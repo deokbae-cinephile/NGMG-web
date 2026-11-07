@@ -210,7 +210,7 @@ test('기록: 분류로 거르고 선택을 기억한다', async ({ page }) => {
 test('기록: 스크롤하면 다음 페이지를 불러온다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./records');
-  const status = page.getByRole('status');
+  const status = page.getByRole('status').first();
   await expect(page.getByText('감성돔 1마리')).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
@@ -445,4 +445,101 @@ test('없는 주소: 제목을 보여 준다', async ({ page }) => {
   await page.goto('./nowhere');
   await expect(page.getByRole('heading', { level: 1, name: '페이지를 찾을 수 없습니다' })).toBeVisible();
   await expect(page).toHaveTitle('페이지 없음 | 낚고먹고');
+});
+
+test('기록: 조과와 메모에서 찾고 지우면 전체를 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    records: [
+      { id: 'a', place_id: 'p1', visited_on: '2026-10-02', catches: '볼락', memo: '', rating: null },
+      { id: 'b', place_id: 'p2', visited_on: '2026-10-01', catches: '', memo: '물회가 맛있다', rating: null },
+    ],
+    record_photos: [],
+  });
+  await page.goto('./records');
+  await expect(page.getByText('볼락')).toBeVisible();
+  await expectAccessible(page);
+  const search = page.getByRole('searchbox', { name: '조과·메모에서 찾기' });
+  await search.fill('물회');
+  await search.press('Enter');
+  await expect(page.getByText('물회가 맛있다')).toBeVisible();
+  await expect(page.getByText('볼락')).toBeHidden();
+  await search.fill('없는말');
+  await page.getByRole('button', { name: '찾기' }).click();
+  await expect(page.getByText(/없는말.*기록이 없습니다/)).toBeVisible();
+  await search.fill('');
+  await expect(page.getByText('볼락')).toBeVisible();
+});
+
+test('기록: 데이터를 JSON 파일로 백업한다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./records');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '데이터 백업' }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^ngmg-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  const file = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of file) chunks.push(chunk as Buffer);
+  const { tables } = JSON.parse(Buffer.concat(chunks).toString());
+  expect(tables.places).toHaveLength(3);
+  expect(tables.records).toHaveLength(25);
+  expect(tables.events).toHaveLength(1);
+  await expect(page.getByText('백업 파일을 저장했습니다.')).toBeVisible();
+});
+
+test('장소: 기록 요약을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./places/p1');
+  await expect(page.getByText('25건')).toBeVisible();
+  await expect(page.getByText('4.0점')).toBeVisible();
+  await expect(page.getByRole('definition').filter({ hasText: '2026년 10월 30일' })).toBeVisible();
+  await expectFits(page);
+  await expectAccessible(page);
+});
+
+test('지도: 현재 위치에서 가까운 순으로 정렬하고 끌 수 있다', async ({ page, context }) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 34.74, longitude: 127.74 });
+  await fakeBackend(page, {
+    places: [
+      { ...place('far', '가장 먼 방파제'), latitude: 37.5, longitude: 129.1 },
+      { ...place('near', '바로 앞 횟집', 'restaurant'), latitude: 34.75, longitude: 127.75 },
+    ],
+  });
+  await page.goto('./');
+  const names = page.getByRole('main').getByRole('listitem').getByRole('button');
+  await expect(names.first()).toContainText('가장 먼 방파제');
+  const sort = page.getByRole('button', { name: '현재 위치에서 가까운 순' });
+  await sort.click();
+  await expect(sort).toHaveAttribute('aria-pressed', 'true');
+  await expect(names.first()).toContainText('바로 앞 횟집');
+  await expect(names.first()).toContainText(/직선거리 \d+(\.\d)?(m|km)/);
+  await expectFits(page);
+  await sort.click();
+  await expect(sort).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByText(/직선거리/)).toHaveCount(0);
+  await expect(names.first()).toContainText('가장 먼 방파제');
+});
+
+test('지도: 위치 권한이 없으면 이유를 알린다', async ({ page, context }) => {
+  await context.clearPermissions();
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByRole('button', { name: '현재 위치에서 가까운 순' }).click();
+  await expect(page.getByRole('alert')).toContainText('위치 권한');
+});
+
+test('대화상자: 입력한 뒤 닫으면 묻는다', async ({ page }) => {
+  const messages: string[] = [];
+  page.on('dialog', (dialog) => void messages.push(dialog.message()));
+  await fakeBackend(page, seed());
+  await page.goto('./calendar?date=2026-11-07');
+  await page.getByRole('button', { name: '일정 추가' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '닫기' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(messages).toEqual([]);
+  await page.getByRole('button', { name: '일정 추가' }).click();
+  await page.getByRole('dialog').getByLabel('할 일').fill('점심');
+  await page.getByRole('dialog').getByRole('button', { name: '닫기' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(messages).toEqual(['작성 중인 내용을 버리고 닫을까요?']);
 });

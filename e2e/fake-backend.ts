@@ -94,6 +94,11 @@ export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn =
     let result = [...rows];
     params.forEach((value, key) => {
       if (['select', 'order', 'offset', 'limit', 'columns', 'on_conflict'].includes(key)) return;
+      if (key === 'or') {
+        const terms = [...value.matchAll(/(\w+)\.ilike\."%(.*?)%"/g)];
+        result = result.filter((row) => terms.some(([, column = '', text = '']) => String(row[column]).toLowerCase().includes(text.toLowerCase())));
+        return;
+      }
       const [op, operand = ''] = [value.slice(0, value.indexOf('.')), value.slice(value.indexOf('.') + 1)];
       if (op === 'eq') result = result.filter((row) => String(read(row, key)) === operand);
       if (op === 'neq') result = result.filter((row) => String(read(row, key)) !== operand);

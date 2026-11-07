@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { KindBadge, useDeletePlace, usePlaces } from '@/entities/place';
-import { RecordCard, usePlaceRecords } from '@/entities/record';
+import { RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
 import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
+import { formatDate } from '@/shared/lib';
 import { ErrorText, Modal } from '@/shared/ui';
 
 export const PlacePage = () => {
@@ -17,6 +18,7 @@ export const PlacePage = () => {
   const [recordForm, setRecordForm] = useState<{ record?: PlaceRecord }>();
 
   const place = places.data?.find((item) => item.id === id);
+  const summary = summarizeRecords(records.data ?? []);
 
   if (places.isPending) return <p className="p-4 text-muted">불러오는 중입니다.</p>;
   if (!place) {
@@ -74,6 +76,22 @@ export const PlacePage = () => {
         </div>
         <ErrorText error={records.error} />
         {records.data?.length === 0 && <p className="text-muted">아직 기록이 없습니다.</p>}
+        {summary.count > 0 && (
+          <dl className="panel grid gap-3 sm:grid-cols-3">
+            <div>
+              <dt className="mono-label">방문 기록</dt>
+              <dd className="font-semibold">{`${summary.count}건`}</dd>
+            </div>
+            <div>
+              <dt className="mono-label">평균 별점</dt>
+              <dd className="font-semibold">{summary.averageRating === null ? '없음' : `${summary.averageRating.toFixed(1)}점`}</dd>
+            </div>
+            <div>
+              <dt className="mono-label">마지막 방문</dt>
+              <dd className="font-semibold">{summary.lastVisited && formatDate(summary.lastVisited)}</dd>
+            </div>
+          </dl>
+        )}
         {records.data?.map((record) => (
           <RecordCard
             key={record.id}

@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PHOTO_BUCKET, supabase, type PlaceKind, type PlaceRecord, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
+import { recordSearchFilter } from './model';
 
 export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
@@ -27,10 +28,13 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
   }));
 };
 
-const fetchPage = async (page: number, kind?: PlaceKind) => {
+const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
   const from = page * PAGE_SIZE;
-  const query = supabase.from('records').select(SELECT);
-  const { data, error } = await (kind ? query.eq('place.kind', kind) : query)
+  let query = supabase.from('records').select(SELECT);
+  if (kind) query = query.eq('place.kind', kind);
+  const search = recordSearchFilter(keyword);
+  if (search) query = query.or(search);
+  const { data, error } = await query
     .order('visited_on', { ascending: false })
     .order('id')
     .range(from, from + PAGE_SIZE - 1);
@@ -38,10 +42,10 @@ const fetchPage = async (page: number, kind?: PlaceKind) => {
   return withPhotoUrls(data as unknown as Row[]);
 };
 
-export const useRecordPages = (kind?: PlaceKind) =>
+export const useRecordPages = (kind?: PlaceKind, keyword?: string) =>
   useInfiniteQuery({
-    queryKey: ['records', 'all', kind],
-    queryFn: ({ pageParam }) => fetchPage(pageParam, kind),
+    queryKey: ['records', 'all', kind, keyword],
+    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword),
     initialPageParam: 0,
     getNextPageParam: (last, _pages, lastParam) => (last.length === PAGE_SIZE ? lastParam + 1 : undefined),
   });

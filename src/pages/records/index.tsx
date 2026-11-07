@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { ExportButton } from '@/features/export-data';
 import { KIND_LABEL } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
 import type { PlaceKind } from '@/shared/api';
 import { getPreference, setPreference } from '@/shared/lib';
-import { ErrorText } from '@/shared/ui';
+import { ErrorText, Field } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';
 const FILTERS: Filter[] = ['all', 'fishing', 'restaurant'];
 
 export const RecordsPage = () => {
   const [filter, setFilter] = useState<Filter>(() => getPreference('records-filter', 'all'));
+  const [draft, setDraft] = useState('');
+  const [keyword, setKeyword] = useState('');
   const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(
     filter === 'all' ? undefined : filter,
+    keyword,
   );
   const more = useRef<HTMLButtonElement>(null);
   const records = data?.pages.flat() ?? [];
@@ -51,9 +55,32 @@ export const RecordsPage = () => {
           ))}
         </div>
       </fieldset>
+      <form
+        role="search"
+        className="flex items-end gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setKeyword(draft.trim());
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <Field
+            label="조과·메모에서 찾기"
+            type="search"
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (!event.target.value) setKeyword(''); // 지우면 전체 목록으로 돌아갑니다.
+            }}
+          />
+        </div>
+        <button type="submit" className="button shrink-0">찾기</button>
+      </form>
       <ErrorText error={error} />
       {!isPending && !error && records.length === 0 && (
-        <p className="text-muted">아직 기록이 없습니다. 지도에서 장소를 고르면 기록을 남길 수 있습니다.</p>
+        <p className="text-muted">
+          {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르면 기록을 남길 수 있습니다.'}
+        </p>
       )}
       <div className="flex flex-col gap-3">
         {records.map((record) => (
@@ -78,6 +105,7 @@ export const RecordsPage = () => {
           기록 더 불러오기
         </button>
       )}
+      <ExportButton />
     </div>
   );
 };

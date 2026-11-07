@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { KIND_LABEL, KindBadge, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
-import { findAddress, getPreference, setPreference } from '@/shared/lib';
+import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, type Coordinates } from '@/shared/lib';
 import { ErrorText, Field, Modal } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
@@ -19,19 +20,25 @@ export const MapPage = () => {
 
   const [keyword, setKeyword] = useState('');
 
+  const locate = useMutation({ mutationFn: getCurrentLocation });
+  const origin = locate.data;
+
+  const search = keyword.trim().toLowerCase();
   const visible = places.filter(
-    (place) => (filter === 'all' || place.kind === filter) && `${place.name} ${place.address}`.includes(keyword.trim()),
+    (place) => (filter === 'all' || place.kind === filter) && `${place.name} ${place.address}`.toLowerCase().includes(search),
   );
+  const distanceOf = (place: Coordinates) => (origin ? distanceKm(origin, place) : null);
+  const listed = origin ? [...visible].sort((a, b) => distanceKm(origin, a) - distanceKm(origin, b)) : visible;
 
   const changeFilter = (next: Filter) => {
     setFilter(next);
     setPreference('map-filter', next);
   };
 
-  const onPick = useCallback(async (latitude: number, longitude: number) => {
+  const onPick = async (latitude: number, longitude: number) => {
     setPicking(false);
     setDraft({ latitude, longitude, address: await findAddress(latitude, longitude) });
-  }, []);
+  };
 
   return (
     <div className="grid lg:h-[calc(100dvh-61px)] lg:grid-cols-[minmax(0,1fr)_24rem]">
@@ -65,13 +72,26 @@ export const MapPage = () => {
           </div>
         </fieldset>
 
+        <button
+          type="button"
+          className="button self-start"
+          aria-pressed={Boolean(origin)}
+          disabled={locate.isPending}
+          onClick={() => (origin ? locate.reset() : locate.mutate())}
+        >
+          현재 위치에서 가까운 순
+        </button>
+        <ErrorText error={locate.error} />
+
         <Field label="내 장소에서 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
         <ErrorText error={error} />
         <p role="status" className="text-sm text-muted">
           {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
         </p>
         <ul className="flex flex-col gap-2">
-          {visible.map((place) => (
+          {listed.map((place) => {
+            const distance = distanceOf(place);
+            return (
             <li key={place.id} className={`panel ${place.id === selectedId ? 'border-tape!' : ''}`}>
               <button
                 type="button"
@@ -83,6 +103,7 @@ export const MapPage = () => {
                   {place.name} <KindBadge kind={place.kind} />
                 </span>
                 <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
+                {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
               </button>
               {place.id === selectedId && (
                 <Link to={`/places/${place.id}`} className="button mt-2">
@@ -90,7 +111,8 @@ export const MapPage = () => {
                 </Link>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
 

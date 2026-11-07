@@ -41,7 +41,7 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
     void search();
   };
 
-  const savedMatches = searched ? saved.filter((place) => place.name.includes(searched)) : [];
+  const savedMatches = searched ? saved.filter((place) => place.name.toLowerCase().includes(searched.toLowerCase())) : [];
   const count = savedMatches.length + results.length;
 
   const clear = () => {
