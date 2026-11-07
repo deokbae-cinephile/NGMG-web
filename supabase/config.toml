@@ -1,6 +1,7 @@
 project_id = "ngmg-web"
 
 [auth]
+site_url = "https://deokbae-cinephile.github.io/NGMG-web/"
 # 가입 화면이 없습니다. 계정은 Supabase 대시보드에서 직접 만듭니다.
 enable_signup = false
 

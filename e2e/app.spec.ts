@@ -391,3 +391,58 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page).toHaveTitle('기록 | 낚고먹고');
   await expect(page.locator('#main')).toBeFocused();
 });
+
+test('로그인: 서버에 닿지 못하면 비밀번호 오류로 안내하지 않는다', async ({ page }) => {
+  await fakeBackend(page, seed(), { signedIn: false });
+  await page.route('**/auth/v1/token**', (route) => route.abort());
+  await page.goto('./');
+  await page.getByLabel('이메일').fill('a@example.com');
+  await page.getByLabel('비밀번호').fill('secret');
+  await page.getByRole('button', { name: '로그인' }).click();
+  await expect(page.getByRole('alert')).toContainText('잠시 후 다시 시도');
+});
+
+test('장소: 삭제에 실패하면 사진 파일을 지우지 않는다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.route('**/rest/v1/places**', (route) =>
+    route.request().method() === 'DELETE' ? route.fulfill({ status: 500, json: { message: 'fail' } }) : route.fallback(),
+  );
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '장소 삭제' }).click();
+  await expect(page.getByRole('alert')).toContainText('장소를 삭제하지 못했습니다');
+  expect(db.removedFiles).toEqual([]);
+});
+
+test('캘린더: 일정의 날짜를 옮기면 옮긴 날을 보여 준다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./calendar?date=2026-11-07');
+  await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
+  const dialog = page.getByRole('dialog', { name: '일정 수정' });
+  await dialog.getByLabel('날짜').fill('2026-11-10');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(page.getByRole('heading', { name: '2026년 11월 10일 (화)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
+  expect(db.events![0]).toMatchObject({ date: '2026-11-10' });
+});
+
+test('캘린더: 준비물 오류는 다음 동작이 성공하거나 날짜를 옮기면 사라진다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./calendar?date=2026-11-09');
+  await page.getByRole('button', { name: '이전 목록 복사' }).click();
+  await expect(page.getByRole('alert')).toContainText('복사할 이전 목록이 없습니다');
+  await page.getByRole('button', { name: '10 일 (화), 2026년 11월' }).click();
+  await expect(page.getByRole('heading', { name: '2026년 11월 10일 (화)' })).toBeVisible();
+  await expect(page.getByRole('alert')).toBeHidden();
+  await page.getByRole('button', { name: '이전 목록 복사' }).click();
+  await expect(page.getByRole('alert')).toContainText('복사할 이전 목록이 없습니다');
+  await page.getByRole('button', { name: '기본 목록 불러오기' }).click();
+  await expect(page.getByRole('checkbox').first()).toBeVisible();
+  await expect(page.getByRole('alert')).toBeHidden();
+});
+
+test('없는 주소: 제목을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./nowhere');
+  await expect(page.getByRole('heading', { level: 1, name: '페이지를 찾을 수 없습니다' })).toBeVisible();
+  await expect(page).toHaveTitle('페이지 없음 | 낚고먹고');
+});

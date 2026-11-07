@@ -15,6 +15,13 @@ const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTim
 
 const Loading = () => <p className="p-4 text-muted">불러오는 중입니다.</p>;
 
+const NotFound = () => (
+  <div className="p-4">
+    <title>페이지 없음 | 낚고먹고</title>
+    <h1 className="sticker text-2xl">페이지를 찾을 수 없습니다</h1>
+  </div>
+);
+
 export const App = () => {
   const session = useSession();
 
@@ -37,7 +44,7 @@ export const App = () => {
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="records" element={<RecordsPage />} />
                 <Route path="places/:id" element={<PlacePage />} />
-                <Route path="*" element={<p className="p-4">페이지를 찾을 수 없습니다.</p>} />
+                <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
           </BrowserRouter>

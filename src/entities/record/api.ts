@@ -104,11 +104,12 @@ export const useSaveRecord = () => {
 };
 
 const deleteRecord = async (record: PlaceRecord) => {
+  // 기록을 먼저 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
+  const { error } = await supabase.from('records').delete().eq('id', record.id);
+  if (error) throw new Error('기록을 삭제하지 못했습니다.');
   if (record.photos.length) {
     await supabase.storage.from(PHOTO_BUCKET).remove(record.photos.map((photo) => photo.storage_path));
   }
-  const { error } = await supabase.from('records').delete().eq('id', record.id);
-  if (error) throw new Error('기록을 삭제하지 못했습니다.');
 };
 
 export const useDeleteRecord = () => {

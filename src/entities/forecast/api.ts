@@ -41,8 +41,8 @@ export const parseForecast = (weather: Daily, marine: Daily | null): Forecast =>
 const fetchForecast = async (date: string, latitude: number, longitude: number) => {
   const common = `latitude=${latitude}&longitude=${longitude}&start_date=${date}&end_date=${date}&timezone=Asia%2FSeoul`;
   const fields = 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max';
-  const weather = await fetch(`https://api.open-meteo.com/v1/forecast?${common}&daily=${fields}&wind_speed_unit=ms`);
-  if (!weather.ok) throw new Error('날씨를 불러오지 못했습니다.');
+  const weather = await fetch(`https://api.open-meteo.com/v1/forecast?${common}&daily=${fields}&wind_speed_unit=ms`).catch(() => null);
+  if (!weather?.ok) throw new Error('날씨를 불러오지 못했습니다.');
   // 내륙 좌표에는 파고가 없으므로 실패해도 날씨는 보여 줍니다.
   const marine = await fetch(`https://marine-api.open-meteo.com/v1/marine?${common}&daily=wave_height_max`).catch(() => null);
   return parseForecast(await weather.json(), marine?.ok ? await marine.json() : null);

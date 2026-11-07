@@ -7,14 +7,15 @@ import type { CalendarEvent, PlaceDraft, PlaceKind } from '@/shared/api';
 import { formatDate, formatTime } from '@/shared/lib';
 import { ErrorText, Field, TextareaField } from '@/shared/ui';
 
-type Values = { title: string; start_time: string; end_time: string; memo: string };
-type Props = { date: string; event?: CalendarEvent; onDone: () => void };
+type Values = { title: string; date: string; start_time: string; end_time: string; memo: string };
+type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => void };
 type Input = Values & { place: PlaceDraft | null };
 
 export const EventForm = ({ date, event, onDone }: Props) => {
   const { register, handleSubmit, getValues, formState: { errors } } = useForm<Values>({
     defaultValues: {
       title: event?.title ?? '',
+      date: event?.date ?? date,
       start_time: event ? formatTime(event.start_time) : '',
       end_time: event?.end_time ? formatTime(event.end_time) : '',
       memo: event?.memo ?? '',
@@ -32,7 +33,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
       await saveEvent({
         ...values,
         id: event?.id,
-        date,
         end_time: values.end_time || null,
         place_id: saved?.id ?? null,
       });
@@ -40,11 +40,15 @@ export const EventForm = ({ date, event, onDone }: Props) => {
     onSuccess: () => client.invalidateQueries(),
   });
 
-  const submit = handleSubmit((values) => save.mutate({ ...values, place }, { onSuccess: onDone }));
+  const submit = handleSubmit((values) => save.mutate({ ...values, place }, { onSuccess: () => onDone(values.date) }));
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      <p className="mono-label">{formatDate(date)}</p>
+      {event ? (
+        <Field label="날짜" type="date" error={errors.date?.message} {...register('date', { required: '날짜를 입력해 주세요.' })} />
+      ) : (
+        <p className="mono-label">{formatDate(date)}</p>
+      )}
       <Field label="할 일" placeholder="예: 새벽 출조" error={errors.title?.message} {...register('title', { required: '할 일을 입력해 주세요.', maxLength: { value: 100, message: '100자까지 입력할 수 있습니다.' } })} />
       <div className="grid grid-cols-2 gap-3">
         <Field label="시작 시간" type="time" error={errors.start_time?.message} {...register('start_time', { required: '시작 시간을 입력해 주세요.' })} />

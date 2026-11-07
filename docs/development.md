@@ -42,9 +42,9 @@ select id from auth.users where email in ('첫번째@example.com', '두번째@ex
 
 ## 배포 (GitHub Pages)
 
-1. 저장소 **Settings > Pages**의 Source를 **GitHub Actions**로 바꿉니다.
-2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다.
-3. `main`에 올리면 `deploy.yml`이 배포합니다. 주소는 `https://deokbae-cinephile.github.io/NGMG-web/`입니다.
+1. 저장소 Pages의 Source는 **GitHub Actions**로 설정되어 있습니다.
+2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 하나라도 없으면 빈 화면이 배포되지 않도록 `deploy.yml`이 빌드 전에 실패합니다.
+3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://deokbae-cinephile.github.io/NGMG-web/`입니다.
 
 저장소 이름이나 도메인이 바뀌면 `vite.config.ts`의 `base`도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
 

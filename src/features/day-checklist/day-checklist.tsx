@@ -11,7 +11,10 @@ export const DayChecklist = ({ date }: { date: string }) => {
     defaultValues: { title: '', category: CHECKLIST_CATEGORIES[0] },
   });
   const done = items.filter((item) => item.checked).length;
-  const actionError = addDefaults.error ?? copyLatest.error ?? uncheckAll.error ?? add.error ?? toggle.error ?? remove.error;
+  // 마지막으로 한 동작의 결과만 보여 줍니다. 다음 동작이 성공하면 이전 오류는 사라집니다.
+  const lastAction = [addDefaults, copyLatest, uncheckAll, add, toggle, remove].reduce((last, action) =>
+    action.submittedAt > last.submittedAt ? action : last,
+  );
 
   const submit = handleSubmit((values) =>
     add.mutate(
@@ -26,7 +29,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
         <h3 id="checklist-title" className="sticker text-lg">장비·준비물</h3>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}
       </div>
-      <ErrorText error={error ?? actionError} />
+      <ErrorText error={error ?? lastAction.error} />
       {!isPending && !error && items.length === 0 && (
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>

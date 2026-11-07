@@ -13,7 +13,12 @@ export const RecordCard = ({ record, heading, actions }: Props) => (
       </div>
       {actions}
     </div>
-    {record.rating !== null && <p aria-label={`별점 5점 중 ${record.rating}점`}>{'★'.repeat(record.rating)}</p>}
+    {record.rating !== null && (
+      <p>
+        <span className="sr-only">{`별점 5점 중 ${record.rating}점`}</span>
+        <span aria-hidden="true">{'★'.repeat(record.rating)}</span>
+      </p>
+    )}
     {record.catches && (
       <p>
         <span className="mono-label mr-2">조과</span>

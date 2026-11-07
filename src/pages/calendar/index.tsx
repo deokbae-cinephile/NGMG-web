@@ -117,7 +117,7 @@ export const CalendarPage = () => {
           </ol>
         </section>
 
-        <DayChecklist date={date} />
+        <DayChecklist key={date} date={date} />
       </div>
 
       {upcoming.data && upcoming.data.length > 0 && (
@@ -153,7 +153,14 @@ export const CalendarPage = () => {
       )}
       {form && (
         <Modal title={form.event ? '일정 수정' : '새 일정'} onClose={() => setForm(undefined)}>
-          <EventForm date={date} event={form.event} onDone={() => setForm(undefined)} />
+          <EventForm
+            date={date}
+            event={form.event}
+            onDone={(next) => {
+              setForm(undefined);
+              goTo(next); // 날짜를 옮겼다면 옮긴 날을 보여 줍니다.
+            }}
+          />
         </Modal>
       )}
     </div>
