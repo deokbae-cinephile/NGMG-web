@@ -212,6 +212,8 @@ test('기록: 스크롤하면 다음 페이지를 불러온다', async ({ page }
   await page.goto('./records');
   const status = page.getByRole('status').first();
   await expect(page.getByText('감성돔 1마리')).toBeVisible();
+  await expect(page.getByRole('img', { name: /기록 사진 1/ })).toHaveJSProperty('complete', true);
+  expect(await page.getByRole('img', { name: /기록 사진 1/ }).evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await expectFits(page);
   await expectAccessible(page);
   await page.getByRole('button', { name: '기록 더 불러오기' }).scrollIntoViewIfNeeded();

@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { demoSeed } from './demo-data';
 import { startFakeBackend as fakeBackend } from './fake-backend';
 
@@ -20,6 +20,7 @@ test('휴대폰 화면', async ({ page }, info) => {
   await page.screenshot({ path: `${dir}/event-form.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./records');
   await page.getByText('감성돔 1마리').waitFor();
+  await expect(page.getByRole('img', { name: /기록 사진 1/ })).toHaveJSProperty('complete', true);
   await page.screenshot({ path: `${dir}/records.jpg`, type: 'jpeg', quality: 80 });
 });
 

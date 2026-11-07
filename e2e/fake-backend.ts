@@ -140,8 +140,14 @@ export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn =
 
     if (path.startsWith('/storage/v1/object/sign/')) {
       const { paths } = request.postDataJSON();
-      const picture = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#3a362b"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#daceb0"/></svg>')}`;
-      return json(route, paths.map((item: string) => ({ path: item, signedURL: picture, error: null })));
+      // 실제 서버처럼 상대 경로를 줍니다. SDK가 앞에 Storage 주소를 붙입니다.
+      return json(route, paths.map((item: string) => ({ path: item, signedURL: `/object/fake-photo/${item}?token=t`, error: null })));
+    }
+    if (path.startsWith('/storage/v1/object/fake-photo/')) {
+      return route.fulfill({
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#3a362b"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#daceb0"/></svg>',
+      });
     }
     if (method === 'DELETE' && path.startsWith('/storage/v1/object')) {
       removedFiles.push(...request.postDataJSON().prefixes);
