@@ -97,10 +97,12 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 | 토큰 | 값 | 쓰임 |
 | --- | --- | --- |
-| `paper` / `surface` | `#ececec` / `#f7f7f7` | 바탕 / 입력란·강조 영역 |
-| `ink` / `muted` | `#0a0a0a` / `#595959` | 본문 글자 / 보조 글자·라벨 |
-| `line` / `field` | `#c4c4c4` / `#8c8c8c` | 구분선 / 입력란 테두리 |
-| `accent` | `#ff4a4a` | 칠하는 색(선택, 표시 점). 회색 바탕 위 글자로는 대비가 모자라 쓰지 않습니다. |
-| `accent-ink` / `danger` | `#c01f1c` / `#b3221e` | 빨간 글자(오늘 날짜) / 삭제·오류 |
+| `paper` / `surface` | `#fafafa` / `#f0f0f0` | 바탕 / 입력란·강조 영역 |
+| `ink` / `muted` | `#0a0a0a` / `#595959` | 본문 글자·제목 밑줄 / 보조 글자·라벨 |
+| `line` / `field` | `#d4d4d4` / `#8c8c8c` | 구분선 / 입력란 테두리 |
+| `accent` / `accent-ink` | `#2f7bd8` / `#1f5fb4` | 가는 선·점·초점 표시 / 파란 글자(오늘 날짜) |
+| `danger` | `#b3221e` | 삭제·오류 |
+
+화면 제목은 `.page-title`(가로선 위의 큰 글자)과 그 위의 `.eyebrow`(자간을 넓힌 작은 라벨)로 씁니다. 장소 분류는 색 대신 채움으로 구분합니다(낚시: 테두리, 맛집: 검정 채움).
 
 장식용 애니메이션과 추가 글꼴은 쓰지 않습니다. 화면이 가볍게 유지되도록 Pretendard 하나와 색·선·여백으로만 표현합니다.

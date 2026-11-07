@@ -25,7 +25,7 @@ export const PlacePage = () => {
     return (
       <div className="p-4">
         <title>장소 없음 | 낚고먹고</title>
-        <h1 className="title text-2xl">장소를 찾을 수 없습니다</h1>
+        <h1 className="page-title">장소를 찾을 수 없습니다</h1>
         <ErrorText error={places.error} />
       </div>
     );
@@ -41,10 +41,10 @@ export const PlacePage = () => {
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 lg:py-8">
       <title>{`${place.name} | 낚고먹고`}</title>
       <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="title text-3xl">{place.name}</h1>
+        <span className="self-start">
           <KindBadge kind={place.kind} />
-        </div>
+        </span>
+        <h1 className="page-title">{place.name}</h1>
         <p>{place.address || '주소 없음'}</p>
         <p className="mono-label">{`${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`}</p>
         {place.memo && <p className="whitespace-pre-wrap break-words">{place.memo}</p>}

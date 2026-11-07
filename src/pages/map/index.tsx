@@ -48,8 +48,9 @@ export const MapPage = () => {
       </div>
 
       <section className="flex flex-col gap-4 p-4 lg:overflow-y-auto">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="title text-2xl">내 장소</h1>
+        <p className="eyebrow">낚시 포인트 · 맛집</p>
+        <div className="flex items-end gap-3">
+          <h1 className="page-title">내 장소</h1>
           <button type="button" className="button button-primary" onClick={() => setDraft({})}>
             장소 추가
           </button>

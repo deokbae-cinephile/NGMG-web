@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.3.0-ff4a4a)
+![version](https://img.shields.io/badge/version-1.4.0-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 캘린더로 출조 일정과 준비물을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -19,7 +19,7 @@
 | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | <img src="docs/images/calendar-mobile.jpg" alt="휴대폰 폭의 달력과 선택한 날짜, 하단 탭 메뉴" width="240"> | <img src="docs/images/event-form.jpg" alt="할 일, 시간, 장소 검색, 메모 입력란" width="240"> |
 | **전체 기록**                                                                                     | **로그인**                                                                    |
-| <img src="docs/images/records.jpg" alt="분류 필터와 검색창 아래 조과, 별점, 사진이 있는 기록 카드 목록" width="240"> | <img src="docs/images/login.jpg" alt="큰 낚고먹고 제목과 이메일, 비밀번호 입력란" width="240"> |
+| <img src="docs/images/records.jpg" alt="분류 필터와 검색창 아래 조과, 별점, 사진이 있는 기록 카드 목록" width="240"> | <img src="docs/images/login.jpg" alt="작은 소개 문구 아래 가로선 위에 얹은 큰 낚고먹고 제목과 이메일, 비밀번호 입력란" width="240"> |
 
 ## 주요 기능
 

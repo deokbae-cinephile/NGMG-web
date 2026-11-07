@@ -1,19 +1,17 @@
 @import 'tailwindcss';
 @import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
-/* 밝은 회색 바탕, 검정 글자, 빨강 포인트 하나. 빨강(accent)은 칠하는 데만 쓰고 글자에는 accent-ink를 씁니다. */
+/* 거의 흰 바탕과 검정 글자. 파랑(accent)은 가는 선과 점에만 쓰고, 파란 글자는 accent-ink를 씁니다. */
 @theme {
-  --color-paper: #ececec;
-  --color-surface: #f7f7f7;
+  --color-paper: #fafafa;
+  --color-surface: #f0f0f0;
   --color-ink: #0a0a0a;
   --color-muted: #595959;
-  --color-line: #c4c4c4;
+  --color-line: #d4d4d4;
   --color-field: #8c8c8c;
-  --color-accent: #ff4a4a;
-  --color-accent-ink: #c01f1c;
+  --color-accent: #2f7bd8;
+  --color-accent-ink: #1f5fb4;
   --color-danger: #b3221e;
-  --color-fishing: #9fcfe0;
-  --color-restaurant: #f5ad8a;
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
 }
 
@@ -30,51 +28,77 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  box-shadow: 0 0 0 5px var(--color-accent);
 }
 
 @layer components {
-  /* 화면 제목: 장식 없이 굵고 촘촘한 글자 */
+  /* 화면 제목: 큰 글자를 가로선 위에 얹습니다. */
+  .page-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-bottom: 1px solid var(--color-ink);
+    font-size: clamp(2.25rem, 4vw + 1rem, 4.5rem);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  /* 제목 위의 작은 라벨 */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+  }
+
   .title {
     max-width: 100%;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1.05;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  .display-number {
+    font-size: clamp(3.5rem, 6vw, 5.5rem);
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.06em;
+    line-height: 0.85;
   }
 
   .wordmark {
     font-size: 1.125rem;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: -0.04em;
     white-space: nowrap;
   }
-  .wordmark::after {
+  /* 로고 끝의 빈 사각형 */
+  .wordmark::after,
+  .wordmark-square::after {
     content: '';
     display: inline-block;
-    width: 0.4em;
-    height: 0.4em;
-    margin-left: 0.15em;
-    background: var(--color-accent);
-    vertical-align: 0.05em;
+    width: 0.5em;
+    height: 0.5em;
+    margin-left: 0.12em;
+    border: 0.08em solid var(--color-ink);
+    vertical-align: 0;
   }
 
   .mono-label {
     color: var(--color-muted);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
   }
 
-  /* 카드 대신 위쪽 굵은 선으로 구획을 나눕니다. */
+  /* 카드 대신 위쪽 선으로 구획을 나눕니다. */
   .panel {
     border-top: 1px solid var(--color-ink);
     padding: 0.875rem 0;
   }
   .panel-active {
     background: var(--color-surface);
-    box-shadow: inset 4px 0 0 var(--color-accent);
+    box-shadow: inset 3px 0 0 var(--color-accent);
     padding-inline: 0.875rem;
   }
 
@@ -84,7 +108,7 @@ body {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-ink);
-    padding: 0.375rem 0.875rem;
+    padding: 0.375rem 1rem;
     color: var(--color-ink);
     font-size: 0.875rem;
     cursor: pointer;
@@ -98,19 +122,13 @@ body {
     cursor: not-allowed;
     opacity: 0.5;
   }
-  .button[aria-pressed='true'] {
-    background: var(--color-accent);
-    color: var(--color-ink);
-    font-weight: 600;
-  }
+  .button[aria-pressed='true'],
   .button-primary {
     background: var(--color-ink);
     color: var(--color-paper);
-    font-weight: 600;
   }
   .button-primary:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: var(--color-ink);
+    background: #333;
   }
   .button-danger {
     border-color: var(--color-danger);
@@ -134,17 +152,19 @@ body {
     background: var(--color-surface);
   }
 
+  /* 분류는 색 대신 채움으로 구분합니다: 낚시는 테두리, 맛집은 검정 채움 */
   .badge {
-    padding: 0.05rem 0.375rem;
+    border: 1px solid var(--color-ink);
+    padding: 0 0.375rem;
     color: var(--color-ink);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 500;
+    white-space: nowrap;
   }
-  .badge-fishing {
-    background: var(--color-fishing);
-  }
-  .badge-restaurant {
-    background: var(--color-restaurant);
+  .badge-restaurant,
+  .badge-solid {
+    background: var(--color-ink);
+    color: var(--color-paper);
   }
 
   .modal {
@@ -160,7 +180,7 @@ body {
     color: var(--color-ink);
   }
   .modal::backdrop {
-    background: rgb(10 10 10 / 0.45);
+    background: rgb(10 10 10 / 0.4);
   }
   @media (width >= 40rem) {
     .modal {
@@ -186,7 +206,7 @@ body {
     transform: none;
   }
 
-  /* 휴대폰은 하단 탭, 넓은 화면은 머리글 메뉴. 현재 메뉴 앞에 화살표를 붙입니다. */
+  /* 휴대폰은 하단 탭, 넓은 화면은 머리글 메뉴. 현재 메뉴 앞에 파란 줄을 긋습니다. */
   .main-nav {
     position: fixed;
     inset: auto 0 0;
@@ -204,24 +224,26 @@ body {
     justify-content: center;
     padding: 0 1rem;
     color: var(--color-muted);
-    font-weight: 600;
   }
   .nav-link:hover {
     color: var(--color-ink);
   }
   .nav-link[aria-current='page'] {
     color: var(--color-ink);
-    box-shadow: inset 0 3px 0 var(--color-accent);
+    font-weight: 600;
   }
   .nav-link[aria-current='page']::before {
-    content: '→';
-    margin-right: 0.3em;
+    content: '';
+    width: 1.25rem;
+    height: 2px;
+    margin-right: 0.4rem;
+    background: var(--color-accent);
   }
   @media (width >= 64rem) {
     .main-nav {
       position: static;
       display: flex;
-      gap: 0.25rem;
+      gap: 0.5rem;
       margin-right: auto;
       border: 0;
       background: none;
@@ -230,13 +252,10 @@ body {
     .nav-link {
       min-height: 2.75rem;
     }
-    .nav-link[aria-current='page'] {
-      box-shadow: none;
-    }
   }
 
   .map {
-    filter: grayscale(0.5) contrast(1.02);
+    filter: grayscale(0.85) contrast(1.05);
   }
 
   .pin {
@@ -247,16 +266,15 @@ body {
     justify-content: center;
     border: 2px solid var(--color-ink);
     border-radius: 50%;
+    background: var(--color-paper);
     color: var(--color-ink);
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
   }
-  .pin-fishing {
-    background: var(--color-fishing);
-  }
   .pin-restaurant {
-    background: var(--color-restaurant);
     border-radius: 0;
+    background: var(--color-ink);
+    color: var(--color-paper);
   }
 }
 
@@ -288,8 +306,8 @@ body {
   position: absolute;
   bottom: 0.3rem;
   left: 50%;
-  width: 0.375rem;
-  height: 0.375rem;
+  width: 0.875rem;
+  height: 2px;
   background: var(--color-accent);
   transform: translateX(-50%);
 }

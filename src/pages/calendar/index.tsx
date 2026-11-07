@@ -45,13 +45,14 @@ export const CalendarPage = () => {
     <div className="mx-auto grid max-w-6xl gap-6 p-4 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:py-8">
       <title>캘린더 | 낚고먹고</title>
       <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="title text-3xl">캘린더</h1>
+        <p className="eyebrow">출조 일정 · 준비물</p>
+        <div className="flex items-end gap-3">
+          <h1 className="page-title">캘린더</h1>
           <button type="button" className="button" onClick={() => goTo(toDateKey(new Date()))}>
             오늘
           </button>
         </div>
-        <div className="panel flex justify-center">
+        <div className="flex justify-center">
           <DayPicker
             mode="single"
             required
@@ -78,7 +79,7 @@ export const CalendarPage = () => {
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div className="flex items-end gap-3">
               {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
-              <p aria-hidden="true" className="title text-6xl tabular-nums">
+              <p aria-hidden="true" className="display-number">
                 {date.slice(8)}
               </p>
               <h2 id="day-title" aria-live="polite" className="title pb-1 text-xl">
@@ -129,12 +130,12 @@ export const CalendarPage = () => {
       {upcoming.data && upcoming.data.length > 0 && (
         <section aria-labelledby="upcoming-title" className="flex flex-col gap-2 lg:col-start-1">
           <h2 id="upcoming-title" className="mono-label">다가오는 일정</h2>
-          <ul className="flex flex-col divide-y divide-line border border-line lg:w-[21rem]">
+          <ul className="flex flex-col divide-y divide-line border-t border-ink lg:w-[21rem]">
             {upcoming.data.map((event) => (
               <li key={event.id}>
                 <button type="button" className="result" onClick={() => goTo(event.date)}>
                   <span className="flex items-center gap-2">
-                    <span className="badge bg-accent">{formatDday(event.date)}</span>
+                    <span className="badge badge-solid">{formatDday(event.date)}</span>
                     <span className="font-semibold">{event.title}</span>
                   </span>
                   <span className="text-sm text-muted">

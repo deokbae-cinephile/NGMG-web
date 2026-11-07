@@ -35,7 +35,10 @@ export const RecordsPage = () => {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 lg:py-8">
       <title>기록 | 낚고먹고</title>
-      <h1 className="title self-start text-3xl">전체 기록</h1>
+      <div>
+        <p className="eyebrow pb-3">조과 · 별점 · 사진</p>
+        <h1 className="page-title">전체 기록</h1>
+      </div>
       <fieldset>
         <legend className="mono-label pb-1.5">분류</legend>
         <div className="flex gap-2">
