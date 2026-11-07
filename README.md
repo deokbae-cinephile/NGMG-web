@@ -33,7 +33,7 @@
 
 ## 기술 스택
 
-![React, TypeScript, Vite, Tailwind CSS, Supabase, PostgreSQL, Vitest, Playwright, pnpm, GitHub Actions](https://skillicons.dev/icons?i=react,ts,vite,tailwind,supabase,postgres,vitest,playwright,pnpm,githubactions)
+![React, TypeScript, Vite, Tailwind CSS, Supabase, PostgreSQL, Vitest, pnpm, GitHub Actions](https://skillicons.dev/icons?i=react,ts,vite,tailwind,supabase,postgres,vitest,pnpm,githubactions)
 
 | 구분        | 사용 기술                                                              |
 | ----------- | ---------------------------------------------------------------------- |
