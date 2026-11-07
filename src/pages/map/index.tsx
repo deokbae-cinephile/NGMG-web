@@ -77,7 +77,6 @@ export const MapPage = () => {
       <section aria-labelledby="places-title" className="pane">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
-            <span aria-hidden="true" className="eyebrow">Places</span>
             <h2 id="places-title" className="title text-xl">내 장소</h2>
           </div>
           <button type="button" className="button button-primary" onClick={() => setDraft({})}>

@@ -43,7 +43,6 @@ export const PlacePage = () => {
       <h1 className="sr-only">{`${place.name} 장소 상세`}</h1>
       <section aria-labelledby="place-title" className="pane">
         <div className="cell-head">
-          <span aria-hidden="true" className="eyebrow">Place</span>
           <KindBadge kind={place.kind} />
         </div>
         {place.photo_url && <img src={place.photo_url} alt={`${place.name} 사진`} className="aspect-[3/2] w-full border-b border-line object-cover" />}
@@ -75,7 +74,6 @@ export const PlacePage = () => {
       <section aria-labelledby="place-records-title" className="pane">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
-            <span aria-hidden="true" className="eyebrow">Log</span>
             <h2 id="place-records-title" className="title text-xl">기록</h2>
           </div>
           <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>

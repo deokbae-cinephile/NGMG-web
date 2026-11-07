@@ -28,7 +28,6 @@ export const DayChecklist = ({ date }: { date: string }) => {
     <section aria-labelledby="checklist-title" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
         <div className="flex items-baseline gap-3">
-          <span aria-hidden="true" className="eyebrow">Checklist</span>
           <h3 id="checklist-title" className="title text-lg">장비·준비물</h3>
         </div>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}

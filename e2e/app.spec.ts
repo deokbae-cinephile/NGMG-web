@@ -24,8 +24,13 @@ const seed = (): Seed => ({
 });
 
 const expectFits = async (page: Page) => {
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  // 문서 가로 스크롤과 함께, 잘려서 스크롤이 안 생기는 경우도 잡도록 본문 요소의 오른쪽 끝을 봅니다.
+  const overflow = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth;
+    const right = Math.max(...[...document.querySelectorAll('main *')].map((el) => el.getBoundingClientRect().right));
+    return Math.max(document.documentElement.scrollWidth - width, right - width);
+  });
+  expect(overflow).toBeLessThanOrEqual(0.5);
 };
 
 const expectAccessible = async (page: Page) => {

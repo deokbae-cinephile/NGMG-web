@@ -2,8 +2,9 @@
 @import '@fontsource/do-hyeon/400.css'; /* 한글은 글자 조각(unicode-range)으로 나뉘어 화면에 쓰인 조각만 받습니다. */
 
 /*
- * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 형광 그린 포인트 하나.
- * 형광 그린(accent)은 흰 바탕 위 글자로는 읽히지 않으므로 칠하는 데만 쓰고, 그 위 글자는 검정입니다.
+ * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 주황 포인트 하나(로고 그림의 튀김 색).
+ * 주황(accent)은 흰 바탕 위 글자로는 대비가 모자라 칠하는 데만 쓰고 그 위 글자는 검정입니다(검정과 약 9:1).
+ * 선택 상태는 검정 선을 함께 둘러 색 없이도 구분되게 합니다.
  */
 @theme {
   --color-paper: #fafafa;
@@ -13,7 +14,7 @@
   --color-line: #0a0a0a;
   --color-soft: #d9d9d9;
   --color-field: #8c8c8c;
-  --color-accent: #39ff14;
+  --color-accent: #f0932b;
   --color-sun: #d4271b;
   --color-sat: #1f5fb4;
   --color-danger: #b3221e;
@@ -56,12 +57,6 @@ select {
 
 @layer components {
   /* 영문 대문자 라벨. 장식이라 읽지 않게 하고, 읽는 이름은 옆의 한글 제목이 맡습니다. */
-  .eyebrow {
-    font-size: 0.75rem;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-  }
-
   .title {
     max-width: 100%;
     letter-spacing: -0.02em;
@@ -107,7 +102,7 @@ select {
   }
   .panel-active {
     background: var(--color-surface);
-    box-shadow: inset 4px 0 0 var(--color-accent);
+    box-shadow: inset 4px 0 0 var(--color-ink);
     padding-inline: 1rem;
   }
 
@@ -133,6 +128,7 @@ select {
   }
   .button[aria-pressed='true'] {
     background: var(--color-accent);
+    box-shadow: inset 0 0 0 1px var(--color-ink); /* 테두리를 2px로 굵혀 색 없이도 눌린 상태가 보입니다. */
   }
   .button-primary {
     background: var(--color-ink);
@@ -341,6 +337,7 @@ select {
   }
   .nav-link[aria-current='page'] {
     background: var(--color-accent);
+    box-shadow: inset 0 -3px 0 var(--color-ink); /* 현재 메뉴는 아래 검정 막대로도 표시합니다. */
     color: var(--color-ink);
   }
   .nav-text {
@@ -380,6 +377,10 @@ select {
   /* 화면을 선으로 나눈 칸들. 넓은 화면에서는 칸마다 따로 스크롤합니다. */
   .panes {
     display: grid;
+    grid-template-columns: minmax(0, 1fr); /* 사진 넘기기 같은 넓은 내용이 칸을 화면 밖으로 늘리지 않게 합니다. */
+  }
+  .pane {
+    min-width: 0;
   }
   .pane + .pane {
     border-top: 1px solid var(--color-line);
@@ -418,29 +419,44 @@ select {
     filter: grayscale(0.85) contrast(1.05);
   }
 
+  /* 지도 핀: 모서리를 살짝 굴린 사각형 아래에 꼬리를 단 표식. 꼬리 끝이 장소 위치입니다. 분류는 채움으로 구분합니다. */
   .pin {
+    position: relative;
     display: flex;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--color-ink);
-    border-radius: 50%;
-    background: var(--color-paper);
-    color: var(--color-ink);
-    cursor: pointer;
-  }
-  .pin-restaurant {
-    border-radius: 0;
+    border: 1.5px solid var(--color-ink);
+    border-radius: 0.375rem;
     background: var(--color-ink);
     color: var(--color-paper);
+    cursor: pointer;
+  }
+  .pin::after {
+    content: '';
+    position: absolute;
+    bottom: -0.3125rem;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 1.5px solid var(--color-ink);
+    border-bottom: 1.5px solid var(--color-ink);
+    background: inherit;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .pin-restaurant {
+    background: var(--color-paper);
+    color: var(--color-ink);
   }
   .pin-etc {
     background: var(--color-accent);
+    color: var(--color-ink);
   }
   .pin[aria-pressed='true'] {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 2px;
+    z-index: 1;
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
   }
 
   .loader {
@@ -463,6 +479,10 @@ select {
   /* 막대그래프 */
   .bar {
     height: 0.75rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-accent);
+  }
+  .bar-top {
     background: var(--color-ink);
   }
 }

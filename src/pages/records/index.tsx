@@ -52,7 +52,6 @@ export const RecordsPage = () => {
       <section aria-labelledby="filter-title" className="pane">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
-            <span aria-hidden="true" className="eyebrow">Filter</span>
             <h2 id="filter-title" className="title text-xl">찾기</h2>
           </div>
         </div>
@@ -144,7 +143,6 @@ export const RecordsPage = () => {
       <section aria-labelledby="records-title" className="pane">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
-            <span aria-hidden="true" className="eyebrow">Log</span>
             <h2 id="records-title" className="title text-xl">기록</h2>
           </div>
           <p role="status" className="mono-label">

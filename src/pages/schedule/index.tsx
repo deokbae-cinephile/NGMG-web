@@ -13,10 +13,9 @@ import type { CalendarEvent, PlaceRecord } from '@/shared/api';
 import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, holidayName, normalizeDateKey, parseDateKey, toDateKey } from '@/shared/lib';
 import { ErrorText, Modal } from '@/shared/ui';
 
-const PaneHead = ({ eyebrow, id, title, children }: { eyebrow: string; id: string; title: string; children?: ReactNode }) => (
+const PaneHead = ({ id, title, children }: { id: string; title: string; children?: ReactNode }) => (
   <div className="cell-head">
     <div className="flex items-baseline gap-3">
-      <span aria-hidden="true" className="eyebrow">{eyebrow}</span>
       <h2 id={id} className="title text-xl">{title}</h2>
     </div>
     {children}
@@ -67,7 +66,7 @@ export const SchedulePage = () => {
       <h1 className="sr-only">일정</h1>
 
       <section aria-labelledby="calendar-title" className="pane">
-        <PaneHead eyebrow="Calendar" id="calendar-title" title="달력">
+        <PaneHead id="calendar-title" title="달력">
           <button type="button" className="button" onClick={() => goTo(toDateKey(new Date()))}>
             오늘
           </button>
@@ -178,7 +177,7 @@ export const SchedulePage = () => {
       </section>
 
       <section aria-labelledby="day-log-title" className="pane">
-        <PaneHead eyebrow="Log" id="day-log-title" title="그날의 조건과 기록" />
+        <PaneHead id="day-log-title" title="그날의 조건과 기록" />
         <div className="cell-body flex flex-col gap-8">
           {conditionPlace ? (
             <DayConditions date={date} place={conditionPlace} />

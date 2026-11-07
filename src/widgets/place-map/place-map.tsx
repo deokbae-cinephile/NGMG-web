@@ -19,7 +19,7 @@ const createPin = (place: Place, selected: boolean, onSelect: (id: string) => vo
   const pin = document.createElement('button');
   pin.type = 'button';
   pin.className = `pin pin-${place.kind}`;
-  pin.innerHTML = iconSvg(KIND_ICON[place.kind], 20);
+  pin.innerHTML = iconSvg(KIND_ICON[place.kind], 18);
   pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택`);
   pin.setAttribute('aria-pressed', String(selected));
   pin.title = place.name;
@@ -77,6 +77,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
         new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(place.latitude, place.longitude),
           content: createPin(place, place.id === selectedId, onSelect),
+          yAnchor: 1.2, // 핀 아래 꼬리 끝이 장소 위치에 오게 합니다.
           clickable: true,
         }),
     );
