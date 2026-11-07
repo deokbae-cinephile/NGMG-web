@@ -37,7 +37,6 @@ export const AppShell = () => {
             </NavLink>
           ))}
         </nav>
-        <div aria-hidden="true" className="topbar-end hidden lg:block" />
       </header>
       <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
         <Suspense fallback={<Loader />}>
