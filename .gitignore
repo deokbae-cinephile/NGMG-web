@@ -6,3 +6,4 @@ dist/
 .idea/
 test-results/
 playwright-report/
+supabase/.temp/
