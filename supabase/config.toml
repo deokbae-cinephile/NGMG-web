@@ -6,4 +6,5 @@ site_url = "https://deokbae-cinephile.github.io/NGMG-web/"
 enable_signup = false
 
 [auth.email]
-enable_signup = false
+# 이메일 로그인 자체를 켭니다. (예전 이름 enable_signup은 가입이 아니라 이 설정이었습니다.)
+enabled = true

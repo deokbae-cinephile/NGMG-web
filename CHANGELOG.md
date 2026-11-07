@@ -2,6 +2,8 @@
 
 ## 1.2.0 - 2026-11-07
 
+- Supabase(서울)와 Kakao 지도를 연결해 실서버로 배포, 두 사람 계정 대신 공용 계정 하나로 사용
+- 이메일 로그인까지 꺼 버리던 `auth.email.enable_signup` 설정 수정
 - Secrets가 없으면 가상 데이터로 동작하는 웹 데모를 GitHub Pages에 배포 (`pnpm run build:demo`)
 - 가짜 서버를 Playwright와 브라우저에서 함께 쓰도록 분리 (`e2e/fake-server.ts`)
 - 프로젝트를 가볍게 하려고 단위 테스트(Vitest·jsdom·Testing Library)와 DB 권한 테스트(PGlite)를 지우고 E2E를 핵심 흐름 8개로 줄임
