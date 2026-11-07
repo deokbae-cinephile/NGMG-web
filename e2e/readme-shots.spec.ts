@@ -27,6 +27,9 @@ test('휴대폰 화면', async ({ page }, info) => {
 test('넓은 화면', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop');
   await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByText('밤바다 횟집').waitFor();
+  await page.screenshot({ path: `${dir}/map.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./calendar?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
   await page.getByRole('region', { name: /물때와 날씨/ }).waitFor();
@@ -34,7 +37,7 @@ test('넓은 화면', async ({ page }, info) => {
 });
 
 test('로그인 화면', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop');
+  test.skip(info.project.name !== 'mobile');
   await fakeBackend(page, {}, { signedIn: false });
   await page.goto('./');
   await page.getByRole('heading', { name: '낚고먹고' }).waitFor();
