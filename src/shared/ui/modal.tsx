@@ -1,0 +1,33 @@
+import { useEffect, useId, useRef, type ReactNode } from 'react';
+
+type Props = { title: string; onClose: () => void; children: ReactNode };
+
+/** 네이티브 dialog라 초점 가두기와 Esc 닫기를 브라우저가 처리합니다. */
+export const Modal = ({ title, onClose, children }: Props) => {
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = ref.current;
+    const opener = document.activeElement;
+    if (dialog && !dialog.open) dialog.showModal();
+    // 저장 후 바로 사라져도 대화상자를 연 버튼으로 초점을 돌려줍니다.
+    return () => {
+      if (opener instanceof HTMLElement) opener.focus();
+    };
+  }, []);
+
+  return (
+    <dialog ref={ref} aria-labelledby={titleId} onClose={onClose} className="modal">
+      <div className="flex items-start justify-between gap-4 pb-5">
+        <h2 id={titleId} className="sticker text-xl">
+          {title}
+        </h2>
+        <button type="button" onClick={onClose} className="button shrink-0">
+          닫기
+        </button>
+      </div>
+      {children}
+    </dialog>
+  );
+};

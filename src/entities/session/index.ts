@@ -1,0 +1,27 @@
+import type { Session } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/shared/api';
+
+/** undefined는 확인 중, null은 로그아웃 상태입니다. */
+export const useSession = () => {
+  const [session, setSession] = useState<Session | null>();
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  return session;
+};
+
+export const signIn = async ({ email, password }: { email: string; password: string }) => {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error('이메일 또는 비밀번호를 확인해 주세요.');
+};
+
+export const changePassword = async (password: string) => {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error('비밀번호를 바꾸지 못했습니다. 이전과 다른 비밀번호인지 확인해 주세요.');
+};
+
+export const signOut = () => supabase.auth.signOut();

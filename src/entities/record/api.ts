@@ -1,0 +1,120 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PHOTO_BUCKET, supabase, type PlaceKind, type PlaceRecord, type RecordPhoto } from '@/shared/api';
+import { compressImage } from '@/shared/lib';
+
+export const MAX_PHOTOS = 10;
+export const PAGE_SIZE = 10;
+
+const SELECT = '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position)';
+
+type Row = Omit<PlaceRecord, 'photos'> & { photos: Omit<RecordPhoto, 'url'>[] };
+
+// 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
+const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
+  const paths = rows.flatMap((row) => row.photos.map((photo) => photo.storage_path));
+  const urls = new Map<string, string>();
+  if (paths.length) {
+    const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+    data?.forEach((item) => {
+      if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
+    });
+  }
+  return rows.map((row) => ({
+    ...row,
+    photos: [...row.photos]
+      .sort((a, b) => a.position - b.position)
+      .map((photo) => ({ ...photo, url: urls.get(photo.storage_path) ?? '' })),
+  }));
+};
+
+const fetchPage = async (page: number, kind?: PlaceKind) => {
+  const from = page * PAGE_SIZE;
+  const query = supabase.from('records').select(SELECT);
+  const { data, error } = await (kind ? query.eq('place.kind', kind) : query)
+    .order('visited_on', { ascending: false })
+    .order('id')
+    .range(from, from + PAGE_SIZE - 1);
+  if (error) throw new Error('기록을 불러오지 못했습니다.');
+  return withPhotoUrls(data as unknown as Row[]);
+};
+
+export const useRecordPages = (kind?: PlaceKind) =>
+  useInfiniteQuery({
+    queryKey: ['records', 'all', kind],
+    queryFn: ({ pageParam }) => fetchPage(pageParam, kind),
+    initialPageParam: 0,
+    getNextPageParam: (last, _pages, lastParam) => (last.length === PAGE_SIZE ? lastParam + 1 : undefined),
+  });
+
+export const usePlaceRecords = (placeId: string) =>
+  useQuery({
+    queryKey: ['records', 'place', placeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('records')
+        .select(SELECT)
+        .eq('place_id', placeId)
+        .order('visited_on', { ascending: false });
+      if (error) throw new Error('기록을 불러오지 못했습니다.');
+      return withPhotoUrls(data as unknown as Row[]);
+    },
+  });
+
+export type RecordInput = {
+  id: string; // 폼을 열 때 만듭니다. 실패 후 다시 저장해도 기록이 중복되지 않습니다.
+  place_id: string;
+  visited_on: string;
+  catches: string;
+  memo: string;
+  rating: number | null;
+  files: File[];
+  removedPhotos: Pick<RecordPhoto, 'id' | 'storage_path'>[];
+  nextPosition: number;
+};
+
+const saveRecord = async ({ files, removedPhotos, nextPosition, ...values }: RecordInput) => {
+  const { error } = await supabase.from('records').upsert(values);
+  if (error) throw new Error('기록을 저장하지 못했습니다.');
+
+  if (removedPhotos.length) {
+    const removal = await supabase.from('record_photos').delete().in('id', removedPhotos.map((photo) => photo.id));
+    if (removal.error) throw new Error('사진을 삭제하지 못했습니다.');
+    await supabase.storage.from(PHOTO_BUCKET).remove(removedPhotos.map((photo) => photo.storage_path));
+  }
+
+  for (const [index, file] of files.entries()) {
+    // 같은 파일은 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
+    const path = `${values.id}/${file.lastModified}-${file.size}.jpg`;
+    const blob = await compressImage(file);
+    const upload = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (upload.error) throw new Error(`사진을 올리지 못했습니다: ${file.name}`);
+    const row = await supabase
+      .from('record_photos')
+      .upsert({ record_id: values.id, storage_path: path, position: nextPosition + index }, { onConflict: 'storage_path' });
+    if (row.error) throw new Error(`사진을 저장하지 못했습니다: ${file.name}`);
+  }
+};
+
+export const useSaveRecord = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: saveRecord,
+    onSettled: () => client.invalidateQueries({ queryKey: ['records'] }),
+  });
+};
+
+const deleteRecord = async (record: PlaceRecord) => {
+  if (record.photos.length) {
+    await supabase.storage.from(PHOTO_BUCKET).remove(record.photos.map((photo) => photo.storage_path));
+  }
+  const { error } = await supabase.from('records').delete().eq('id', record.id);
+  if (error) throw new Error('기록을 삭제하지 못했습니다.');
+};
+
+export const useDeleteRecord = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: deleteRecord,
+    onSuccess: () => client.invalidateQueries({ queryKey: ['records'] }),
+  });
+};
