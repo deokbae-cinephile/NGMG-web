@@ -12,28 +12,28 @@ const dir = 'docs/images';
 test('휴대폰 화면', async ({ page }, info) => {
   test.skip(info.project.name !== 'mobile');
   await fakeBackend(page, seed());
-  await page.goto('./calendar?date=2026-11-14');
+  await page.goto('./schedule?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
-  await page.screenshot({ path: `${dir}/calendar-mobile.jpg`, type: 'jpeg', quality: 80 });
-  await page.getByRole('button', { name: '일정 추가' }).click();
-  await page.getByRole('dialog').getByLabel('할 일').fill('저녁 낚시');
-  await page.screenshot({ path: `${dir}/event-form.jpg`, type: 'jpeg', quality: 80 });
+  await page.screenshot({ path: `${dir}/schedule-mobile.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./records');
   await page.getByText('감성돔 1마리').waitFor();
-  await expect(page.getByRole('img', { name: /기록 사진 1/ })).toHaveJSProperty('complete', true);
+  await expect(page.getByRole('img', { name: /기록 사진 1/ }).first()).toHaveJSProperty('complete', true);
   await page.screenshot({ path: `${dir}/records.jpg`, type: 'jpeg', quality: 80 });
+  await page.goto('./stats');
+  await page.getByRole('heading', { level: 2 }).first().waitFor();
+  await page.screenshot({ path: `${dir}/stats.jpg`, type: 'jpeg', quality: 80 });
 });
 
 test('넓은 화면', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop');
   await fakeBackend(page, seed());
   await page.goto('./');
-  await page.getByText('밤바다 횟집').waitFor();
+  await page.getByText('밤바다 횟집').first().waitFor();
   await page.screenshot({ path: `${dir}/map.jpg`, type: 'jpeg', quality: 80 });
-  await page.goto('./calendar?date=2026-11-14');
+  await page.goto('./schedule?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
   await page.getByRole('region', { name: /물때와 날씨/ }).waitFor();
-  await page.screenshot({ path: `${dir}/calendar.jpg`, type: 'jpeg', quality: 80, fullPage: true });
+  await page.screenshot({ path: `${dir}/schedule.jpg`, type: 'jpeg', quality: 80 });
 });
 
 test('로그인 화면', async ({ page }, info) => {

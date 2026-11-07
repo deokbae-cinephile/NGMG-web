@@ -23,7 +23,7 @@ export const KAKAO_SDK = `
         });
       }
       getCenter() { return new LatLng(36, 127); } getLevel() { return 13; }
-      relayout() {} panTo() {}
+      relayout() {} panTo() {} setMapTypeId() {}
     }
     class CustomOverlay { constructor(o) { this.o = o; } }
     class MarkerClusterer {
@@ -48,13 +48,24 @@ export const KAKAO_SDK = `
       }
     }
     class Geocoder { coord2Address(_x, _y, cb) { cb([{ address: { address_name: '전남 고흥군' } }], Status.OK); } }
-    window.kakao = { maps: { load: (cb) => cb(), LatLng, Map, CustomOverlay, MarkerClusterer,
+    window.kakao = { maps: { load: (cb) => cb(), LatLng, Map, CustomOverlay, MarkerClusterer, MapTypeId: { ROADMAP: 1, HYBRID: 3 },
       event: { addListener: (_t, name, cb) => { listeners[name] = cb; } },
       services: { Places, Geocoder, Status } } };
   })();
 `;
 
 export const PHOTO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#bdbdbd"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#8c8c8c"/></svg>';
+
+const RECORD_DEFAULTS = {
+  memo: '', catches: '', rating: null, event_id: null, people: null, price: null,
+  companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '',
+};
+const DEFAULTS: Record<string, Record<string, unknown>> = {
+  places: { memo: '', address: '', tags: [], photo_path: null, created_at: '2026-01-01T00:00:00Z' },
+  records: RECORD_DEFAULTS,
+  events: { memo: '', end_time: null, place_id: null },
+  checklist_items: { checked: false },
+};
 
 const json = (body: unknown, status = 200): FakeResponse => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
@@ -68,7 +79,10 @@ export const session = () => ({
 });
 
 export const createFakeServer = (seed: Seed = {}) => {
-  const db: Record<string, Row[]> = { places: [], records: [], record_photos: [], events: [], checklist_items: [], ...seed };
+  const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => ({ ...DEFAULTS[table], ...row }) as Row);
+  const db: Record<string, Row[]> = Object.fromEntries(
+    ['places', 'records', 'record_photos', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
+  );
   const removedFiles: string[] = [];
   let nextId = 1;
 
@@ -93,7 +107,12 @@ export const createFakeServer = (seed: Seed = {}) => {
       if (['select', 'order', 'offset', 'limit', 'columns', 'on_conflict'].includes(key)) return;
       if (key === 'or') {
         const terms = [...value.matchAll(/(\w+)\.ilike\."%(.*?)%"/g)];
-        result = result.filter((row) => terms.some(([, column = '', text = '']) => String(row[column]).toLowerCase().includes(text.toLowerCase())));
+        const notEmpty = [...value.matchAll(/(\w+)\.neq\.(?=,|$)/g)].map(([, column = '']) => column);
+        result = result.filter(
+          (row) =>
+            terms.some(([, column = '', text = '']) => String(row[column]).toLowerCase().includes(text.toLowerCase())) ||
+            notEmpty.some((column) => row[column] !== '' && row[column] != null),
+        );
         return;
       }
       const [op, operand = ''] = [value.slice(0, value.indexOf('.')), value.slice(value.indexOf('.') + 1)];
@@ -101,6 +120,13 @@ export const createFakeServer = (seed: Seed = {}) => {
       if (op === 'neq') result = result.filter((row) => String(read(row, key)) !== operand);
       if (op === 'gte') result = result.filter((row) => String(read(row, key)) >= operand);
       if (op === 'lte') result = result.filter((row) => String(read(row, key)) <= operand);
+      if (op === 'cs') {
+        const wanted = operand.slice(1, -1).split(',').map((item) => item.replaceAll('"', ''));
+        result = result.filter((row) => {
+          const list = read(row, key);
+          return Array.isArray(list) && wanted.every((item) => list.includes(item));
+        });
+      }
       if (op === 'in') {
         const list = operand.slice(1, -1).split(',').map((item) => item.replaceAll('"', ''));
         result = result.filter((row) => list.includes(String(row[key])));
@@ -170,7 +196,8 @@ export const createFakeServer = (seed: Seed = {}) => {
     if (method === 'POST') {
       const body = request.body;
       const created = [body].flat().map((value: Row) => {
-        const row = { memo: '', address: '', checked: false, ...value, id: value.id ?? `gen-${nextId++}` };
+        const defaults = DEFAULTS[table] ?? {};
+        const row = { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` };
         const index = rows.findIndex((item) => item.id === row.id || (item.storage_path && item.storage_path === value.storage_path));
         if (index >= 0) rows[index] = row;
         else rows.push(row);

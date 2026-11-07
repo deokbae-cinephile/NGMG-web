@@ -45,16 +45,16 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 ## Kakao 지도 준비
 
 1. [Kakao Developers](https://developers.kakao.com)에서 앱을 만들고 **카카오맵** 사용을 켭니다.
-2. **플랫폼 > Web**에 `http://localhost:5173`과 `https://deokbae-cinephile.github.io`를 등록합니다.
+2. **플랫폼 > Web**에 `https://ngmg.kr`과 `https://www.ngmg.kr`을 등록합니다. (Kakao 콘솔이 localhost를 거절해 로컬에서는 지도가 뜨지 않을 수 있습니다.)
 3. **JavaScript 키**를 `VITE_KAKAO_MAP_KEY`에 넣습니다.
 
 ## 배포 (GitHub Pages)
 
 1. 저장소 Pages의 Source는 **GitHub Actions**로 설정되어 있습니다.
 2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 3개가 모두 없으면 `deploy.yml`이 웹 데모(`build:demo`)를 배포하고, 일부만 있으면 실패합니다.
-3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://deokbae-cinephile.github.io/NGMG-web/`입니다.
+3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://ngmg.kr`입니다.
 
-저장소 이름이나 도메인이 바뀌면 `vite.config.ts`의 `base`도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
+사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
 
 ## 테스트
 

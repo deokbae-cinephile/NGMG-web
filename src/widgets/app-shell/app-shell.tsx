@@ -1,20 +1,18 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
-import { signOut } from '@/entities/session';
-import { ChangePasswordForm } from '@/features/change-password';
-import { Modal } from '@/shared/ui';
+import { Icon, Loader, Logo, type IconName } from '@/shared/ui';
 
-const MENU = [
-  { to: '/', label: '지도' },
-  { to: '/calendar', label: '캘린더' },
-  { to: '/records', label: '기록' },
+const MENU: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: '지도', icon: 'map' },
+  { to: '/schedule', label: '일정', icon: 'calendar' },
+  { to: '/records', label: '기록', icon: 'records' },
+  { to: '/stats', label: '통계', icon: 'stats' },
 ];
 
 export const AppShell = () => {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const first = useRef(true);
-  const [changingPassword, setChangingPassword] = useState(false);
 
   // 화면이 바뀌면 스크린리더와 키보드 사용자를 본문으로 옮깁니다.
   useEffect(() => {
@@ -27,34 +25,25 @@ export const AppShell = () => {
       <a href="#main" className="skip-link">
         본문 바로가기
       </a>
-      <header className="flex items-center justify-between gap-4 border-b border-ink bg-paper px-4 py-3 sm:px-6 lg:px-10">
-        <p className="wordmark">낚고먹고</p>
+      <header className="topbar">
+        <NavLink to="/" className="topbar-logo">
+          <Logo />
+        </NavLink>
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link">
-              {item.label}
+              <Icon name={item.icon} size={22} className="nav-icon" />
+              <span className="nav-text">{item.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="flex shrink-0 gap-2">
-          <button type="button" className="button" onClick={() => setChangingPassword(true)}>
-            비밀번호 변경
-          </button>
-          <button type="button" className="button" onClick={() => void signOut()}>
-            로그아웃
-          </button>
-        </div>
+        <div aria-hidden="true" className="topbar-end ml-auto lg:ml-0" />
       </header>
-      <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-20 outline-none lg:pb-0">
-        <Suspense fallback={<p className="p-4 text-muted">불러오는 중입니다.</p>}>
+      <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
+        <Suspense fallback={<Loader />}>
           <Outlet />
         </Suspense>
       </main>
-      {changingPassword && (
-        <Modal title="비밀번호 변경" onClose={() => setChangingPassword(false)}>
-          <ChangePasswordForm onDone={() => setChangingPassword(false)} />
-        </Modal>
-      )}
     </div>
   );
 };

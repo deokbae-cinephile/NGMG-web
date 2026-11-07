@@ -51,13 +51,13 @@ test('로그인 화면: 틀리면 안내하고 맞으면 들어간다', async ({
 
   await page.getByLabel('비밀번호').fill('right');
   await page.getByRole('button', { name: '로그인' }).click();
-  await expect(page.getByRole('heading', { name: '내 장소' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '내 장소', exact: true })).toBeVisible();
 });
 
 test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
-  await expect(page.getByRole('button', { name: '거문도 방파제 선택' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -74,12 +74,12 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
   await expect(page.getByRole('button', { name: /백도 횟집/ }).first()).toBeVisible();
   expect(db.places).toHaveLength(4);
 
-  await page.getByLabel('내 장소에서 찾기').fill('거문도');
+  await page.getByLabel('이름·주소·태그로 찾기').fill('거문도');
   await expect(page.getByRole('status').last()).toHaveText('장소 1곳');
-  await page.getByLabel('내 장소에서 찾기').clear();
+  await page.getByLabel('이름·주소·태그로 찾기').clear();
 
   await page.getByRole('button', { name: '맛집', exact: true }).click();
-  await expect(page.getByRole('button', { name: '거문도 방파제 선택' })).toBeHidden();
+  await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeHidden();
   await page.reload();
   await expect(page.getByRole('button', { name: '맛집', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
@@ -87,7 +87,7 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
 test('장소: 수정하고 삭제한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./places/p2');
-  await expect(page.getByRole('heading', { name: '바다횟집' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '바다횟집', exact: true })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -102,10 +102,10 @@ test('장소: 수정하고 삭제한다', async ({ page }) => {
   await expect(dialog.getByText('-90에서 90 사이')).toBeVisible();
   await dialog.getByLabel('위도').fill('34.5');
   await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(page.getByRole('heading', { name: '푸른바다횟집' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '푸른바다횟집', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: '장소 삭제' }).click();
-  await expect(page.getByRole('heading', { name: '내 장소' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '내 장소', exact: true })).toBeVisible();
   expect(db.places!.map((item) => item.id)).not.toContain('p2');
 });
 
@@ -142,9 +142,9 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.record_photos).toHaveLength(2);
 });
 
-test('캘린더: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {
+test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./calendar?date=2026-11-07');
+  await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
   await expect(page.getByRole('button', { name: '7 일 (토), 2026년 11월, 일정 1건' })).toBeVisible();
   await expectFits(page);
@@ -189,9 +189,9 @@ test('캘린더: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한
   expect(db.events).toHaveLength(1);
 });
 
-test('캘린더: 날짜별 준비물을 불러와 체크하고 추가한다', async ({ page }) => {
+test('일정: 날짜별 준비물을 불러와 체크하고 추가한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./calendar?date=2026-11-07');
+  await page.goto('./schedule?date=2026-11-07');
   await page.getByRole('button', { name: '기본 목록 불러오기' }).click();
   await page.getByRole('checkbox', { name: '낚싯대' }).click();
   await expect(page.getByRole('checkbox', { name: '낚싯대' })).toBeChecked();
@@ -209,8 +209,8 @@ test('캘린더: 날짜별 준비물을 불러와 체크하고 추가한다', as
 
 test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.goto('./calendar');
-  await expect(page.getByRole('heading', { name: '캘린더' })).toBeVisible();
+  await page.goto('./schedule');
+  await expect(page.getByRole('heading', { name: '달력' })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: '본문 바로가기' })).toBeFocused();
   await page.keyboard.press('Enter');

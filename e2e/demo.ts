@@ -5,7 +5,7 @@ import { demoSeed } from './demo-data.ts';
 import { startFakeBackend } from './fake-backend.ts';
 
 const PORT = 5199;
-const url = `http://localhost:${PORT}/NGMG-web/`;
+const url = `http://localhost:${PORT}/`;
 
 const server = spawn('node_modules/.bin/vite', ['--port', String(PORT), '--strictPort'], {
   stdio: 'inherit',

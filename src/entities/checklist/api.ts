@@ -43,11 +43,25 @@ export const useChecklistActions = (date: string) => {
         failed(error, failure);
       },
     }),
+    checkAll: useMutation({
+      ...options,
+      mutationFn: async () => {
+        const { error } = await supabase.from('checklist_items').update({ checked: true }).eq('date', date);
+        failed(error, '모두 선택하지 못했습니다.');
+      },
+    }),
     uncheckAll: useMutation({
       ...options,
       mutationFn: async () => {
         const { error } = await supabase.from('checklist_items').update({ checked: false }).eq('date', date);
         failed(error, '체크를 해제하지 못했습니다.');
+      },
+    }),
+    removeAll: useMutation({
+      ...options,
+      mutationFn: async () => {
+        const { error } = await supabase.from('checklist_items').delete().eq('date', date);
+        failed(error, '준비물을 모두 삭제하지 못했습니다.');
       },
     }),
     add: useMutation({

@@ -21,10 +21,3 @@ export const signIn = async ({ email, password }: { email: string; password: str
     throw new Error(error.status === 400 ? '이메일 또는 비밀번호를 확인해 주세요.' : '로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
 };
-
-export const changePassword = async (password: string) => {
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw new Error('비밀번호를 바꾸지 못했습니다. 이전과 다른 비밀번호인지 확인해 주세요.');
-};
-
-export const signOut = () => supabase.auth.signOut();

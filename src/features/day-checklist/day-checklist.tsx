@@ -6,17 +6,18 @@ type Values = { title: string; category: string };
 
 export const DayChecklist = ({ date }: { date: string }) => {
   const { data: items = [], isPending, error } = useChecklist(date);
-  const { addDefaults, copyLatest, uncheckAll, add, toggle, remove } = useChecklistActions(date);
+  const { addDefaults, copyLatest, checkAll, uncheckAll, removeAll, add, toggle, remove } = useChecklistActions(date);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Values>({
     defaultValues: { title: '', category: CHECKLIST_CATEGORIES[0] },
   });
   const done = items.filter((item) => item.checked).length;
   // 마지막으로 한 동작의 결과만 보여 줍니다. 다음 동작이 성공하면 이전 오류는 사라집니다.
-  const lastAction = [addDefaults, copyLatest, uncheckAll, add, toggle, remove].reduce((last, action) =>
+  const lastAction = [addDefaults, copyLatest, checkAll, uncheckAll, removeAll, add, toggle, remove].reduce((last, action) =>
     action.submittedAt > last.submittedAt ? action : last,
   );
 
   const submit = handleSubmit((values) =>
+    !add.isPending &&
     add.mutate(
       { ...values, position: Math.max(-1, ...items.map((item) => item.position)) + 1 },
       { onSuccess: () => reset({ title: '', category: values.category }) },
@@ -24,9 +25,12 @@ export const DayChecklist = ({ date }: { date: string }) => {
   );
 
   return (
-    <section aria-labelledby="checklist-title" className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id="checklist-title" className="title text-lg">장비·준비물</h3>
+    <section aria-labelledby="checklist-title" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
+        <div className="flex items-baseline gap-3">
+          <span aria-hidden="true" className="eyebrow">Checklist</span>
+          <h3 id="checklist-title" className="title text-lg">장비·준비물</h3>
+        </div>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}
       </div>
       <ErrorText error={error ?? lastAction.error} />
@@ -41,17 +45,30 @@ export const DayChecklist = ({ date }: { date: string }) => {
           </button>
         </div>
       )}
-      {done > 0 && (
-        <button type="button" className="button self-start" disabled={uncheckAll.isPending} onClick={() => uncheckAll.mutate()}>
-          체크 모두 해제
-        </button>
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="button" disabled={checkAll.isPending || done === items.length} onClick={() => checkAll.mutate()}>
+            모두 선택
+          </button>
+          <button type="button" className="button" disabled={uncheckAll.isPending || done === 0} onClick={() => uncheckAll.mutate()}>
+            모두 해제
+          </button>
+          <button
+            type="button"
+            className="button button-danger ml-auto"
+            disabled={removeAll.isPending}
+            onClick={() => window.confirm('이 날짜의 준비물을 모두 삭제할까요?') && removeAll.mutate()}
+          >
+            전체 삭제
+          </button>
+        </div>
       )}
       {groupByCategory(items).map((group) => (
         <fieldset key={group.category}>
           <legend className="mono-label pb-1">{group.category}</legend>
           <ul>
             {group.items.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-2 border-b border-line">
+              <li key={item.id} className="flex items-center justify-between gap-2 border-b border-soft">
                 <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
                   <input
                     type="checkbox"
@@ -63,7 +80,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
                 </label>
                 <button
                   type="button"
-                  className="min-h-11 shrink-0 px-2 text-sm text-muted underline"
+                  className="text-action shrink-0"
                   aria-label={`${item.title} 삭제`}
                   disabled={remove.isPending}
                   onClick={() => remove.mutate(item.id)}

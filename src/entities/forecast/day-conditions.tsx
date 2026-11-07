@@ -17,7 +17,7 @@ export const DayConditions = ({ date, place }: { date: string; place: Pick<Place
   const tide = getTide(date, place.latitude, place.longitude);
 
   return (
-    <section aria-label={`${place.name} 물때와 날씨`} className="panel flex flex-col gap-3">
+    <section aria-label={`${place.name} 물때와 날씨`} className="flex flex-col gap-3">
       <p className="mono-label">{`${place.name} 기준`}</p>
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <Item label={`물때 (${tide.system})`} value={tide.name ?? ''} />

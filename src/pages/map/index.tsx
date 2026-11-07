@@ -1,38 +1,63 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { KIND_LABEL, KindBadge, usePlaces } from '@/entities/place';
+import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
-import type { PlaceDraft, PlaceKind } from '@/shared/api';
-import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, type Coordinates } from '@/shared/lib';
+import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
+import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference } from '@/shared/lib';
 import { ErrorText, Field, Modal } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
-const FILTERS: Filter[] = ['all', 'fishing', 'restaurant'];
+type Sort = 'name' | 'tag' | 'near' | 'recent';
+const SORTS: { value: Sort; label: string }[] = [
+  { value: 'name', label: '이름순' },
+  { value: 'tag', label: '태그순' },
+  { value: 'near', label: '가까운 순' },
+  { value: 'recent', label: '최근 추가순' },
+];
+
+const firstTag = (place: Place) => [...place.tags].sort((a, b) => a.localeCompare(b, 'ko'))[0];
 
 export const MapPage = () => {
   const { data: places = [], isPending, error } = usePlaces();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
+  const [tag, setTag] = useState<string>();
+  const [sort, setSort] = useState<Sort>('name');
   const [selectedId, setSelectedId] = useState<string>();
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
-
   const [keyword, setKeyword] = useState('');
 
   const locate = useMutation({ mutationFn: getCurrentLocation });
   const origin = locate.data;
 
-  const search = keyword.trim().toLowerCase();
+  // 이름, 주소, 태그에서 찾습니다. '#방파제'처럼 써도 됩니다.
+  const search = keyword.trim().replace(/^#/, '').toLowerCase();
   const visible = places.filter(
-    (place) => (filter === 'all' || place.kind === filter) && `${place.name} ${place.address}`.toLowerCase().includes(search),
+    (place) =>
+      (filter === 'all' || place.kind === filter) &&
+      (!tag || place.tags.includes(tag)) &&
+      `${place.name} ${place.address} ${place.tags.join(' ')}`.toLowerCase().includes(search),
   );
-  const distanceOf = (place: Coordinates) => (origin ? distanceKm(origin, place) : null);
-  const listed = origin ? [...visible].sort((a, b) => distanceKm(origin, a) - distanceKm(origin, b)) : visible;
+  const listed = [...visible].sort((a, b) => {
+    if (sort === 'near' && origin) return distanceKm(origin, a) - distanceKm(origin, b);
+    if (sort === 'tag') {
+      const [x, y] = [firstTag(a), firstTag(b)];
+      if (x !== y) return !x ? 1 : !y ? -1 : x.localeCompare(y, 'ko');
+    }
+    if (sort === 'recent') return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+    return a.name.localeCompare(b.name, 'ko');
+  });
+  const tags = collectTags(places);
 
   const changeFilter = (next: Filter) => {
     setFilter(next);
     setPreference('map-filter', next);
+  };
+  const changeSort = (next: Sort) => {
+    setSort(next);
+    if (next === 'near' && !origin) locate.mutate();
   };
 
   const onPick = async (latitude: number, longitude: number) => {
@@ -41,83 +66,128 @@ export const MapPage = () => {
   };
 
   return (
-    <div className="grid lg:h-[calc(100dvh-61px)] lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="panes lg:grid-cols-[minmax(0,1fr)_26rem]">
       <title>지도 | 낚고먹고</title>
-      <div className="relative h-[50dvh] min-h-72 lg:h-full">
+      <h1 className="sr-only">내 장소 지도</h1>
+      {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
+      <div className="pane sticky top-topbar z-20 h-[42dvh] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0">
         <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onPick={onPick} />
       </div>
 
-      <section className="flex flex-col gap-5 px-4 py-6 sm:px-6 lg:overflow-y-auto lg:px-8 lg:py-8">
-        <p className="eyebrow">낚시 포인트 · 맛집</p>
-        <div className="flex items-end gap-3">
-          <h1 className="page-title">내 장소</h1>
+      <section aria-labelledby="places-title" className="pane">
+        <div className="cell-head">
+          <div className="flex items-baseline gap-3">
+            <span aria-hidden="true" className="eyebrow">Places</span>
+            <h2 id="places-title" className="title text-xl">내 장소</h2>
+          </div>
           <button type="button" className="button button-primary" onClick={() => setDraft({})}>
             장소 추가
           </button>
         </div>
-        <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
-          {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
-        </button>
-        <p role="status" className="text-sm text-muted">
-          {picking ? '지도에서 저장할 위치를 눌러 주세요.' : ''}
-        </p>
 
-        <fieldset>
-          <legend className="mono-label pb-1.5">분류</legend>
-          <div className="flex gap-2">
-            {FILTERS.map((item) => (
-              <button key={item} type="button" className="button" aria-pressed={filter === item} onClick={() => changeFilter(item)}>
-                {item === 'all' ? '전체' : KIND_LABEL[item]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <div className="cell-body flex flex-col gap-5">
+          <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+            {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+          </button>
+          <p role="status" className="text-sm text-muted empty:hidden">
+            {picking ? '지도에서 저장할 위치를 눌러 주세요.' : ''}
+          </p>
 
-        <button
-          type="button"
-          className="button self-start"
-          aria-pressed={Boolean(origin)}
-          disabled={locate.isPending}
-          onClick={() => (origin ? locate.reset() : locate.mutate())}
-        >
-          현재 위치에서 가까운 순
-        </button>
-        <ErrorText error={locate.error} />
+          <fieldset>
+            <legend className="mono-label pb-1.5">분류</legend>
+            <div className="flex flex-wrap gap-2">
+              {(['all', ...KINDS] as Filter[]).map((item) => (
+                <button key={item} type="button" className="button" aria-pressed={filter === item} onClick={() => changeFilter(item)}>
+                  {item === 'all' ? '전체' : KIND_LABEL[item]}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
-        <Field label="내 장소에서 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-        <ErrorText error={error} />
-        <p role="status" className="text-sm text-muted">
-          {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
-        </p>
-        <ul className="flex flex-col gap-2">
-          {listed.map((place, index) => {
-            const distance = distanceOf(place);
-            return (
-            <li key={place.id} className={`panel ${place.id === selectedId ? 'panel-active' : ''}`}>
-              <button
-                type="button"
-                className="flex min-h-11 w-full flex-col items-start gap-1 text-left"
-                aria-pressed={place.id === selectedId}
-                onClick={() => setSelectedId(place.id)}
+          {tags.length > 0 && (
+            <fieldset>
+              <legend className="mono-label pb-1.5">태그</legend>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className="button min-h-9 px-3 text-sm"
+                    aria-pressed={tag === item}
+                    onClick={() => setTag(tag === item ? undefined : item)}
+                  >
+                    {`#${item}`}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+            <Field label="이름·주소·태그로 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="place-sort" className="mono-label">정렬</label>
+              <select
+                id="place-sort"
+                className="min-h-11 border border-field bg-surface px-3"
+                value={sort}
+                onChange={(event) => changeSort(event.target.value as Sort)}
               >
-                <span aria-hidden="true" className="mono-label">
-                  {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
-                </span>
-                <span className="flex flex-wrap items-center gap-2 font-semibold">
-                  {place.name} <KindBadge kind={place.kind} />
-                </span>
-                <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
-                {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
-              </button>
-              {place.id === selectedId && (
-                <Link to={`/places/${place.id}`} className="button mt-2">
-                  {`${place.name} 자세히 보기`}
-                </Link>
-              )}
-            </li>
-            );
-          })}
-        </ul>
+                {SORTS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <ErrorText error={locate.error ?? error} />
+          <p role="status" className="text-sm text-muted">
+            {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
+          </p>
+
+          <ul className="flex flex-col">
+            {listed.map((place, index) => {
+              const distance = origin ? distanceKm(origin, place) : null;
+              const selected = place.id === selectedId;
+              return (
+                <li key={place.id} className={`panel ${selected ? 'panel-active' : ''}`}>
+                  <button
+                    type="button"
+                    className="flex min-h-11 w-full items-start gap-3 text-left"
+                    aria-pressed={selected}
+                    onClick={() => setSelectedId(place.id)}
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      <span aria-hidden="true" className="mono-label">
+                        {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
+                      </span>
+                      <span className="flex flex-wrap items-center gap-2 text-lg">
+                        {place.name} <KindBadge kind={place.kind} />
+                      </span>
+                      <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
+                      {place.tags.length > 0 && (
+                        <span className="flex flex-wrap gap-x-2">
+                          {place.tags.map((item) => (
+                            <span key={item} className="tag">{item}</span>
+                          ))}
+                        </span>
+                      )}
+                      {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
+                    </span>
+                    {place.photo_url && <img src={place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line object-cover" />}
+                  </button>
+                  {selected && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <PlaceActions place={place} />
+                      <Link to={`/places/${place.id}`} className="button button-primary self-start">
+                        {`${place.name} 자세히 보기`}
+                      </Link>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
 
       {draft && (

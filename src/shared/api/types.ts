@@ -1,4 +1,4 @@
-export type PlaceKind = 'fishing' | 'restaurant';
+export type PlaceKind = 'fishing' | 'restaurant' | 'etc';
 
 export type Place = {
   id: string;
@@ -8,21 +8,42 @@ export type Place = {
   latitude: number;
   longitude: number;
   memo: string;
+  tags: string[];
+  photo_path: string | null;
+  created_at?: string;
+  /** 화면에 보여 줄 서명된 사진 주소 (저장하지 않습니다) */
+  photo_url?: string;
 };
 
 /** 아직 저장하지 않았을 수 있는 장소. id가 있으면 저장된 장소입니다. */
-export type PlaceDraft = Omit<Place, 'id' | 'memo'> & { id?: string; memo?: string };
+export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'tags' | 'photo_path' | 'photo_url' | 'created_at'> & { id?: string; memo?: string; tags?: string[]; photo_path?: string | null };
 
 export type RecordPhoto = { id: string; storage_path: string; position: number; url: string };
 
-export type PlaceRecord = {
+/** 기록의 자세한 항목. 낚시는 인원부터 수온까지, 맛집은 메뉴와 가격을 씁니다. */
+export type RecordDetails = {
+  people: number | null;
+  companions: string;
+  gear: string;
+  rig: string;
+  bait: string;
+  weather: string;
+  tide: string;
+  wind: string;
+  water_temp: string;
+  menu: string;
+  price: number | null;
+};
+
+export type PlaceRecord = RecordDetails & {
   id: string;
   place_id: string;
   visited_on: string;
   catches: string;
   memo: string;
   rating: number | null;
-  place: Pick<Place, 'id' | 'name' | 'kind'>;
+  event_id: string | null;
+  place: Pick<Place, 'id' | 'name' | 'kind' | 'tags'>;
   photos: RecordPhoto[];
 };
 

@@ -1,23 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { usePastEvents } from '@/entities/event';
+import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
+import { RecordCard, useRecordedEventIds, useRecordPages } from '@/entities/record';
 import { ExportButton } from '@/features/export-data';
-import { KIND_LABEL } from '@/entities/place';
-import { RecordCard, useRecordPages } from '@/entities/record';
-import type { PlaceKind } from '@/shared/api';
-import { getPreference, setPreference } from '@/shared/lib';
-import { ErrorText, Field } from '@/shared/ui';
+import { RecordForm } from '@/features/record-form';
+import type { CalendarEvent, PlaceKind } from '@/shared/api';
+import { formatDate, getPreference, setPreference } from '@/shared/lib';
+import { ErrorText, Field, Modal } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';
-const FILTERS: Filter[] = ['all', 'fishing', 'restaurant'];
 
 export const RecordsPage = () => {
   const [filter, setFilter] = useState<Filter>(() => getPreference('records-filter', 'all'));
+  const [tag, setTag] = useState<string>();
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [recordEvent, setRecordEvent] = useState<CalendarEvent>();
   const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(
     filter === 'all' ? undefined : filter,
     keyword,
+    tag,
   );
+  const places = usePlaces();
+  const past = usePastEvents();
+  const pastWithPlace = (past.data ?? []).filter((event) => event.place);
+  const recorded = useRecordedEventIds(pastWithPlace.map((event) => event.id));
+  const waiting = recorded.data ? pastWithPlace.filter((event) => !recorded.data.has(event.id)) : [];
+  const tags = collectTags(places.data ?? []);
   const more = useRef<HTMLButtonElement>(null);
   const records = data?.pages.flat() ?? [];
 
@@ -32,83 +42,149 @@ export const RecordsPage = () => {
     return () => observer.disconnect();
   }, [hasNextPage, records.length, fetchNextPage]);
 
+  const recordPlace = recordEvent?.place;
+
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-12">
+    <div className="panes lg:grid-cols-[24rem_minmax(0,1fr)]">
       <title>기록 | 낚고먹고</title>
-      <div>
-        <p className="eyebrow pb-3">조과 · 별점 · 사진</p>
-        <h1 className="page-title">전체 기록</h1>
-      </div>
-      <fieldset>
-        <legend className="mono-label pb-1.5">분류</legend>
-        <div className="flex gap-2">
-          {FILTERS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="button"
-              aria-pressed={filter === item}
-              onClick={() => {
-                setFilter(item);
-                setPreference('records-filter', item);
-              }}
-            >
-              {item === 'all' ? '전체' : KIND_LABEL[item]}
-            </button>
-          ))}
+      <h1 className="sr-only">전체 기록</h1>
+
+      <section aria-labelledby="filter-title" className="pane">
+        <div className="cell-head">
+          <div className="flex items-baseline gap-3">
+            <span aria-hidden="true" className="eyebrow">Filter</span>
+            <h2 id="filter-title" className="title text-xl">찾기</h2>
+          </div>
         </div>
-      </fieldset>
-      <form
-        role="search"
-        className="flex items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setKeyword(draft.trim());
-        }}
-      >
-        <div className="min-w-0 flex-1">
-          <Field
-            label="조과·메모에서 찾기"
-            type="search"
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              if (!event.target.value) setKeyword(''); // 지우면 전체 목록으로 돌아갑니다.
+        <div className="cell-body flex flex-col gap-5">
+          <fieldset>
+            <legend className="mono-label pb-1.5">분류</legend>
+            <div className="flex flex-wrap gap-2">
+              {(['all', ...KINDS] as Filter[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="button"
+                  aria-pressed={filter === item}
+                  onClick={() => {
+                    setFilter(item);
+                    setPreference('records-filter', item);
+                  }}
+                >
+                  {item === 'all' ? '전체' : KIND_LABEL[item]}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          {tags.length > 0 && (
+            <fieldset>
+              <legend className="mono-label pb-1.5">장소 태그</legend>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className="button min-h-9 px-3 text-sm"
+                    aria-pressed={tag === item}
+                    onClick={() => setTag(tag === item ? undefined : item)}
+                  >
+                    {`#${item}`}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <form
+            role="search"
+            className="flex items-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setKeyword(draft.trim());
             }}
-          />
+          >
+            <div className="min-w-0 flex-1">
+              <Field
+                label="조과·미끼·메뉴·메모에서 찾기"
+                type="search"
+                value={draft}
+                onChange={(event) => {
+                  setDraft(event.target.value);
+                  if (!event.target.value) setKeyword(''); // 지우면 전체 목록으로 돌아갑니다.
+                }}
+              />
+            </div>
+            <button type="submit" className="button shrink-0">찾기</button>
+          </form>
         </div>
-        <button type="submit" className="button shrink-0">찾기</button>
-      </form>
-      <ErrorText error={error} />
-      {!isPending && !error && records.length === 0 && (
-        <p className="text-muted">
-          {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르면 기록을 남길 수 있습니다.'}
-        </p>
+
+        {waiting.length > 0 && (
+          <section aria-labelledby="waiting-events" className="border-t border-line">
+            <h2 id="waiting-events" className="mono-label px-5 pt-4 pb-2">기록을 기다리는 지난 일정</h2>
+            <ul className="flex flex-col divide-y divide-soft border-t border-line">
+              {waiting.map((event) => (
+                <li key={event.id} className="flex items-center justify-between gap-2 px-5 py-3">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="mono-label">{formatDate(event.date)}</span>
+                    <span>{event.title}</span>
+                    <span className="text-sm text-muted">{event.place?.name}</span>
+                  </span>
+                  <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
+                    기록 남기기
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <div className="cell-body border-t border-line">
+          <ExportButton />
+        </div>
+      </section>
+
+      <section aria-labelledby="records-title" className="pane">
+        <div className="cell-head">
+          <div className="flex items-baseline gap-3">
+            <span aria-hidden="true" className="eyebrow">Log</span>
+            <h2 id="records-title" className="title text-xl">기록</h2>
+          </div>
+          <p role="status" className="mono-label">
+            {isFetchingNextPage ? '더 불러오는 중' : records.length ? `${records.length}건 표시 중` : ''}
+          </p>
+        </div>
+        <div className="cell-body flex flex-col">
+          <ErrorText error={error ?? past.error ?? recorded.error} />
+          {!isPending && !error && records.length === 0 && (
+            <p className="text-muted">
+              {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르거나 지난 일정에서 기록을 남길 수 있습니다.'}
+            </p>
+          )}
+          {records.map((record) => (
+            <RecordCard
+              key={record.id}
+              record={record}
+              heading={
+                <h3 className="flex flex-wrap items-center gap-2 text-lg">
+                  <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
+                    {record.place.name}
+                  </Link>
+                  <KindBadge kind={record.place.kind} />
+                </h3>
+              }
+            />
+          ))}
+          {hasNextPage && (
+            <button ref={more} type="button" className="button mt-4" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+              기록 더 불러오기
+            </button>
+          )}
+        </div>
+      </section>
+
+      {recordEvent && recordPlace && (
+        <Modal title={`${recordPlace.name} 기록`} onClose={() => setRecordEvent(undefined)}>
+          <RecordForm place={recordPlace} date={recordEvent.date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />
+        </Modal>
       )}
-      <div className="flex flex-col gap-4">
-        {records.map((record) => (
-          <RecordCard
-            key={record.id}
-            record={record}
-            heading={
-              <h2 className="text-lg font-semibold">
-                <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
-                  {record.place.name}
-                </Link>
-              </h2>
-            }
-          />
-        ))}
-      </div>
-      <p role="status" className="text-sm text-muted">
-        {isFetchingNextPage ? '기록을 더 불러오는 중입니다.' : records.length ? `기록 ${records.length}건 표시 중` : ''}
-      </p>
-      {hasNextPage && (
-        <button ref={more} type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-          기록 더 불러오기
-        </button>
-      )}
-      <ExportButton />
     </div>
   );
 };

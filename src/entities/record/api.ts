@@ -1,12 +1,12 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, supabase, type PlaceKind, type PlaceRecord, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, supabase, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { recordSearchFilter } from './model';
 
 export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
 
-const SELECT = '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position)';
+const SELECT = '*, place:places!inner(id, name, kind, tags), photos:record_photos(id, storage_path, position)';
 
 type Row = Omit<PlaceRecord, 'photos'> & { photos: Omit<RecordPhoto, 'url'>[] };
 
@@ -28,10 +28,11 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
   }));
 };
 
-const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
+const fetchPage = async (page: number, kind?: PlaceKind, keyword = '', tag?: string) => {
   const from = page * PAGE_SIZE;
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
+  if (tag) query = query.filter('place.tags', 'cs', `{"${tag.replace(/"/g, '')}"}`);
   const search = recordSearchFilter(keyword);
   if (search) query = query.or(search);
   const { data, error } = await query
@@ -42,10 +43,10 @@ const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
   return withPhotoUrls(data as unknown as Row[]);
 };
 
-export const useRecordPages = (kind?: PlaceKind, keyword?: string) =>
+export const useRecordPages = (kind?: PlaceKind, keyword?: string, tag?: string) =>
   useInfiniteQuery({
-    queryKey: ['records', 'all', kind, keyword],
-    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword),
+    queryKey: ['records', 'all', kind, keyword, tag],
+    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword, tag),
     initialPageParam: 0,
     getNextPageParam: (last, _pages, lastParam) => (last.length === PAGE_SIZE ? lastParam + 1 : undefined),
   });
@@ -64,9 +65,71 @@ export const usePlaceRecords = (placeId: string) =>
     },
   });
 
-export type RecordInput = {
+export const useDayRecords = (date: string) =>
+  useQuery({
+    queryKey: ['records', 'day', date],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('records').select(SELECT).eq('visited_on', date).order('id');
+      if (error) throw new Error('기록을 불러오지 못했습니다.');
+      return withPhotoUrls(data as unknown as Row[]);
+    },
+  });
+
+/** 이 일정들 중 이미 기록을 남긴 일정의 id */
+export const useRecordedEventIds = (eventIds: string[]) =>
+  useQuery({
+    queryKey: ['records', 'events', eventIds],
+    enabled: eventIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('records').select('event_id').in('event_id', eventIds);
+      if (error) throw new Error('기록을 불러오지 못했습니다.');
+      return new Set(data.map((row) => row.event_id as string));
+    },
+  });
+
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'companions' | 'catches' | 'rating'> & {
+  place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
+};
+
+/** 통계용으로 모든 기록의 일부 항목만 받습니다. */
+export const useStatRecords = () =>
+  useQuery({
+    queryKey: ['records', 'stats'],
+    queryFn: async () => {
+      const rows: StatRecord[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from('records')
+          .select('id, visited_on, bait, companions, catches, rating, place:places!inner(id, name, kind)')
+          .order('visited_on')
+          .order('id')
+          .range(from, from + 999);
+        if (error) throw new Error('통계를 불러오지 못했습니다.');
+        rows.push(...(data as unknown as StatRecord[]));
+        if (data.length < 1000) return rows;
+      }
+    },
+  });
+
+/** 가장 최근 낚시 기록의 장비·채비·미끼 */
+export const fetchLatestGear = async () => {
+  const { data, error } = await supabase
+    .from('records')
+    .select('gear, rig, bait, place:places!inner(kind)')
+    .eq('place.kind', 'fishing')
+    .or('gear.neq.,rig.neq.,bait.neq.')
+    .order('visited_on', { ascending: false })
+    .limit(1);
+  if (error) throw new Error('지난 기록을 불러오지 못했습니다.');
+  const latest = data[0] as Pick<RecordDetails, 'gear' | 'rig' | 'bait'> | undefined;
+  if (!latest) throw new Error('불러올 지난 낚시 기록이 없습니다.');
+  return latest;
+};
+
+export type RecordInput = RecordDetails & {
   id: string; // 폼을 열 때 만듭니다. 실패 후 다시 저장해도 기록이 중복되지 않습니다.
   place_id: string;
+  event_id: string | null;
   visited_on: string;
   catches: string;
   memo: string;

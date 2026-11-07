@@ -1,18 +1,24 @@
 @import 'tailwindcss';
 @import '@fontsource/do-hyeon/400.css'; /* 한글은 글자 조각(unicode-range)으로 나뉘어 화면에 쓰인 조각만 받습니다. */
 
-/* 거의 흰 바탕과 검정 글자. 파랑(accent)은 가는 선과 점에만 쓰고, 파란 글자는 accent-ink를 씁니다. */
+/*
+ * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 형광 그린 포인트 하나.
+ * 형광 그린(accent)은 흰 바탕 위 글자로는 읽히지 않으므로 칠하는 데만 쓰고, 그 위 글자는 검정입니다.
+ */
 @theme {
   --color-paper: #fafafa;
   --color-surface: #f0f0f0;
   --color-ink: #0a0a0a;
   --color-muted: #595959;
-  --color-line: #d4d4d4;
+  --color-line: #0a0a0a;
+  --color-soft: #d9d9d9;
   --color-field: #8c8c8c;
-  --color-accent: #2f7bd8;
-  --color-accent-ink: #1f5fb4;
+  --color-accent: #39ff14;
+  --color-sun: #d4271b;
+  --color-sat: #1f5fb4;
   --color-danger: #b3221e;
   --font-sans: 'Do Hyeon', system-ui, sans-serif;
+  --spacing-topbar: 4rem;
 }
 
 html {
@@ -29,60 +35,44 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--color-accent);
+}
+
+/* 스크롤바가 생기고 없어지는 화면을 오가도 메뉴가 옆으로 밀리지 않게 자리를 늘 비워 둡니다. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* 셀렉트 화살표를 오른쪽 끝에서 안쪽으로 들여 둡니다. */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%230a0a0a' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  padding-right: 2.75rem !important;
 }
 
 @layer components {
-  /* 화면 제목: 큰 글자를 가로선 위에 얹습니다. */
-  .page-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    border-bottom: 1px solid var(--color-ink);
-    font-size: clamp(2.25rem, 4vw + 1rem, 4.5rem);
-    font-weight: 500;
-    letter-spacing: -0.045em;
-    line-height: 1;
-  }
-
-  /* 제목 위의 작은 라벨 */
+  /* 영문 대문자 라벨. 장식이라 읽지 않게 하고, 읽는 이름은 옆의 한글 제목이 맡습니다. */
   .eyebrow {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.18em;
+    font-size: 0.75rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
   }
 
   .title {
     max-width: 100%;
-    font-weight: 600;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     line-height: 1.15;
   }
 
   .display-number {
-    font-size: clamp(3.5rem, 6vw, 5.5rem);
-    font-weight: 300;
+    font-size: clamp(4rem, 7vw, 7rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.06em;
-    line-height: 0.85;
-  }
-
-  .wordmark {
-    font-size: 1.125rem;
-    font-weight: 600;
     letter-spacing: -0.04em;
-    white-space: nowrap;
-  }
-  /* 로고 끝의 빈 사각형 */
-  .wordmark::after,
-  .wordmark-square::after {
-    content: '';
-    display: inline-block;
-    width: 0.5em;
-    height: 0.5em;
-    margin-left: 0.12em;
-    border: 0.08em solid var(--color-ink);
-    vertical-align: 0;
+    line-height: 0.8;
   }
 
   .mono-label {
@@ -92,15 +82,33 @@ body {
     letter-spacing: 0.04em;
   }
 
-  /* 카드 대신 위쪽 선으로 구획을 나눕니다. */
+  /* 칸 머리: 위아래를 선으로 나눈 제목 줄 */
+  .cell-head {
+    display: flex;
+    min-height: 3.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.5rem 1.25rem;
+  }
+  .cell-body {
+    padding: 1.25rem;
+  }
+
+  /* 목록 항목 사이의 옅은 선 */
   .panel {
-    border-top: 1px solid var(--color-ink);
-    padding: 1.125rem 0;
+    border-top: 1px solid var(--color-soft);
+    padding: 1rem 0;
+  }
+  .panel:first-child {
+    border-top: 0;
+    padding-top: 0;
   }
   .panel-active {
     background: var(--color-surface);
-    box-shadow: inset 3px 0 0 var(--color-accent);
-    padding-inline: 0.875rem;
+    box-shadow: inset 4px 0 0 var(--color-accent);
+    padding-inline: 1rem;
   }
 
   .button {
@@ -108,28 +116,31 @@ body {
     min-height: 2.75rem;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
     border: 1px solid var(--color-ink);
     padding: 0.375rem 1rem;
     color: var(--color-ink);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
   }
   .button:hover:not(:disabled) {
-    background: var(--color-ink);
-    color: var(--color-paper);
+    background: var(--color-accent);
   }
   .button:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.45;
   }
-  .button[aria-pressed='true'],
+  .button[aria-pressed='true'] {
+    background: var(--color-accent);
+  }
   .button-primary {
     background: var(--color-ink);
     color: var(--color-paper);
+    padding-inline: 1.5rem;
   }
   .button-primary:hover:not(:disabled) {
-    background: #333;
+    color: var(--color-ink);
   }
   .button-danger {
     border-color: var(--color-danger);
@@ -139,13 +150,43 @@ body {
     background: var(--color-danger);
     color: var(--color-paper);
   }
+  .button-icon {
+    width: 2.75rem;
+    padding: 0;
+  }
+
+  /* [ 삭제 ] 처럼 대괄호로 감싼 글자 버튼. 대괄호는 읽지 않습니다. */
+  .text-action {
+    display: inline-flex;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.25rem;
+    color: var(--color-muted);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .text-action::before {
+    content: '[\00a0' / '';
+  }
+  .text-action::after {
+    content: '\00a0]' / '';
+  }
+  .text-action:hover:not(:disabled) {
+    color: var(--color-ink);
+  }
+  .text-action-danger {
+    color: var(--color-danger);
+  }
 
   .result {
     display: flex;
     min-height: 2.75rem;
     width: 100%;
     flex-direction: column;
-    padding: 0.625rem 0.75rem;
+    padding: 0.75rem 1.25rem;
     text-align: left;
     cursor: pointer;
   }
@@ -153,19 +194,34 @@ body {
     background: var(--color-surface);
   }
 
-  /* 분류는 색 대신 채움으로 구분합니다: 낚시는 테두리, 맛집은 검정 채움 */
+  /* 분류는 색 대신 채움으로 구분합니다: 낚시 테두리, 맛집 검정, 기타 형광 */
   .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     border: 1px solid var(--color-ink);
-    padding: 0 0.375rem;
+    padding: 0 0.4rem;
     color: var(--color-ink);
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.8125rem;
     white-space: nowrap;
   }
   .badge-restaurant,
   .badge-solid {
     background: var(--color-ink);
     color: var(--color-paper);
+  }
+  .badge-etc {
+    background: var(--color-accent);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-muted);
+    font-size: 0.8125rem;
+  }
+  .tag::before {
+    content: '#';
   }
 
   .modal {
@@ -185,7 +241,7 @@ body {
   }
   @media (width >= 40rem) {
     .modal {
-      width: 34rem;
+      width: 36rem;
       height: fit-content;
       max-height: 90dvh;
       margin: auto;
@@ -197,7 +253,7 @@ body {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
-    z-index: 50;
+    z-index: 60;
     background: var(--color-ink);
     padding: 0.5rem 1rem;
     color: var(--color-paper);
@@ -207,55 +263,158 @@ body {
     transform: none;
   }
 
-  /* 휴대폰은 하단 탭, 넓은 화면은 머리글 메뉴. 현재 메뉴 앞에 파란 줄을 긋습니다. */
+  /* 로고: 왼쪽 그림, 오른쪽 NG / MG 두 줄 */
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo-image {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 1.125rem;
+    letter-spacing: 0.04em;
+    line-height: 0.92;
+  }
+  .logo-lg .logo-image {
+    width: 6rem;
+    height: 6rem;
+  }
+  .logo-lg {
+    gap: 1rem;
+  }
+  .logo-lg .logo-text {
+    font-size: 3.25rem;
+  }
+
+  /* 머리글: 선으로 나눈 칸. 메뉴 칸은 너비가 정해져 있어 현재 메뉴가 바뀌어도 흔들리지 않습니다. */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    height: var(--spacing-topbar);
+    align-items: stretch;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-paper);
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+  }
+  .topbar-end {
+    width: var(--spacing-topbar);
+    flex-shrink: 0;
+    border-left: 1px solid var(--color-line);
+    background: var(--color-ink);
+  }
+
+  /* 휴대폰은 하단 아이콘 탭, 넓은 화면은 머리글 오른쪽 메뉴 */
   .main-nav {
     position: fixed;
     inset: auto 0 0;
-    z-index: 20;
+    z-index: 30;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid var(--color-ink);
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--color-line);
     background: var(--color-paper);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .nav-link {
     display: flex;
-    min-height: 3.25rem;
+    min-height: 3.5rem;
     align-items: center;
     justify-content: center;
-    padding: 0 1rem;
+    gap: 0.4rem;
     color: var(--color-muted);
+  }
+  .nav-link + .nav-link {
+    border-left: 1px solid var(--color-line);
   }
   .nav-link:hover {
     color: var(--color-ink);
   }
   .nav-link[aria-current='page'] {
-    color: var(--color-ink);
-    font-weight: 600;
-  }
-  .nav-link[aria-current='page']::before {
-    content: '';
-    width: 1.25rem;
-    height: 2px;
-    margin-right: 0.4rem;
     background: var(--color-accent);
+    color: var(--color-ink);
+  }
+  .nav-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   @media (width >= 64rem) {
     .main-nav {
       position: static;
       display: flex;
-      gap: 0.5rem;
-      margin-right: auto;
-      border: 0;
+      margin-left: auto;
+      border-top: 0;
       background: none;
       padding: 0;
     }
     .nav-link {
-      min-height: 2.75rem;
+      width: 7.5rem;
+      border-left: 1px solid var(--color-line);
+      font-size: 1.0625rem;
+    }
+    .nav-link .nav-icon {
+      display: none;
+    }
+    .nav-text {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
     }
   }
 
-  .map {
+  /* 화면을 선으로 나눈 칸들. 넓은 화면에서는 칸마다 따로 스크롤합니다. */
+  .panes {
+    display: grid;
+  }
+  .pane + .pane {
+    border-top: 1px solid var(--color-line);
+  }
+  @media (width >= 64rem) {
+    .panes {
+      height: calc(100dvh - var(--spacing-topbar) - 1px);
+    }
+    .pane {
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .pane + .pane {
+      border-top: 0;
+      border-left: 1px solid var(--color-line);
+    }
+  }
+
+  /* 일정 화면의 3칸은 아주 넓은 화면에서만 나란히 놓습니다. */
+  @media (width >= 80rem) {
+    .panes-wide {
+      height: calc(100dvh - var(--spacing-topbar) - 1px);
+    }
+    .panes-wide > .pane {
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .panes-wide > .pane + .pane {
+      border-top: 0;
+      border-left: 1px solid var(--color-line);
+    }
+  }
+
+  /* 지도 바탕(타일 이미지)만 흑백에 가깝게 하고 핀 색은 그대로 둡니다. */
+  .map img {
     filter: grayscale(0.85) contrast(1.05);
   }
 
@@ -269,7 +428,6 @@ body {
     border-radius: 50%;
     background: var(--color-paper);
     color: var(--color-ink);
-    font-weight: 700;
     cursor: pointer;
   }
   .pin-restaurant {
@@ -277,13 +435,43 @@ body {
     background: var(--color-ink);
     color: var(--color-paper);
   }
+  .pin-etc {
+    background: var(--color-accent);
+  }
+  .pin[aria-pressed='true'] {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .loader {
+    display: flex;
+    min-height: 12rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .loader-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--color-paper);
+  }
+  .loader-animation {
+    width: min(15rem, 60vw);
+    aspect-ratio: 3 / 2;
+  }
+
+  /* 막대그래프 */
+  .bar {
+    height: 0.75rem;
+    background: var(--color-ink);
+  }
 }
 
 /* 달력. 라이브러리 CSS를 덮어쓰도록 레이어 밖에 둡니다. */
 .rdp-root {
   --rdp-accent-color: var(--color-ink);
   --rdp-accent-background-color: var(--color-surface);
-  --rdp-today-color: var(--color-accent-ink);
+  --rdp-today-color: var(--color-ink);
   --rdp-day-width: 2.75rem;
   --rdp-day-height: 2.75rem;
   --rdp-day_button-width: 2.625rem;
@@ -291,13 +479,23 @@ body {
   --rdp-day_button-border-radius: 0;
   --rdp-selected-border: 2px solid var(--color-ink);
 }
-.rdp-today:not(.rdp-selected) .rdp-day_button {
-  font-weight: 700;
+.rdp-weekday:first-child,
+.rdp-sunday .rdp-day_button,
+.rdp-holiday .rdp-day_button {
+  color: var(--color-sun);
+}
+.rdp-weekday:last-child,
+.rdp-saturday:not(.rdp-holiday) .rdp-day_button {
+  color: var(--color-sat);
+}
+/* 오늘은 원, 고른 날은 검정 칸. 오늘을 고르면 검정 원입니다. */
+.rdp-today .rdp-day_button {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--color-ink);
 }
 .rdp-selected .rdp-day_button {
   background: var(--color-ink);
-  color: var(--color-paper);
-  font-weight: 700;
+  color: var(--color-paper) !important;
 }
 .has-event .rdp-day_button {
   position: relative;
@@ -305,12 +503,33 @@ body {
 .has-event .rdp-day_button::after {
   content: '';
   position: absolute;
-  bottom: 0.3rem;
+  bottom: 0.25rem;
   left: 50%;
-  width: 0.875rem;
-  height: 2px;
-  background: var(--color-accent);
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
   transform: translateX(-50%);
+}
+.rdp-selected.has-event .rdp-day_button::after {
+  background: var(--color-accent);
+}
+
+/* 사진 넘기기(Swiper) */
+.photo-swiper.swiper {
+  --swiper-theme-color: var(--color-ink);
+  --swiper-navigation-size: 1.25rem;
+  --swiper-pagination-bullet-inactive-color: var(--color-ink);
+  max-width: 36rem;
+  margin: 0;
+  border: 1px solid var(--color-line);
+}
+.photo-swiper .swiper-button-prev,
+.photo-swiper .swiper-button-next {
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--color-paper);
+  border: 1px solid var(--color-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

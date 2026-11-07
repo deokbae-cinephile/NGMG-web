@@ -6,7 +6,7 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   reporter: 'list',
-  use: { baseURL: 'http://localhost:4173/NGMG-web/', trace: 'retain-on-failure' },
+  use: { baseURL: 'http://localhost:4173/', trace: 'retain-on-failure' },
   projects: [
     { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } } },
     { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 } } },
@@ -14,7 +14,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm run build && pnpm run preview --port 4173 --strictPort',
-    url: 'http://localhost:4173/NGMG-web/',
+    url: 'http://localhost:4173/',
     reuseExistingServer: false,
     env: {
       VITE_SUPABASE_URL: 'http://localhost:4173/fake-supabase',

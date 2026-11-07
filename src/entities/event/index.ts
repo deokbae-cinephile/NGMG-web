@@ -1,1 +1,1 @@
-export { saveEvent, useDeleteEvent, useMonthEvents, useUpcomingEvents, type EventInput } from './api';
+export { saveEvent, useDeleteEvent, useMonthEvents, usePastEvents, useUpcomingEvents, type EventInput } from './api';

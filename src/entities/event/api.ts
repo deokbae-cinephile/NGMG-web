@@ -38,6 +38,23 @@ export const useUpcomingEvents = () =>
     },
   });
 
+/** 오늘까지의 지난 일정 (최근 순). 기록을 남기지 않은 일정을 찾는 데 씁니다. */
+export const usePastEvents = () =>
+  useQuery({
+    queryKey: ['events', 'past'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*, place:places(*)')
+        .lte('date', toDateKey(new Date()))
+        .order('date', { ascending: false })
+        .order('start_time', { ascending: false })
+        .limit(30);
+      if (error) throw new Error('지난 일정을 불러오지 못했습니다.');
+      return data as CalendarEvent[];
+    },
+  });
+
 export type EventInput = {
   id?: string;
   date: string;

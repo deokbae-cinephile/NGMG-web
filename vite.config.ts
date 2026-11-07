@@ -18,7 +18,7 @@ const demo = (): Plugin => ({
 });
 
 export default defineConfig(({ mode }) => ({
-  base: '/NGMG-web/', // GitHub Pages 프로젝트 사이트 경로
+  base: '/', // GitHub Pages 사용자 도메인(ngmg.kr)의 루트
   plugins: [react(), tailwindcss(), mode === 'demo' && demo()],
   define:
     mode === 'demo'

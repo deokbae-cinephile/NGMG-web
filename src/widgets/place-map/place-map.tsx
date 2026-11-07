@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { KIND_ICON, KIND_LABEL } from '@/entities/place';
 import type { Place } from '@/shared/api';
 import { getPreference, loadKakao, setPreference, type Kakao } from '@/shared/lib';
+import { Icon, iconSvg } from '@/shared/ui';
 
 type Props = {
   places: Place[];
@@ -12,12 +14,14 @@ type Props = {
 
 const DEFAULT_VIEW = { latitude: 36.3, longitude: 127.8, level: 13 };
 
-const createPin = (place: Place, onSelect: (id: string) => void) => {
+// 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
+const createPin = (place: Place, selected: boolean, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
-  pin.className = `pin ${place.kind === 'fishing' ? 'pin-fishing' : 'pin-restaurant'}`;
-  pin.textContent = place.kind === 'fishing' ? '낚' : '맛';
-  pin.setAttribute('aria-label', `${place.name} 선택`);
+  pin.className = `pin pin-${place.kind}`;
+  pin.innerHTML = iconSvg(KIND_ICON[place.kind], 20);
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택`);
+  pin.setAttribute('aria-pressed', String(selected));
   pin.title = place.name;
   pin.addEventListener('click', () => onSelect(place.id));
   return pin;
@@ -27,6 +31,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
+  const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
 
   // SDK 이벤트는 한 번만 등록하므로 최신 값은 ref로 읽습니다.
   const latest = useRef({ picking, onPick });
@@ -71,13 +76,19 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
       (place) =>
         new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(place.latitude, place.longitude),
-          content: createPin(place, onSelect),
+          content: createPin(place, place.id === selectedId, onSelect),
           clickable: true,
         }),
     );
     const clusterer = new kakao.maps.MarkerClusterer({ map: instance, averageCenter: true, minLevel: 10, markers: overlays });
     return () => clusterer.clear();
-  }, [map, places, onSelect]);
+  }, [map, places, selectedId, onSelect]);
+
+  useEffect(() => {
+    if (!map) return;
+    const { MapTypeId } = map.kakao.maps;
+    map.instance.setMapTypeId(satellite ? MapTypeId.HYBRID : MapTypeId.ROADMAP);
+  }, [map, satellite]);
 
   useEffect(() => {
     const place = places.find((item) => item.id === selectedId);
@@ -92,5 +103,21 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
     );
   }
 
-  return <div ref={container} data-testid="map" role="region" aria-label="장소 지도" className="map h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" className={`h-full w-full ${satellite ? '' : 'map'}`} />
+      <button
+        type="button"
+        className="button absolute top-3 right-3 z-10 bg-paper"
+        aria-pressed={satellite}
+        onClick={() => {
+          setSatellite(!satellite);
+          setPreference('map-satellite', !satellite);
+        }}
+      >
+        <Icon name="layers" size={16} />
+        위성 지도
+      </button>
+    </div>
+  );
 };
