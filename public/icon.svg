@@ -1,9 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#030302"/>
-  <g fill="none" stroke="#daceb0" stroke-opacity=".25" stroke-width="3">
-    <circle cx="180" cy="180" r="170"/><circle cx="332" cy="180" r="170"/><circle cx="180" cy="332" r="170"/><circle cx="332" cy="332" r="170"/>
-  </g>
-  <rect x="96" y="176" width="320" height="160" fill="#daceb0" transform="rotate(-3 256 256)"/>
-  <rect x="316" y="150" width="120" height="44" fill="#e0b02c" transform="rotate(24 376 172)"/>
-  <path d="M160 256c40-44 104-44 150 0-46 44-110 44-150 0zm150 0 50-36v72z" fill="#030302"/>
+  <rect width="512" height="512" fill="#ececec"/>
+  <path d="M120 256c56-62 146-62 210 0-64 62-154 62-210 0zm210 0 70-50v100z" fill="#0a0a0a"/>
+  <rect x="352" y="120" width="48" height="48" fill="#ff4a4a"/>
 </svg>

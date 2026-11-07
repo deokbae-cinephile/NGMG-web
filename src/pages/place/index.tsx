@@ -25,7 +25,7 @@ export const PlacePage = () => {
     return (
       <div className="p-4">
         <title>장소 없음 | 낚고먹고</title>
-        <h1 className="sticker text-2xl">장소를 찾을 수 없습니다</h1>
+        <h1 className="title text-2xl">장소를 찾을 수 없습니다</h1>
         <ErrorText error={places.error} />
       </div>
     );
@@ -42,7 +42,7 @@ export const PlacePage = () => {
       <title>{`${place.name} | 낚고먹고`}</title>
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="sticker text-3xl">{place.name}</h1>
+          <h1 className="title text-3xl">{place.name}</h1>
           <KindBadge kind={place.kind} />
         </div>
         <p>{place.address || '주소 없음'}</p>
@@ -69,7 +69,7 @@ export const PlacePage = () => {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="sticker text-xl">기록</h2>
+          <h2 className="title text-xl">기록</h2>
           <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>
             기록 추가
           </button>

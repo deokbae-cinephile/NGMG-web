@@ -55,7 +55,7 @@ export const RecordForm = ({ placeId, kind, record, date, onDone }: Props) => {
       {kind === 'fishing' && <Field label="조과" placeholder="예: 감성돔 2마리" {...register('catches')} />}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="record-rating" className="mono-label">별점</label>
-        <select id="record-rating" className="min-h-11 border border-line bg-night px-3 text-cream" {...register('rating')}>
+        <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
           <option value="">선택 안 함</option>
           {[5, 4, 3, 2, 1].map((score) => (
             <option key={score} value={score}>{`${score}점`}</option>
@@ -75,7 +75,7 @@ export const RecordForm = ({ placeId, kind, record, date, onDone }: Props) => {
                   <span className="flex min-h-11 items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      className="size-5 accent-tape"
+                      className="size-5 accent-ink"
                       onChange={(event) =>
                         setRemoved((list) => (event.target.checked ? [...list, photo] : list.filter((item) => item !== photo)))
                       }

@@ -18,7 +18,7 @@ const Loading = () => <p className="p-4 text-muted">불러오는 중입니다.</
 const NotFound = () => (
   <div className="p-4">
     <title>페이지 없음 | 낚고먹고</title>
-    <h1 className="sticker text-2xl">페이지를 찾을 수 없습니다</h1>
+    <h1 className="title text-2xl">페이지를 찾을 수 없습니다</h1>
   </div>
 );
 

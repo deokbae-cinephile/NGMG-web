@@ -81,7 +81,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
           <label className="flex min-h-11 items-center gap-2">
             <span className="mono-label">새 장소 분류</span>
             <select
-              className="min-h-11 border border-line bg-night px-3 text-cream"
+              className="min-h-11 border border-field bg-surface px-3 text-ink"
               value={place.kind}
               onChange={(change) => setPlace({ ...place, kind: change.target.value as PlaceKind })}
             >

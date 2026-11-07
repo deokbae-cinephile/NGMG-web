@@ -46,7 +46,7 @@ export const CalendarPage = () => {
       <title>캘린더 | 낚고먹고</title>
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="sticker text-3xl">캘린더</h1>
+          <h1 className="title text-3xl">캘린더</h1>
           <button type="button" className="button" onClick={() => goTo(toDateKey(new Date()))}>
             오늘
           </button>
@@ -75,10 +75,16 @@ export const CalendarPage = () => {
 
       <div className="flex min-w-0 flex-col gap-8 lg:col-start-2 lg:row-span-2 lg:row-start-1">
         <section aria-labelledby="day-title" className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="day-title" aria-live="polite" className="sticker text-xl">
-              {formatDate(date)}
-            </h2>
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div className="flex items-end gap-3">
+              {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
+              <p aria-hidden="true" className="title text-6xl tabular-nums">
+                {date.slice(8)}
+              </p>
+              <h2 id="day-title" aria-live="polite" className="title pb-1 text-xl">
+                {formatDate(date)}
+              </h2>
+            </div>
             <button type="button" className="button button-primary" onClick={() => setForm({})}>
               일정 추가
             </button>
@@ -128,7 +134,7 @@ export const CalendarPage = () => {
               <li key={event.id}>
                 <button type="button" className="result" onClick={() => goTo(event.date)}>
                   <span className="flex items-center gap-2">
-                    <span className="badge bg-tape">{formatDday(event.date)}</span>
+                    <span className="badge bg-accent">{formatDday(event.date)}</span>
                     <span className="font-semibold">{event.title}</span>
                   </span>
                   <span className="text-sm text-muted">

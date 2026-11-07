@@ -6,7 +6,7 @@ export type FakeRequest = { method: string; url: string; accept: string; body: a
 export type FakeResponse = { status: number; contentType: string; body: string };
 
 export const KAKAO_SDK = `
-  document.head.insertAdjacentHTML('beforeend', '<style>[data-demo]{position:relative;overflow:hidden;background:#b9c4bc}[data-demo]::after{content:attr(data-demo);position:absolute;right:8px;bottom:8px;padding:2px 6px;background:#030302;color:#fdf4df;font-size:12px}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>[data-demo]{position:relative;overflow:hidden;background:#d4d4d4}[data-demo]::after{content:attr(data-demo);position:absolute;right:8px;bottom:8px;padding:2px 6px;background:#030302;color:#fdf4df;font-size:12px}</style>');
   (() => {
     class LatLng { constructor(a, b) { this.a = a; this.b = b; } getLat() { return this.a; } getLng() { return this.b; } }
     const listeners = {};
@@ -54,7 +54,7 @@ export const KAKAO_SDK = `
   })();
 `;
 
-export const PHOTO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#3a362b"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#daceb0"/></svg>';
+export const PHOTO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#bdbdbd"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#8c8c8c"/></svg>';
 
 const json = (body: unknown, status = 200): FakeResponse => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
 

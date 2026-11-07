@@ -39,7 +39,7 @@ export const Modal = ({ title, onClose, children }: Props) => {
       }}
     >
       <div className="flex items-start justify-between gap-4 pb-5">
-        <h2 id={titleId} className="sticker text-xl">
+        <h2 id={titleId} className="title text-xl">
           {title}
         </h2>
         <button type="button" onClick={requestClose} className="button shrink-0">

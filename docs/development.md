@@ -94,3 +94,13 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 | `fishing` / `restaurant` | `#8fc7d9` / `#f0a07a` | 분류. 색 외에 글자와 모양으로도 구분합니다. |
 
 레퍼런스: [Nocturnal Dream](https://www.nocturnaldream.com/)의 분위기만 참고했고, 그림과 유료 폰트는 쓰지 않습니다.
+
+| 토큰 | 값 | 쓰임 |
+| --- | --- | --- |
+| `paper` / `surface` | `#ececec` / `#f7f7f7` | 바탕 / 입력란·강조 영역 |
+| `ink` / `muted` | `#0a0a0a` / `#595959` | 본문 글자 / 보조 글자·라벨 |
+| `line` / `field` | `#c4c4c4` / `#8c8c8c` | 구분선 / 입력란 테두리 |
+| `accent` | `#ff4a4a` | 칠하는 색(선택, 표시 점). 회색 바탕 위 글자로는 대비가 모자라 쓰지 않습니다. |
+| `accent-ink` / `danger` | `#c01f1c` / `#b3221e` | 빨간 글자(오늘 날짜) / 삭제·오류 |
+
+장식용 애니메이션과 추가 글꼴은 쓰지 않습니다. 화면이 가볍게 유지되도록 Pretendard 하나와 색·선·여백으로만 표현합니다.

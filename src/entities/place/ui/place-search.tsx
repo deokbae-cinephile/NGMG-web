@@ -57,7 +57,7 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
           type="search"
           aria-label="장소 검색"
           placeholder="주소나 장소 이름"
-          className="min-h-11 w-full min-w-0 border border-line bg-night px-3 py-2 text-cream placeholder:text-muted"
+          className="min-h-11 w-full min-w-0 border border-field bg-surface px-3 py-2 text-ink placeholder:text-muted"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKeyDown}

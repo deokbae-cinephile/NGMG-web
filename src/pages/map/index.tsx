@@ -49,7 +49,7 @@ export const MapPage = () => {
 
       <section className="flex flex-col gap-4 p-4 lg:overflow-y-auto">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="sticker text-2xl">내 장소</h1>
+          <h1 className="title text-2xl">내 장소</h1>
           <button type="button" className="button button-primary" onClick={() => setDraft({})}>
             장소 추가
           </button>
@@ -89,16 +89,19 @@ export const MapPage = () => {
           {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
         </p>
         <ul className="flex flex-col gap-2">
-          {listed.map((place) => {
+          {listed.map((place, index) => {
             const distance = distanceOf(place);
             return (
-            <li key={place.id} className={`panel ${place.id === selectedId ? 'border-tape!' : ''}`}>
+            <li key={place.id} className={`panel ${place.id === selectedId ? 'panel-active' : ''}`}>
               <button
                 type="button"
                 className="flex min-h-11 w-full flex-col items-start gap-1 text-left"
                 aria-pressed={place.id === selectedId}
                 onClick={() => setSelectedId(place.id)}
               >
+                <span aria-hidden="true" className="mono-label">
+                  {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
+                </span>
                 <span className="flex flex-wrap items-center gap-2 font-semibold">
                   {place.name} <KindBadge kind={place.kind} />
                 </span>

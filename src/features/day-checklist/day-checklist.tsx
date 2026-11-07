@@ -26,7 +26,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
   return (
     <section aria-labelledby="checklist-title" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id="checklist-title" className="sticker text-lg">장비·준비물</h3>
+        <h3 id="checklist-title" className="title text-lg">장비·준비물</h3>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}
       </div>
       <ErrorText error={error ?? lastAction.error} />
@@ -55,7 +55,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
                 <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
                   <input
                     type="checkbox"
-                    className="size-5 shrink-0 accent-tape"
+                    className="size-5 shrink-0 accent-ink"
                     checked={item.checked}
                     onChange={(event) => toggle.mutate({ id: item.id, checked: event.target.checked })}
                   />
@@ -81,7 +81,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`checklist-category-${date}`} className="mono-label">분류</label>
-          <select id={`checklist-category-${date}`} className="min-h-11 border border-line bg-night px-3 text-cream" {...register('category')}>
+          <select id={`checklist-category-${date}`} className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('category')}>
             {CHECKLIST_CATEGORIES.map((category) => (
               <option key={category}>{category}</option>
             ))}

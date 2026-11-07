@@ -1,7 +1,7 @@
 import { useId, type ComponentProps, type ReactNode } from 'react';
 
 const control =
-  'min-h-11 w-full rounded-none border border-line bg-night px-3 py-2 text-cream placeholder:text-muted aria-invalid:border-danger';
+  'min-h-11 w-full rounded-none border border-field bg-surface px-3 py-2 text-ink placeholder:text-muted aria-invalid:border-danger';
 
 type Props = { label: string; error?: string; hint?: ReactNode };
 

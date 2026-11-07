@@ -10,7 +10,7 @@ export const KindFieldset = ({ register }: { register: UseFormRegisterReturn }) 
     <div className="flex gap-4">
       {KINDS.map((kind) => (
         <label key={kind} className="flex min-h-11 items-center gap-2">
-          <input type="radio" value={kind} className="size-5 accent-tape" {...register} />
+          <input type="radio" value={kind} className="size-5 accent-ink" {...register} />
           {KIND_LABEL[kind]}
         </label>
       ))}
