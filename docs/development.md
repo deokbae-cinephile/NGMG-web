@@ -23,19 +23,22 @@
 ## 서버 준비 (Supabase)
 
 ```bash
-npx supabase login
-npx supabase link --project-ref <프로젝트 ID>
-npx supabase db push
-npx supabase config push   # 가입을 닫습니다 (enable_signup = false)
+supabase login                      # 브라우저 승인이 필요해 별도 터미널에서 실행합니다.
+supabase link --project-ref <프로젝트 ID>
+supabase db push --remote
+supabase config push                # 가입을 닫습니다 (enable_signup = false)
 ```
 
-1. 대시보드 **Authentication > Users**에서 두 사람의 계정을 만듭니다. 가입 화면은 없습니다.
-2. **SQL Editor**에서 두 계정을 멤버로 등록합니다. 등록되지 않은 계정은 로그인해도 빈 화면만 보이고 쓰기는 실패합니다.
+두 사람은 공용 계정 하나를 함께 씁니다. 가입 화면은 없습니다.
 
-```sql
-insert into public.members (user_id)
-select id from auth.users where email in ('첫번째@example.com', '두번째@example.com');
+1. 대시보드 **Authentication > Users > Add user**에서 계정을 하나 만들고 **Auto Confirm User**를 켭니다.
+2. 계정을 멤버로 등록합니다. 등록되지 않은 계정은 로그인해도 빈 화면만 보이고 쓰기는 실패하므로, 가입 설정이 실수로 켜져도 다른 사람은 데이터에 접근하지 못합니다.
+
+```bash
+supabase db query --remote "insert into public.members (user_id) select id from auth.users on conflict do nothing"
 ```
+
+로그인은 기기마다 한 번만 하면 유지됩니다.
 
 무료 플랜은 오랫동안 접속이 없으면 프로젝트가 일시 중지될 수 있습니다. 그때는 대시보드에서 다시 시작합니다.
 
