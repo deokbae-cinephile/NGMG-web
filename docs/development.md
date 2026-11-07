@@ -105,4 +105,4 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 화면 제목은 `.page-title`(가로선 위의 큰 글자)과 그 위의 `.eyebrow`(자간을 넓힌 작은 라벨)로 씁니다. 장소 분류는 색 대신 채움으로 구분합니다(낚시: 테두리, 맛집: 검정 채움).
 
-장식용 애니메이션과 추가 글꼴은 쓰지 않습니다. 화면이 가볍게 유지되도록 Pretendard 하나와 색·선·여백으로만 표현합니다.
+장식용 애니메이션과 추가 글꼴은 쓰지 않습니다. 화면이 가볍게 유지되도록 도현(Do Hyeon) 하나와 색·선·여백으로만 표현합니다. 도현은 `@fontsource/do-hyeon`으로 앱에 포함하며, 한글이 93개 조각으로 나뉘어 화면에 쓰인 조각만 받습니다. 굵기가 하나뿐이라 `font-synthesis: none`으로 가짜 굵게를 막습니다.

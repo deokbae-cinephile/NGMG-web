@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@import '@fontsource/do-hyeon/400.css'; /* 한글은 글자 조각(unicode-range)으로 나뉘어 화면에 쓰인 조각만 받습니다. */
 
 /* 거의 흰 바탕과 검정 글자. 파랑(accent)은 가는 선과 점에만 쓰고, 파란 글자는 accent-ink를 씁니다. */
 @theme {
@@ -12,12 +12,13 @@
   --color-accent: #2f7bd8;
   --color-accent-ink: #1f5fb4;
   --color-danger: #b3221e;
-  --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  --font-sans: 'Do Hyeon', system-ui, sans-serif;
 }
 
 html {
   background: var(--color-paper);
   color-scheme: light;
+  font-synthesis: none; /* 도현은 굵기가 하나뿐이라 브라우저가 가짜 굵게를 만들지 않게 합니다. */
 }
 
 body {
@@ -46,7 +47,7 @@ body {
 
   /* 제목 위의 작은 라벨 */
   .eyebrow {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     letter-spacing: 0.18em;
   }
@@ -86,7 +87,7 @@ body {
 
   .mono-label {
     color: var(--color-muted);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.04em;
   }

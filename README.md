@@ -40,7 +40,7 @@
 | 구분        | 사용 기술                                                              |
 | ----------- | ---------------------------------------------------------------------- |
 | 프레임워크  | React 19, TypeScript, Vite, React Router                               |
-| UI          | Tailwind CSS, 네이티브 dialog, react-day-picker, Pretendard           |
+| UI          | Tailwind CSS, 네이티브 dialog, react-day-picker, 도현(Do Hyeon)       |
 | 지도·검색   | Kakao Maps JavaScript SDK, Open-Meteo                                  |
 | 상태·데이터 | TanStack Query, React Hook Form, date-fns, js-cookie                   |
 | 서버        | Supabase (Postgres, RLS, Auth, Storage)                                |
