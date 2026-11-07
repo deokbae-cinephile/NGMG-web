@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// 프로덕션 빌드로 검사합니다. 서버 대신 e2e/fake-backend.ts가 응답합니다.
+// 프로덕션 빌드로 검사합니다. 서버 대신 e2e/fake-backend.ts(e2e/fake-server.ts)가 응답합니다.
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,

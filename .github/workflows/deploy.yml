@@ -25,15 +25,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # 값이 없으면 앱이 빈 화면으로 배포되므로 여기서 멈춥니다.
-      - name: Check secrets
-        run: |
-          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_KAKAO_MAP_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::저장소 Secrets에 $name 값을 넣어 주세요."
-              exit 1
-            fi
-          done
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
@@ -41,7 +32,18 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run build
+      # Secrets가 모두 있으면 실서버용으로, 없으면 가상 데이터로 동작하는 데모로 빌드합니다.
+      - name: Build
+        run: |
+          if [ -n "$VITE_SUPABASE_URL" ] && [ -n "$VITE_SUPABASE_ANON_KEY" ] && [ -n "$VITE_KAKAO_MAP_KEY" ]; then
+            pnpm run build
+          elif [ -n "$VITE_SUPABASE_URL$VITE_SUPABASE_ANON_KEY$VITE_KAKAO_MAP_KEY" ]; then
+            echo "::error::Secrets 3개 중 일부만 있습니다. 모두 넣어 주세요."
+            exit 1
+          else
+            echo "::notice::Secrets가 없어 데모로 배포합니다."
+            pnpm run build:demo
+          fi
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

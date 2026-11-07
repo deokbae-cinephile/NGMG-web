@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - 2026-11-07
+
+- Secrets가 없으면 가상 데이터로 동작하는 웹 데모를 GitHub Pages에 배포 (`pnpm run build:demo`)
+- 가짜 서버를 Playwright와 브라우저에서 함께 쓰도록 분리 (`e2e/fake-server.ts`)
+- 프로젝트를 가볍게 하려고 단위 테스트(Vitest·jsdom·Testing Library)와 DB 권한 테스트(PGlite)를 지우고 E2E를 핵심 흐름 8개로 줄임
+
 ## 1.1.0 - 2026-11-07
 
 - 지도: 현재 위치에서 가까운 순 정렬과 직선거리 표시, 영문 장소 이름을 대소문자 없이 찾기

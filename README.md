@@ -1,11 +1,11 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.1.0-daceb0)
+![version](https://img.shields.io/badge/version-1.2.0-daceb0)
 
 낚시 포인트와 맛집을 지도에 남기고, 캘린더로 출조 일정과 준비물을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
-> **프로젝트 상태:** 두 사람이 직접 쓰기 위해 개발 중입니다. 실서버(Supabase)와 Kakao 지도 연결 전이며, 지금은 가짜 서버를 쓰는 데모와 E2E로만 검증했습니다.
+> **프로젝트 상태:** 두 사람이 직접 쓰기 위해 개발 중입니다. 실서버(Supabase)와 Kakao 지도 연결 전이며, 지금은 가상 데이터로 동작하는 [웹 데모](https://deokbae-cinephile.github.io/NGMG-web/)를 배포합니다. 데모에서 고친 내용은 탭을 닫으면 사라집니다.
 
 ## 화면
 
@@ -33,7 +33,7 @@
 
 ## 기술 스택
 
-![React, TypeScript, Vite, Tailwind CSS, Supabase, PostgreSQL, Vitest, pnpm, GitHub Actions](https://skillicons.dev/icons?i=react,ts,vite,tailwind,supabase,postgres,vitest,pnpm,githubactions)
+![React, TypeScript, Vite, Tailwind CSS, Supabase, PostgreSQL, pnpm, GitHub Actions](https://skillicons.dev/icons?i=react,ts,vite,tailwind,supabase,postgres,pnpm,githubactions)
 
 | 구분        | 사용 기술                                                              |
 | ----------- | ---------------------------------------------------------------------- |
@@ -42,7 +42,7 @@
 | 지도·검색   | Kakao Maps JavaScript SDK, Open-Meteo                                  |
 | 상태·데이터 | TanStack Query, React Hook Form, date-fns, js-cookie                   |
 | 서버        | Supabase (Postgres, RLS, Auth, Storage)                                |
-| 품질        | ESLint, Vitest, Testing Library, Playwright, axe, PGlite               |
+| 품질        | ESLint, Playwright, axe                                                |
 | 배포        | GitHub Pages, GitHub Actions                                           |
 
 ## 시작하기
@@ -61,10 +61,9 @@ pnpm run demo
 | ----------------------------- | ---------------------------------------- |
 | `pnpm run demo`               | 가짜 서버로 앱 실행 (창을 닫으면 초기화) |
 | `pnpm run build`              | 타입 검사와 프로덕션 빌드                |
+| `pnpm run build:demo`         | 가상 데이터로 동작하는 웹 데모 빌드      |
 | `pnpm run lint` / `typecheck` | ESLint / 타입 검사                       |
-| `pnpm test`                   | 단위·컴포넌트 테스트                     |
-| `pnpm run test:db`            | DB 권한(RLS)과 제약 조건 테스트          |
-| `pnpm run test:e2e`           | 프로덕션 빌드 E2E (360·768·1280px, axe) |
+| `pnpm run test:e2e`           | 핵심 흐름 E2E (360·768·1280px, axe)      |
 | `pnpm run shots`              | README 스크린샷 생성                     |
 
 서버 준비와 배포 방법은 [개발 가이드](docs/development.md)를 참고하세요.
@@ -75,7 +74,7 @@ pnpm run demo
 docs/          문서, 스크린샷
 e2e/           Playwright E2E, 가짜 서버, 데모
 public/        아이콘, 웹 앱 매니페스트
-supabase/      마이그레이션, RLS 테스트
+supabase/      마이그레이션
 src/
 ├─ app/        앱 진입, 라우팅, 전역 스타일
 ├─ pages/      지도, 캘린더, 기록, 장소 상세, 로그인

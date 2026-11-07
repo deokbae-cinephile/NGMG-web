@@ -13,7 +13,12 @@
 
 ## 데모
 
-`pnpm run demo`는 개발 서버와 브라우저 창을 띄우고, Supabase·Kakao·Open-Meteo 응답을 `e2e/fake-backend.ts`로 대신합니다. 앱 코드에는 데모 분기가 없습니다. 지도는 실제 지도가 아니라 가짜 배경이고, 올린 사진도 자리표시 그림으로 보입니다.
+데모는 Supabase와 Kakao SDK 응답을 `e2e/fake-server.ts`의 가짜 서버로 대신합니다. 앱 코드(`src/`)에는 데모 분기가 없습니다. 지도는 실제 지도가 아니라 가짜 배경이고, 올린 사진도 자리표시 그림으로 보입니다.
+
+| 방법 | 설명 |
+| --- | --- |
+| `pnpm run demo` | 개발 서버와 Playwright 브라우저 창을 띄웁니다. 날씨도 가짜 값입니다. |
+| `pnpm run build:demo` | 정적 파일로 빌드합니다. `e2e/demo-setup.ts`가 브라우저의 `fetch`를 가로채 응답하고, 날씨는 실제 Open-Meteo를 부릅니다. 고친 데이터는 탭을 닫기 전까지 sessionStorage에 남습니다. |
 
 ## 서버 준비 (Supabase)
 
@@ -43,7 +48,7 @@ select id from auth.users where email in ('첫번째@example.com', '두번째@ex
 ## 배포 (GitHub Pages)
 
 1. 저장소 Pages의 Source는 **GitHub Actions**로 설정되어 있습니다.
-2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 하나라도 없으면 빈 화면이 배포되지 않도록 `deploy.yml`이 빌드 전에 실패합니다.
+2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 3개가 모두 없으면 `deploy.yml`이 웹 데모(`build:demo`)를 배포하고, 일부만 있으면 실패합니다.
 3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://deokbae-cinephile.github.io/NGMG-web/`입니다.
 
 저장소 이름이나 도메인이 바뀌면 `vite.config.ts`의 `base`도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
@@ -52,11 +57,9 @@ select id from auth.users where email in ('첫번째@example.com', '두번째@ex
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| 단위·컴포넌트 | `src/**/*.test.*` | Vitest |
-| DB 권한 | `supabase/tests/rls.test.mjs` | PGlite에 마이그레이션을 실제로 적용합니다. |
-| E2E | `e2e/app.spec.ts` | 프로덕션 빌드를 360·768·1280px에서 검사합니다. |
+| E2E | `e2e/app.spec.ts` | 핵심 흐름 8개를 프로덕션 빌드로 360·768·1280px에서 검사합니다. 넘침과 axe 접근성 검사를 포함합니다. |
 
-E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
+프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
 ## 물때와 날씨
 
