@@ -33,7 +33,7 @@ export const RecordsPage = () => {
   }, [hasNextPage, records.length, fetchNextPage]);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 lg:py-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-12">
       <title>기록 | 낚고먹고</title>
       <div>
         <p className="eyebrow pb-3">조과 · 별점 · 사진</p>
@@ -85,7 +85,7 @@ export const RecordsPage = () => {
           {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르면 기록을 남길 수 있습니다.'}
         </p>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {records.map((record) => (
           <RecordCard
             key={record.id}

@@ -42,9 +42,9 @@ export const CalendarPage = () => {
   };
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6 p-4 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:py-8">
+    <div className="mx-auto grid max-w-7xl gap-x-16 gap-y-12 px-4 py-6 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:px-10 lg:py-12 xl:gap-x-24">
       <title>캘린더 | 낚고먹고</title>
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-5">
         <p className="eyebrow">출조 일정 · 준비물</p>
         <div className="flex items-end gap-3">
           <h1 className="page-title">캘린더</h1>
@@ -74,8 +74,8 @@ export const CalendarPage = () => {
         <ErrorText error={monthEvents.error ?? upcoming.error} />
       </section>
 
-      <div className="flex min-w-0 flex-col gap-8 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        <section aria-labelledby="day-title" className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-14 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <section aria-labelledby="day-title" className="flex flex-col gap-6">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div className="flex items-end gap-3">
               {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
@@ -128,7 +128,7 @@ export const CalendarPage = () => {
       </div>
 
       {upcoming.data && upcoming.data.length > 0 && (
-        <section aria-labelledby="upcoming-title" className="flex flex-col gap-2 lg:col-start-1">
+        <section aria-labelledby="upcoming-title" className="flex flex-col gap-3 lg:col-start-1">
           <h2 id="upcoming-title" className="mono-label">다가오는 일정</h2>
           <ul className="flex flex-col divide-y divide-line border-t border-ink lg:w-[21rem]">
             {upcoming.data.map((event) => (

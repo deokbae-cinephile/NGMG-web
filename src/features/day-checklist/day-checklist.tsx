@@ -24,7 +24,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
   );
 
   return (
-    <section aria-labelledby="checklist-title" className="flex flex-col gap-4">
+    <section aria-labelledby="checklist-title" className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="checklist-title" className="title text-lg">장비·준비물</h3>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}

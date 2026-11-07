@@ -94,7 +94,7 @@ body {
   /* 카드 대신 위쪽 선으로 구획을 나눕니다. */
   .panel {
     border-top: 1px solid var(--color-ink);
-    padding: 0.875rem 0;
+    padding: 1.125rem 0;
   }
   .panel-active {
     background: var(--color-surface);

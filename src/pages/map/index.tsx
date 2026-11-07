@@ -47,7 +47,7 @@ export const MapPage = () => {
         <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onPick={onPick} />
       </div>
 
-      <section className="flex flex-col gap-4 p-4 lg:overflow-y-auto">
+      <section className="flex flex-col gap-5 px-4 py-6 sm:px-6 lg:overflow-y-auto lg:px-8 lg:py-8">
         <p className="eyebrow">낚시 포인트 · 맛집</p>
         <div className="flex items-end gap-3">
           <h1 className="page-title">내 장소</h1>

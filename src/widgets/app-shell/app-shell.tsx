@@ -27,7 +27,7 @@ export const AppShell = () => {
       <a href="#main" className="skip-link">
         본문 바로가기
       </a>
-      <header className="flex items-center justify-between gap-4 border-b border-ink bg-paper px-4 py-2 lg:px-6">
+      <header className="flex items-center justify-between gap-4 border-b border-ink bg-paper px-4 py-3 sm:px-6 lg:px-10">
         <p className="wordmark">낚고먹고</p>
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (

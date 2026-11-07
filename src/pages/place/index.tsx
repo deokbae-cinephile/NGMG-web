@@ -38,9 +38,9 @@ export const PlacePage = () => {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 lg:py-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-12 px-4 py-6 sm:px-6 lg:py-12">
       <title>{`${place.name} | 낚고먹고`}</title>
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-4">
         <span className="self-start">
           <KindBadge kind={place.kind} />
         </span>
@@ -67,7 +67,7 @@ export const PlacePage = () => {
         <ErrorText error={remove.error} />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="title text-xl">기록</h2>
           <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>
