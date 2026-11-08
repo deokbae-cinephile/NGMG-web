@@ -354,7 +354,7 @@ test('장비: 조사별로 추가, 수정, 삭제하고 사진을 미리 본다'
   await expect(dialog.getByRole('radio', { name: '류 조사' })).toBeChecked();
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByText('장비 이름을 입력해 주세요.')).toBeVisible();
-  await dialog.getByLabel('분류').selectOption('릴');
+  await dialog.getByLabel('분류', { exact: true }).selectOption('릴');
   await dialog.getByLabel('브랜드').fill('다이와');
   await dialog.getByLabel('장비 이름').fill('뜰채');
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
@@ -519,4 +519,25 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   await page.goto('./stats');
   await expect(page.locator('dl dt').first()).toBeVisible();
   expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['전체 기록', '출조 횟수', '낚시 평균 별점', '맛집 방문', '맛집 평균 별점']);
+});
+
+test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', async ({ page }) => {
+  const db = await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'm', angler: '김 조사', category: '라인', subcategory: '원줄', brand: '셉트', name: '합사', position: 0 }] });
+  await page.goto('./gear');
+  await page.getByRole('button', { name: '김 조사 장비 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 장비' });
+  await expect(dialog.getByLabel('세부 분류')).toHaveCount(0);
+  await dialog.getByLabel('분류', { exact: true }).selectOption('라인');
+  await dialog.getByLabel('세부 분류').selectOption('목줄');
+  await dialog.getByLabel('장비 이름').fill('카본');
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.angler_gear!.at(-1)).toMatchObject({ category: '라인', subcategory: '목줄', name: '카본' });
+  await expect(page.locator('[data-gear-sub="목줄"][data-angler="김 조사"]').getByRole('heading', { name: '카본' })).toBeVisible();
+
+  await page.getByRole('button', { name: '[셉트] 합사 아래로' }).click();
+  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'm')!.subcategory).toBe('목줄');
+  await expect(page.locator('[data-gear-sub="목줄"][data-angler="김 조사"]').getByRole('heading', { name: '[셉트] 합사' })).toBeVisible();
+  await expectAccessible(page);
 });
