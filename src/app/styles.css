@@ -270,7 +270,8 @@ select {
     height: 8rem;
   }
 
-  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 머리글 오른쪽 칸으로 나타납니다. */
+  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 머리글 맨 오른쪽 칸으로 나타납니다.
+     휴대폰은 메뉴가 하단 탭이라 로고 맞은편 끝, 넓은 화면은 메뉴(GNB)와 간격을 두고 따로 묶습니다. */
   .install-button {
     display: flex;
     align-items: center;
@@ -284,8 +285,14 @@ select {
   .install-button:hover {
     background: var(--color-accent);
   }
-  .install-button + .main-nav {
-    margin-left: 0 !important;
+  @media (width >= 64rem) {
+    .install-button {
+      margin-left: 1.5rem; /* 메뉴 칸들과 띄워 다른 묶음임을 보여 줍니다. */
+      font-size: 1.0625rem;
+    }
+    .main-nav:has(+ .install-button) {
+      border-right: 1px solid var(--color-line); /* 메뉴 묶음의 오른쪽 끝을 닫습니다. */
+    }
   }
 
   /* 머리글: 선으로 나눈 칸. 메뉴 칸은 너비가 정해져 있어 현재 메뉴가 바뀌어도 흔들리지 않습니다. */

@@ -224,3 +224,30 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page).toHaveTitle('기록 | 낚고먹고');
   await expect(page.locator('#main')).toBeFocused();
 });
+
+test('앱 설치 버튼은 메뉴(GNB) 밖, 머리글 맨 오른쪽에 따로 놓인다', async ({ page }, testInfo) => {
+  await fakeBackend(page, seed());
+  await page.goto('/schedule');
+  await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toBeVisible();
+  // 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
+  await page.evaluate(() => {
+    const event = Object.assign(new Event('beforeinstallprompt'), {
+      prompt: async () => {},
+      userChoice: Promise.resolve({ outcome: 'dismissed' }),
+    });
+    window.dispatchEvent(event);
+  });
+  const button = page.getByRole('button', { name: '앱 설치' });
+  await expect(button).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '앱 설치' })).toHaveCount(0);
+
+  const install = (await button.boundingBox())!;
+  const header = (await page.locator('header.topbar').boundingBox())!;
+  expect(Math.round(install.x + install.width)).toBe(Math.round(header.x + header.width));
+
+  if (testInfo.project.name === 'desktop') {
+    const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;
+    expect(install.x - (nav.x + nav.width)).toBeGreaterThanOrEqual(16); // 메뉴와 간격을 두고 따로 묶인다
+  }
+  await expectFits(page);
+});

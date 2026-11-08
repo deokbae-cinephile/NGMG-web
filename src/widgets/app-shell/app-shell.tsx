@@ -30,7 +30,6 @@ export const AppShell = () => {
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>
-        <InstallButton />
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link">
@@ -39,6 +38,8 @@ export const AppShell = () => {
             </NavLink>
           ))}
         </nav>
+        {/* 설치는 메뉴(GNB)가 아니라 따로 두는 동작이라 메뉴 밖, 머리글 맨 오른쪽에 둡니다. */}
+        <InstallButton />
       </header>
       <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
         <Suspense fallback={<Loader />}>
