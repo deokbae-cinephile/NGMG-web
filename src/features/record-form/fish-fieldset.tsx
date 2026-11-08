@@ -108,7 +108,7 @@ type Props = { value: FishDraft[]; showErrors: boolean; onChange: (value: FishDr
 export const FishFieldset = ({ value, showErrors, onChange }: Props) => (
   <section aria-labelledby="fish-title" className="flex flex-col gap-2 border-t border-line pt-4">
     <h3 id="fish-title" className="title text-lg">잡은 물고기</h3>
-    {value.length === 0 && <p className="text-sm text-muted">물고기를 더하면 조사별 마릿수와 최대어가 통계에 쌓입니다.</p>}
+    {value.length === 0 && <p className="text-sm text-muted">물고기를 더하면 통계와 어종 도감에 쌓입니다.</p>}
     <ol className="flex flex-col">
       {value.map((fish, index) => (
         <FishItem

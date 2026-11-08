@@ -40,7 +40,7 @@ export const demoSeed = (start: Date): Seed => {
         gear: restaurant ? '' : '1호 5.3m 갯바위대',
         rig: restaurant ? '' : '반유동, 0.8호 찌',
         bait: restaurant ? '' : (BAITS[index % BAITS.length] ?? ''),
-        weather: restaurant ? '' : '맑음, 11°/18°',
+        weather: restaurant ? '' : '맑음',
         tide: restaurant ? '' : '8물',
         menu: restaurant ? '모둠회 중, 매운탕' : '',
         price: restaurant ? 60000 : null,

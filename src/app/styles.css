@@ -105,6 +105,13 @@ select {
     border-top: 0;
     padding-top: 0;
   }
+  /* 일정과 기록처럼 내용이 많은 항목은 위아래를 더 띄웁니다. */
+  .panel-roomy {
+    padding-block: 1.75rem;
+  }
+  .panel-roomy:first-child {
+    padding-top: 0;
+  }
   .panel-active {
     background: var(--color-surface);
     box-shadow: inset 4px 0 0 var(--color-ink);
@@ -502,6 +509,25 @@ select {
       border-top: 0;
       border-left: 1px solid var(--color-line);
     }
+    /* 일정 및 기록: 왼쪽 위 달력, 왼쪽 아래 모아 보기, 가운데 고른 날, 오른쪽 전체 기록 */
+    .panes-schedule {
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-columns: 24rem minmax(0, 1fr) 26rem;
+    }
+    .panes-schedule > .pane-calendar {
+      grid-area: 1 / 1;
+    }
+    .panes-schedule > .pane-day {
+      grid-area: 1 / 2 / 3 / 3;
+    }
+    .panes-schedule > .pane.pane-side {
+      grid-area: 2 / 1;
+      border-top: 1px solid var(--color-line);
+      border-left: 0;
+    }
+    .panes-schedule > .pane-records {
+      grid-area: 1 / 3 / 3 / 4;
+    }
   }
 
   /* 지도 바탕(타일 이미지)만 흑백에 가깝게 하고 핀 색은 그대로 둡니다. */
@@ -666,6 +692,16 @@ select {
   }
   .skeleton-page {
     min-height: calc(100dvh - var(--spacing-topbar) - 1px);
+  }
+
+  /* 어종 도감: 카드마다 오른쪽과 아래에 선을 그어 빈자리에는 아무것도 그리지 않습니다. */
+  .dex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  }
+  .dex-grid > li {
+    border-right: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line);
   }
 
   /* 막대그래프 */

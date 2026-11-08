@@ -10,17 +10,17 @@ import { Intro } from './intro';
 const pages = {
   map: () => import('@/pages/map').then((page) => ({ default: page.MapPage })),
   schedule: () => import('@/pages/schedule').then((page) => ({ default: page.SchedulePage })),
-  records: () => import('@/pages/records').then((page) => ({ default: page.RecordsPage })),
   stats: () => import('@/pages/stats').then((page) => ({ default: page.StatsPage })),
   place: () => import('@/pages/place').then((page) => ({ default: page.PlacePage })),
   gear: () => import('@/pages/gear').then((page) => ({ default: page.GearPage })),
+  dex: () => import('@/pages/dex').then((page) => ({ default: page.DexPage })),
 };
 const MapPage = lazy(pages.map);
 const SchedulePage = lazy(pages.schedule);
-const RecordsPage = lazy(pages.records);
 const StatsPage = lazy(pages.stats);
 const PlacePage = lazy(pages.place);
 const GearPage = lazy(pages.gear);
+const DexPage = lazy(pages.dex);
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
 
@@ -31,15 +31,16 @@ const NotFound = () => (
   </div>
 );
 
-/** 주소에 맞는 화면. 예전 주소(/calendar?date=...)로 들어와도 고른 날짜를 그대로 이어 갑니다. */
+/** 주소에 맞는 화면. 예전 주소(/calendar?date=..., /records)로 들어와도 고른 날짜를 그대로 이어 갑니다. */
 const Page = () => {
   const { pathname, search } = useLocation();
   if (pathname === '/') return <MapPage />;
   if (pathname === '/schedule') return <SchedulePage />;
   if (pathname === '/calendar') return <Navigate to={`/schedule${search}`} />;
-  if (pathname === '/records') return <RecordsPage />;
+  if (pathname === '/records') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/stats') return <StatsPage />;
   if (pathname === '/gear') return <GearPage />;
+  if (pathname === '/dex') return <DexPage />;
   const place = /^\/places\/([^/]+)$/.exec(pathname);
   if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;
   return <NotFound />;

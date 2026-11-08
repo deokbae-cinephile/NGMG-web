@@ -79,13 +79,13 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 데이터 백업
 
-기록 화면의 "데이터 백업"은 장소, 기록, 사진 목록, 잡은 물고기, 조사별 장비, 일정, 준비물을 JSON 파일로 저장합니다. 사진 파일 자체는 포함되지 않습니다. 파일을 불러오는 기능은 없으므로 복원이 필요하면 Supabase에 직접 넣습니다.
+일정 및 기록 화면의 "데이터 백업"은 장소, 기록, 사진 목록, 잡은 물고기, 조사별 장비, 일정, 준비물을 JSON 파일로 저장합니다. 사진 파일 자체는 포함되지 않습니다. 파일을 불러오는 기능은 없으므로 복원이 필요하면 Supabase에 직접 넣습니다.
 
-기록 화면의 각 기록에 있는 "내려받기"는 그 기록 하나(잡은 물고기 포함)를 JSON으로 저장합니다.
+전체 기록의 각 기록에 있는 "내려받기"는 그 기록 하나(잡은 물고기 포함)를 JSON으로 저장합니다.
 
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 출발지(`route-origin`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 무악재역 출발지 사용 여부(`route-from-base`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 

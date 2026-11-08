@@ -5,10 +5,10 @@ import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: '지도', icon: 'pin' },
-  { to: '/schedule', label: '일정', icon: 'calendar' },
-  { to: '/records', label: '기록', icon: 'notebook' },
+  { to: '/schedule', label: '일정 및 기록', icon: 'calendar' },
   { to: '/stats', label: '통계', icon: 'stats' },
   { to: '/gear', label: '장비', icon: 'rod' },
+  { to: '/dex', label: '어종 도감', icon: 'dex' },
 ];
 
 export const AppShell = ({ children }: { children: ReactNode }) => {

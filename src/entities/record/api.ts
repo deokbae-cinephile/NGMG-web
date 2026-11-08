@@ -157,6 +157,29 @@ export const useRecentFish = (limit = 8) =>
     },
   });
 
+export type DexFish = RecentFish;
+
+/** 도감용으로 잡은 물고기를 모두 받습니다. */
+export const useFishDex = () =>
+  useQuery({
+    queryKey: ['records', 'dex'],
+    queryFn: async (): Promise<DexFish[]> => {
+      const rows: DexFish[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from('fish_catches')
+          .select('id, angler, species, length_cm, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
+          .order('id')
+          .range(from, from + 999);
+        if (error) throw new Error('도감을 불러오지 못했습니다.');
+        rows.push(...(data as unknown as DexFish[]));
+        if (data.length < 1000) break;
+      }
+      const urls = await signPhotos(rows.flatMap((fish) => fish.photo_path ?? []));
+      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined }));
+    },
+  });
+
 /** 가장 최근 낚시 기록의 장비·채비·미끼 */
 export const fetchLatestGear = async () => {
   const { data, error } = await supabase

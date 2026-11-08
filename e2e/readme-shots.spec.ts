@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test } from '@playwright/test';
 import { demoSeed } from './demo-data';
 import { startFakeBackend as fakeBackend } from './fake-backend';
 
@@ -15,13 +15,13 @@ test('휴대폰 화면', async ({ page }, info) => {
   await page.goto('./schedule?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
   await page.screenshot({ path: `${dir}/schedule-mobile.jpg`, type: 'jpeg', quality: 80 });
-  await page.goto('./records');
-  await page.getByText('감성돔 1마리').waitFor();
-  await expect(page.getByRole('img', { name: /기록 사진 1/ }).first()).toHaveJSProperty('complete', true);
-  await page.screenshot({ path: `${dir}/records.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./stats');
   await page.getByRole('heading', { level: 2 }).first().waitFor();
   await page.screenshot({ path: `${dir}/stats.jpg`, type: 'jpeg', quality: 80 });
+  await page.goto('./dex');
+  await page.getByRole('heading', { name: '어종 도감', level: 2 }).waitFor();
+  await page.getByRole('heading', { level: 3 }).first().waitFor();
+  await page.screenshot({ path: `${dir}/dex.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./gear');
   await page.getByRole('heading', { name: '김 조사 장비' }).waitFor();
   await page.getByRole('heading', { name: /닉스 인쇼어/ }).first().waitFor();
@@ -42,6 +42,7 @@ test('넓은 화면', async ({ page }, info) => {
   await page.goto('./schedule?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
   await page.getByRole('region', { name: /물때와 날씨/ }).waitFor();
+  await page.getByRole('heading', { name: '전체 기록' }).waitFor();
   await page.screenshot({ path: `${dir}/schedule.jpg`, type: 'jpeg', quality: 80 });
 });
 
