@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
+import { KIND_LABEL, KINDS, KindBadge } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
 import { DownloadRecordButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
@@ -12,13 +12,10 @@ type Filter = PlaceKind | 'all';
 /** 오른쪽 칸: 전체 기록을 찾고 훑어봅니다. */
 export const AllRecords = () => {
   const [filter, setFilter] = useState<Filter>(() => getPreference('records-filter', 'all'));
-  const [tag, setTag] = useState<string>();
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [editing, setEditing] = useState<PlaceRecord>();
-  const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword, tag);
-  const places = usePlaces();
-  const tags = collectTags(places.data ?? []);
+  const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword);
   const more = useRef<HTMLButtonElement>(null);
   const records = data?.pages.flat() ?? [];
 
@@ -61,24 +58,6 @@ export const AllRecords = () => {
               ))}
             </div>
           </fieldset>
-          {tags.length > 0 && (
-            <fieldset>
-              <legend className="mono-label pb-1.5">장소 태그</legend>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className="button min-h-9 px-3 text-sm"
-                    aria-pressed={tag === item}
-                    onClick={() => setTag(tag === item ? undefined : item)}
-                  >
-                    {`#${item}`}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
           <form
             role="search"
             className="flex items-end gap-2"

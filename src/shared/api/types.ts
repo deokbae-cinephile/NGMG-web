@@ -8,7 +8,6 @@ export type Place = {
   latitude: number;
   longitude: number;
   memo: string;
-  tags: string[];
   photo_path: string | null;
   created_at?: string;
   /** 화면에 보여 줄 서명된 사진 주소 (저장하지 않습니다) */
@@ -16,7 +15,7 @@ export type Place = {
 };
 
 /** 아직 저장하지 않았을 수 있는 장소. id가 있으면 저장된 장소입니다. */
-export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'tags' | 'photo_path' | 'photo_url' | 'created_at'> & { id?: string; memo?: string; tags?: string[]; photo_path?: string | null };
+export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'photo_path' | 'photo_url' | 'created_at'> & { id?: string; memo?: string; photo_path?: string | null };
 
 export type RecordPhoto = { id: string; storage_path: string; position: number; url: string };
 
@@ -73,7 +72,7 @@ export type PlaceRecord = RecordDetails & {
   memo: string;
   rating: number | null;
   event_id: string | null;
-  place: Pick<Place, 'id' | 'name' | 'kind' | 'tags'>;
+  place: Pick<Place, 'id' | 'name' | 'kind'>;
   photos: RecordPhoto[];
   fish: FishCatch[];
 };
