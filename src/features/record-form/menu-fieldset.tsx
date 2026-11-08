@@ -6,9 +6,11 @@ export type MenuRow = MenuItem & { key: string };
 
 export const newMenuRow = (item: MenuItem = { name: '', price: '' }): MenuRow => ({ ...item, key: crypto.randomUUID() });
 
+const nameError = (row: MenuItem) => (row.price && !row.name.trim() ? '메뉴 이름을 입력해 주세요.' : undefined);
+const priceError = (row: MenuItem) => (Number(row.price) < 0 ? '0 이상으로 입력해 주세요.' : undefined);
+
 /** 가격만 적고 이름을 비웠거나 가격이 음수인 줄 */
-export const menuRowError = (row: MenuItem) =>
-  row.price && !row.name.trim() ? '메뉴 이름을 입력해 주세요.' : Number(row.price) < 0 ? '0 이상으로 입력해 주세요.' : undefined;
+export const menuRowError = (row: MenuItem) => nameError(row) ?? priceError(row);
 
 type Props = { value: MenuRow[]; showErrors: boolean; onChange: (rows: MenuRow[]) => void };
 
@@ -23,7 +25,6 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
       <legend className="sr-only">메뉴와 가격</legend>
       <ul className="flex flex-col gap-3">
         {value.map((row, index) => {
-          const error = showErrors ? menuRowError(row) : undefined;
           return (
             <li key={row.key} className="grid grid-cols-[minmax(0,1fr)_7rem_auto] items-start gap-2">
               <Field
@@ -37,7 +38,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                 placeholder="예: 모둠회 중"
                 maxLength={60}
                 value={row.name}
-                error={error}
+                error={showErrors ? nameError(row) : undefined}
                 onChange={(event) => set(row.key, { name: event.target.value })}
               />
               <Field
@@ -46,6 +47,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                 inputMode="numeric"
                 min={0}
                 value={row.price}
+                error={showErrors ? priceError(row) : undefined}
                 onChange={(event) => set(row.key, { price: event.target.value })}
               />
               {value.length > 1 ? (

@@ -73,12 +73,12 @@ export type MenuItem = { name: string; price: string };
 /** 메뉴 칸을 줄로 나눕니다. '모둠회 30000원 / 매운탕'처럼 저장하고, 쉼표로 적은 예전 값도 읽습니다. */
 export const parseMenu = (text: string): MenuItem[] =>
   text
-    .split(/\s+\/\s+|[,;\n]+/)
+    .split(/\s+\/\s+|[;\n]+|,(?!\d{3}(?:\D|$))/) // 12,000원의 쉼표는 구분자가 아닙니다.
     .map((item) => item.trim())
     .filter(Boolean)
     .map((item) => {
-      const match = item.match(/^(.*\S)\s+(\d+)원$/);
-      return match ? { name: match[1]!, price: match[2]! } : { name: item, price: '' };
+      const match = item.match(/^(.*\S)\s+(\d[\d,]*)원$/);
+      return match ? { name: match[1]!, price: match[2]!.replaceAll(',', '') } : { name: item, price: '' };
     });
 
 export const formatMenu = (items: MenuItem[]) =>

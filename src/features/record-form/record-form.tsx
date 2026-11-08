@@ -56,6 +56,11 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     return items.length ? items.map(newMenuRow) : [newMenuRow()];
   });
   const [checkedMenu, setCheckedMenu] = useState(false);
+  // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
+  const [legacyTotal] = useState(() => {
+    const items = parseMenu(record?.menu ?? '');
+    return items.length !== 1 && !items.some((item) => item.price) ? (record?.price ?? null) : null;
+  });
   const registeredGear = useGear();
   const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
   // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
@@ -96,7 +101,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
-        price: kind === 'restaurant' ? (menuTotal(menu) ?? record?.price ?? null) : null, // 가격을 줄마다 적지 않은 예전 기록의 합계는 지우지 않습니다.
+        price: kind === 'restaurant' ? (menuTotal(menu) ?? legacyTotal) : null,
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         files,
