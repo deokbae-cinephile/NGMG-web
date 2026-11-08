@@ -85,7 +85,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 무악재역 출발지 사용 여부(`route-from-base`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 
@@ -115,5 +115,5 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
 - Supabase는 `supabase-js` 대신 쓰는 클라이언트(`auth-js`, `postgrest-js`, `storage-js`)만 묶어 실시간 기능을 뺐습니다(`src/shared/api/supabase.ts`).
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
-- 사진 여러 장은 라이브러리 없이 가로 스크롤과 `scroll-snap`으로 넘깁니다.
+- 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘깁니다.
 

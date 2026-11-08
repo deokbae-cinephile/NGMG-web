@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type CalendarEvent, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { cleanKeyword, recordSearchFilter } from './model';
+import { SAVE_KEY } from '@/shared/ui';
 
 export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
@@ -287,6 +288,7 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
 export const useSaveRecord = () => {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: SAVE_KEY,
     mutationFn: saveRecord,
     onSettled: () => client.invalidateQueries({ queryKey: ['records'] }),
   });

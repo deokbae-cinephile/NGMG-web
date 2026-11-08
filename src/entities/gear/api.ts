@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Gear } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
+import { SAVE_KEY } from '@/shared/ui';
 
 export const useGear = () =>
   useQuery({
@@ -35,7 +36,7 @@ const saveGear = async ({ file, removePhoto, ...values }: GearInput) => {
 
 export const useSaveGear = () => {
   const client = useQueryClient();
-  return useMutation({ mutationFn: saveGear, onSuccess: () => client.invalidateQueries({ queryKey: ['gear'] }) });
+  return useMutation({ mutationKey: SAVE_KEY, mutationFn: saveGear, onSuccess: () => client.invalidateQueries({ queryKey: ['gear'] }) });
 };
 
 /** 끌어서 옮긴 장비의 분류와 순서를 저장합니다. */

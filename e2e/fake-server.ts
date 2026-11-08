@@ -23,7 +23,7 @@ export const KAKAO_SDK = `
         });
       }
       getCenter() { return new LatLng(36, 127); } getLevel() { return 13; }
-      relayout() {} panTo() {} setMapTypeId() {}
+      relayout() {} panTo() {} setMapTypeId() {} setLevel() {}
       getBounds() { return { getNorthEast: () => new LatLng(38.6, 130), getSouthWest: () => new LatLng(33, 125.5) }; }
     }
     class CustomOverlay {

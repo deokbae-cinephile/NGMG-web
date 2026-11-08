@@ -1,41 +1,11 @@
 import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
-import { formatDate, formatDateRange, formatStay } from '@/shared/lib';
+import { formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
+import { RecordPhotos } from './photo-slider';
 import { formatGear, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
-
-/** 사진이 한 장이면 그대로, 여러 장이면 옆으로 넘겨 봅니다. 사진을 누르면 새 창에서 크게 봅니다. */
-const Photos = ({ record }: { record: PlaceRecord }) => {
-  const date = formatDate(record.visited_on);
-  const count = record.photos.length;
-  const image = (url: string, index: number) => (
-    <a href={url} target="_blank" rel="noreferrer" className="block">
-      <img
-        src={url}
-        alt={`${date} 기록 사진 ${index + 1} (새 창에서 크게 보기)`}
-        loading="lazy"
-        className="aspect-[4/3] w-full border border-line bg-surface object-cover"
-      />
-    </a>
-  );
-  if (count === 1) return <div className="max-w-xl">{image(record.photos[0]!.url, 0)}</div>;
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className="mono-label" aria-hidden="true">{`사진 ${count}장 · 옆으로 넘겨 보기`}</p>
-      {/* 키보드 사용자도 화살표로 넘길 수 있게 스크롤 영역에 이름과 초점을 줍니다. */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로 스크롤 영역은 키보드 초점이 있어야 넘길 수 있습니다. */}
-      <div role="region" tabIndex={0} aria-label={`${date} 기록 사진 ${count}장`} className="photo-strip">
-        <ul>
-          {record.photos.map((photo, index) => (
-            <li key={photo.id}>{image(photo.url, index)}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-};
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const details = [
@@ -89,7 +59,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         </section>
       )}
       {record.memo && <p className="whitespace-pre-wrap break-words">{record.memo}</p>}
-      {record.photos.length > 0 && <Photos record={record} />}
+      {record.photos.length > 0 && <RecordPhotos record={record} />}
     </article>
   );
 };

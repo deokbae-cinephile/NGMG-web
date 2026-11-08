@@ -5,7 +5,7 @@ import { saveEvent } from '@/entities/event';
 import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
 import type { CalendarEvent, PlaceDraft, PlaceKind } from '@/shared/api';
 import { formatTime } from '@/shared/lib';
-import { ErrorText, Field, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, TextareaField, SAVE_KEY } from '@/shared/ui';
 
 type Values = { title: string; date: string; end_date: string; start_time: string; memo: string };
 type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => void };
@@ -28,6 +28,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
 
   const save = useMutation({
+    mutationKey: SAVE_KEY,
     mutationFn: async ({ place: draft, ...values }: Input) => {
       // 검색으로 고른 새 장소는 일정과 함께 저장합니다.
       const saved = draft && !draft.id ? await savePlace(draft) : draft;
