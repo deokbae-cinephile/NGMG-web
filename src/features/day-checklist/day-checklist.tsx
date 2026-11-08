@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { CHECKLIST_CATEGORIES, groupByCategory, useChecklist, useChecklistActions } from '@/entities/checklist';
 import { defaultGearLabels, useGear } from '@/entities/gear';
@@ -8,6 +9,17 @@ type Values = { title: string; category: string };
 export const DayChecklist = ({ date }: { date: string }) => {
   const { data: items = [], isPending, error } = useChecklist(date);
   const registeredGear = useGear();
+  const filling = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
+  /** 목록을 채우는 요청은 끝날 때까지 한 번만 보냅니다. 두 번 가면 항목이 중복됩니다. */
+  const once = <T,>(mutate: (input: T, options: { onSettled: () => void }) => void, input: T) => {
+    if (filling.current) return;
+    filling.current = true;
+    mutate(input, {
+      onSettled: () => {
+        filling.current = false;
+      },
+    });
+  };
   const { addDefaults, copyLatest, checkAll, uncheckAll, removeAll, add, toggle, remove } = useChecklistActions(date);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Values>({
     defaultValues: { title: '', category: CHECKLIST_CATEGORIES[0] },
@@ -38,10 +50,10 @@ export const DayChecklist = ({ date }: { date: string }) => {
       {!isPending && !error && items.length === 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>
-          <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => addDefaults.mutate(defaultGearLabels(registeredGear.data ?? []))}>
+          <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => once(addDefaults.mutate, defaultGearLabels(registeredGear.data ?? []))}>
             기본 목록 불러오기
           </button>
-          <button type="button" className="button" disabled={copyLatest.isPending} onClick={() => copyLatest.mutate()}>
+          <button type="button" className="button" disabled={copyLatest.isPending} onClick={() => once(copyLatest.mutate, undefined)}>
             이전 목록 복사
           </button>
         </div>

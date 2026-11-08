@@ -480,8 +480,9 @@ test('기본값: 새 기록의 장비 칸과 일정의 기본 목록에 등록�
   await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나, 로드둘, [다이와] 릴하나');
   await page.keyboard.press('Escape');
   await page.goto('./schedule?date=2026-11-07');
-  await page.getByRole('button', { name: '기본 목록 불러오기' }).click();
+  await page.getByRole('button', { name: '기본 목록 불러오기' }).dblclick();
   await expect(page.getByRole('checkbox', { name: '[다이와] 릴하나' })).toBeVisible();
+  expect(new Set(db.checklist_items!.map((item) => item.title)).size).toBe(db.checklist_items!.length); // 더블 클릭해도 중복되지 않습니다.
   await expect(page.getByRole('checkbox', { name: '낚싯대', exact: true })).toHaveCount(0);
   expect(db.checklist_items!.some((item) => item.title === '로드둘')).toBe(true);
 });
