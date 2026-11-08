@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { GEAR_CATEGORIES, GEAR_ICON, GEAR_SECTIONS, gearLabel, gearSubcategory, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
-import { splitList, useStatRecords } from '@/entities/record';
+import { gearList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
 import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
@@ -39,7 +39,7 @@ export const GearPage = () => {
   /** 기록의 장비 칸에 적힌 이름별 사용 횟수 */
   const usage = useMemo(() => {
     const counts = new Map<string, number>();
-    records.data?.forEach((record) => new Set(splitList(record.gear)).forEach((name) => counts.set(name, (counts.get(name) ?? 0) + 1)));
+    records.data?.forEach((record) => new Set(gearList(record.gear)).forEach((name) => counts.set(name, (counts.get(name) ?? 0) + 1)));
     return counts;
   }, [records.data]);
 

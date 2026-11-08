@@ -587,6 +587,16 @@ select {
     color: var(--color-ink);
     cursor: pointer;
   }
+  .map-popup-origin {
+    min-height: 1.5rem;
+    border: 1px solid var(--color-ink);
+    padding: 0 0.375rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .map-popup-origin[aria-pressed='true'] {
+    background: var(--color-accent);
+  }
   .map-popup-close:hover {
     background: var(--color-surface);
   }

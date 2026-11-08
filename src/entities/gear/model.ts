@@ -1,7 +1,7 @@
 import type { Gear } from '@/shared/api';
 import type { IconName } from '@/shared/ui';
 
-export const GEAR_CATEGORIES = ['로드', '릴', '라인', '채비', '기타'] as const;
+export const GEAR_CATEGORIES = ['로드', '릴', '라인', '채비', '미끼', '기타'] as const;
 export type GearCategory = (typeof GEAR_CATEGORIES)[number];
 export const LINE_SUBCATEGORIES = ['원줄', '목줄'] as const;
 
@@ -15,7 +15,7 @@ export const gearSubcategory = (gear: Pick<Gear, 'category' | 'subcategory'>) =>
   gear.category === '라인' ? gear.subcategory || LINE_SUBCATEGORIES[0] : '';
 
 /** 사진이 없을 때 보여 주는 분류별 아이콘 */
-export const GEAR_ICON: Record<string, IconName> = { 로드: 'rod', 릴: 'reel', 라인: 'line', 채비: 'hook', 기타: 'backpack' };
+export const GEAR_ICON: Record<string, IconName> = { 로드: 'rod', 릴: 'reel', 라인: 'line', 채비: 'hook', 미끼: 'bait', 기타: 'backpack' };
 
 /** 브랜드가 있으면 '[다이와] 25 레가리스'처럼 씁니다. 기록의 장비 칸과 사용 횟수도 이 이름으로 맞춥니다. */
 export const gearLabel = (gear: Pick<Gear, 'brand' | 'name'>) => (gear.brand ? `[${gear.brand}] ${gear.name}` : gear.name);

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useDeleteEvent, useMonthEvents, useUpcomingEvents } from '@/entities/event';
 import { DayConditions } from '@/entities/forecast';
-import { KindBadge, usePlaces } from '@/entities/place';
+import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { DayChecklist } from '@/features/day-checklist';
 import { EventForm } from '@/features/event-form';
@@ -33,7 +33,6 @@ export const SchedulePage = () => {
   const upcoming = useUpcomingEvents();
   const dayRecords = useDayRecords(date);
   const remove = useDeleteEvent();
-  const allPlaces = usePlaces();
 
   const counts = new Map<string, number>();
   // 연박 일정이 걸친 날. 앞뒤 날과 이어지는지 함께 둡니다.
@@ -47,7 +46,7 @@ export const SchedulePage = () => {
     }),
   );
   const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
-  const recorded = useRecordedEventIds(events.map((event) => event.id));
+  const recorded = useRecordedEventIds(events);
   const waiting = events.filter((event) => event.place && !recorded.data?.has(event.id));
   const holiday = holidayName(selected);
 
@@ -65,7 +64,6 @@ export const SchedulePage = () => {
   };
 
   const recordPlace = recordForm?.record?.place ?? recordForm?.event?.place;
-  const fullPlace = allPlaces.data?.find((place) => place.id === recordPlace?.id) ?? recordForm?.event?.place;
 
   return (
     <div className="panes panes-wide xl:grid-cols-[24rem_minmax(0,1fr)_26rem]">
@@ -266,7 +264,7 @@ export const SchedulePage = () => {
       {recordForm && recordPlace && (
         <Modal title={recordForm.record ? '기록 수정' : `${recordPlace.name} 기록`} onClose={() => setRecordForm(undefined)}>
           <RecordForm
-            place={fullPlace ?? { ...recordPlace, latitude: 36.3, longitude: 127.8 }}
+            place={recordPlace}
             record={recordForm.record}
             date={recordForm.event?.date ?? date}
             endDate={recordForm.event?.end_date}

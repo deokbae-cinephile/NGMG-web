@@ -4,7 +4,7 @@ import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities
 import { FishRow, RecordCard, useRecentFish, useRecordedEventIds, useRecordPages } from '@/entities/record';
 import { DownloadRecordButton, ExportButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
-import type { CalendarEvent, PlaceKind } from '@/shared/api';
+import type { CalendarEvent, PlaceKind, PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, setPreference, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 
@@ -16,6 +16,7 @@ export const RecordsPage = () => {
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [recordEvent, setRecordEvent] = useState<CalendarEvent>();
+  const [editing, setEditing] = useState<PlaceRecord>();
   const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(
     filter === 'all' ? undefined : filter,
     keyword,
@@ -24,7 +25,7 @@ export const RecordsPage = () => {
   const places = usePlaces();
   const past = usePastEvents();
   const pastWithPlace = (past.data ?? []).filter((event) => event.place);
-  const recorded = useRecordedEventIds(pastWithPlace.map((event) => event.id));
+  const recorded = useRecordedEventIds(pastWithPlace);
   const waiting = recorded.data ? pastWithPlace.filter((event) => !recorded.data.has(event.id)) : [];
   const tags = collectTags(places.data ?? []);
   const recentFish = useRecentFish();
@@ -142,7 +143,14 @@ export const RecordsPage = () => {
             <RecordCard
               key={record.id}
               record={record}
-              actions={<DownloadRecordButton record={record} />}
+              actions={
+                <div className="flex flex-wrap items-center">
+                  <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
+                    수정
+                  </button>
+                  <DownloadRecordButton record={record} />
+                </div>
+              }
               heading={
                 <h3 className="flex flex-wrap items-center gap-2">
                   <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
@@ -200,6 +208,11 @@ export const RecordsPage = () => {
         )}
       </section>
 
+      {editing && (
+        <Modal title="기록 수정" onClose={() => setEditing(undefined)}>
+          <RecordForm place={editing.place} record={editing} onDone={() => setEditing(undefined)} />
+        </Modal>
+      )}
       {recordEvent && recordPlace && (
         <Modal title={`${recordPlace.name} 기록`} onClose={() => setRecordEvent(undefined)}>
           <RecordForm place={recordPlace} date={recordEvent.date} endDate={recordEvent.end_date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />
