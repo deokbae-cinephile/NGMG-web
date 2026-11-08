@@ -676,3 +676,10 @@ test('일정 및 기록: 넓은 화면은 페이지 전체가 아니라 칸마�
     expect(await records.evaluate((pane) => pane.scrollHeight > pane.clientHeight)).toBe(true);
   }
 });
+
+test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
+  await fakeBackend(page, { ...seed(), records: [{ id: 'a', place_id: 'p1', visited_on: '2026-10-01', rating: 5 }] });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 별점 5\.0$/ })).toHaveClass(/rate-5/);
+  await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
+});

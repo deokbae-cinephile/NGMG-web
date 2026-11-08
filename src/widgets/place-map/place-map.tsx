@@ -51,7 +51,7 @@ const pinOffsets = (places: Place[]) => {
     groups.set(key, [...(groups.get(key) ?? []), place.id]);
   });
   const offsets = new Map<string, number>();
-  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 42)));
+  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 60)));
   return offsets;
 };
 
@@ -261,9 +261,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     <div className="relative h-full w-full">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 4점대까지">
+      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 5점까지">
         <strong className="font-normal">별점</strong>
-        {[1, 2, 3, 4].map((score) => (
+        {[1, 2, 3, 4, 5].map((score) => (
           <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
         ))}
       </div>

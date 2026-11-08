@@ -37,9 +37,9 @@ export const DexPage = () => {
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1">
                 <dt className="mono-label">빅원</dt>
                 <dd className="text-lg">{`${big.length_cm}cm`}</dd>
-                <dt className="mono-label">잡은 조사</dt>
+                <dt className="mono-label">조사</dt>
                 <dd>{big.angler}</dd>
-                <dt className="mono-label">잡은 곳</dt>
+                <dt className="mono-label">시간 및 장소</dt>
                 <dd className="break-words text-sm">{`${formatDate(big.record.visited_on)} · ${big.record.place.name}`}</dd>
                 <dt className="mono-label">마릿수</dt>
                 <dd>{`${count}마리`}</dd>
