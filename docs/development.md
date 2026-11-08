@@ -58,7 +58,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## PR 리뷰
 
-`main`에는 브랜치와 PR로 올리고, 검사가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다.
+`main`에는 브랜치와 PR로 올리고, 검사가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다. 초안(Draft) PR은 자동 리뷰에서 제외됩니다. Ready로 바꾼 뒤에도 리뷰가 시작되지 않으면 PR에 `@coderabbitai review` 댓글을 남겨 요청합니다.
 
 ## 테스트
 
