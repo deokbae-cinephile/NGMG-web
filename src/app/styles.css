@@ -527,6 +527,21 @@ select {
     padding: 0.625rem 0.75rem;
     color: var(--color-ink);
   }
+  /* 이름 첫 줄과 높이를 맞춘 작은 닫기 버튼. 말풍선 오른쪽 위에 놓습니다. */
+  .map-popup-close {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-right: -0.25rem;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .map-popup-close:hover {
+    background: var(--color-surface);
+  }
   .map-popup::after {
     content: '';
     position: absolute;

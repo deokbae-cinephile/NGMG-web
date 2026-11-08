@@ -247,10 +247,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             className="map-popup"
             style={{ transform: `translateX(${offsets.get(selected.id) ?? 0}px)` }} // 벌려 놓은 핀 위에 맞춥니다.
           >
-            <div className="flex items-start justify-between gap-1">
+            <div className="flex w-full items-start justify-between gap-2">
               <p className="min-w-0 break-words">{selected.name}</p>
-              <button type="button" className="icon-button -mt-2 -mr-2 shrink-0" aria-label="정보 닫기" onClick={closePopup}>
-                <Icon name="close" size={18} />
+              <button type="button" className="map-popup-close" aria-label="정보 닫기" onClick={closePopup}>
+                <Icon name="close" size={16} />
               </button>
             </div>
             <KindBadge kind={selected.kind} />
