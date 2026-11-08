@@ -7,7 +7,13 @@ export type RouteOrigin = Pick<Place, 'name' | 'latitude' | 'longitude'>;
 /** 출발지 초기값 */
 export const DEFAULT_ORIGIN: RouteOrigin = { name: '무악재역', latitude: 37.5825632, longitude: 126.950231 };
 
-let origin = getPreference<RouteOrigin>('route-origin', DEFAULT_ORIGIN);
+/** 저장된 값이 깨져 있으면 초기값을 씁니다. */
+const readOrigin = () => {
+  const saved = getPreference<Partial<RouteOrigin> | null>('route-origin', DEFAULT_ORIGIN);
+  return typeof saved?.name === 'string' && typeof saved.latitude === 'number' && typeof saved.longitude === 'number' ? (saved as RouteOrigin) : DEFAULT_ORIGIN;
+};
+
+let origin = readOrigin();
 const listeners = new Set<() => void>();
 
 export const sameLocation = (a: RouteOrigin, b: RouteOrigin) => a.name === b.name && a.latitude === b.latitude && a.longitude === b.longitude;

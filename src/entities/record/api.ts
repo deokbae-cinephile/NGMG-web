@@ -96,11 +96,15 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     queryKey: ['records', 'events', events.map((event) => `${event.id}:${event.date}:${event.end_date}:${event.place_id}`)],
     enabled: events.length > 0,
     queryFn: async () => {
+      const columns = 'event_id, place_id, visited_on, end_date';
       const places = [...new Set(events.flatMap((event) => event.place_id ?? []))];
-      if (!places.length) return new Set<string>();
-      const { data, error } = await supabase.from('records').select('event_id, place_id, visited_on, end_date').in('place_id', places);
-      if (error) throw new Error('기록을 불러오지 못했습니다.');
-      const rows = data as Pick<PlaceRecord, 'event_id' | 'place_id' | 'visited_on' | 'end_date'>[];
+      // 일정의 장소를 나중에 바꿔도 연결된 기록을 찾도록 일정 id로도 조회합니다.
+      const [byPlace, byEvent] = await Promise.all([
+        places.length ? supabase.from('records').select(columns).in('place_id', places) : { data: [], error: null },
+        supabase.from('records').select(columns).in('event_id', events.map((event) => event.id)),
+      ]);
+      if (byPlace.error || byEvent.error) throw new Error('기록을 불러오지 못했습니다.');
+      const rows = [...byPlace.data, ...byEvent.data] as Pick<PlaceRecord, 'event_id' | 'place_id' | 'visited_on' | 'end_date'>[];
       return new Set(
         events
           .filter((event) => rows.some((row) => row.event_id === event.id || (row.place_id === event.place_id && row.visited_on <= event.end_date && row.end_date >= event.date)))
