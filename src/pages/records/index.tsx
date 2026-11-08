@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePastEvents } from '@/entities/event';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
-import { RecordCard, useRecordedEventIds, useRecordPages } from '@/entities/record';
+import { FishRow, RecordCard, useRecentFish, useRecordedEventIds, useRecordPages } from '@/entities/record';
 import { ExportButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceKind } from '@/shared/api';
 import { formatDate, getPreference, setPreference, Link } from '@/shared/lib';
-import { ErrorText, Field, Modal } from '@/shared/ui';
+import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';
 
@@ -27,6 +27,7 @@ export const RecordsPage = () => {
   const recorded = useRecordedEventIds(pastWithPlace.map((event) => event.id));
   const waiting = recorded.data ? pastWithPlace.filter((event) => !recorded.data.has(event.id)) : [];
   const tags = collectTags(places.data ?? []);
+  const recentFish = useRecentFish();
   const more = useRef<HTMLButtonElement>(null);
   const records = data?.pages.flat() ?? [];
 
@@ -44,7 +45,7 @@ export const RecordsPage = () => {
   const recordPlace = recordEvent?.place;
 
   return (
-    <div className="panes lg:grid-cols-[24rem_minmax(0,1fr)]">
+    <div className="panes panes-wide xl:grid-cols-[24rem_minmax(0,1fr)_26rem]">
       <title>기록 | 낚고먹고</title>
       <h1 className="sr-only">전체 기록</h1>
 
@@ -115,31 +116,12 @@ export const RecordsPage = () => {
           </form>
         </div>
 
-        {waiting.length > 0 && (
-          <section aria-labelledby="waiting-events" className="border-t border-line">
-            <h3 id="waiting-events" className="title text-lg px-5 pt-5 pb-3">기록을 기다리는 지난 일정</h3>
-            <ul className="flex flex-col divide-y divide-soft border-t border-line">
-              {waiting.map((event) => (
-                <li key={event.id} className="flex items-center justify-between gap-2 px-5 py-3">
-                  <span className="flex min-w-0 flex-col">
-                    <span className="mono-label">{formatDate(event.date)}</span>
-                    <span>{event.title}</span>
-                    <span className="text-sm text-muted">{event.place?.name}</span>
-                  </span>
-                  <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
-                    기록 남기기
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         <div className="cell-body border-t border-line">
           <ExportButton />
         </div>
       </section>
 
-      <section aria-labelledby="records-title" className="pane">
+      <section aria-labelledby="records-title" className="pane order-3 xl:order-none">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
             <h2 id="records-title" className="title text-xl">기록</h2>
@@ -149,7 +131,8 @@ export const RecordsPage = () => {
           </p>
         </div>
         <div className="cell-body flex flex-col">
-          <ErrorText error={error ?? past.error ?? recorded.error} />
+          <ErrorText error={error} />
+          {isPending && <SkeletonRows />}
           {!isPending && !error && records.length === 0 && (
             <p className="text-muted">
               {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르거나 지난 일정에서 기록을 남길 수 있습니다.'}
@@ -175,6 +158,45 @@ export const RecordsPage = () => {
             </button>
           )}
         </div>
+      </section>
+
+      {/* 기록 목록이 길어 휴대폰에서는 이 칸을 목록 앞에 둡니다. */}
+      <section aria-labelledby="recent-title" className="pane order-2 xl:order-none">
+        <div className="cell-head">
+          <h2 id="recent-title" className="title text-xl">최근 조과</h2>
+        </div>
+        <div className="cell-body">
+          <ErrorText error={recentFish.error} />
+          {recentFish.isPending && <SkeletonRows count={3} />}
+          {recentFish.data?.length === 0 && <p className="text-muted">아직 잡은 물고기가 없습니다. 낚시 기록에서 물고기를 추가해 보세요.</p>}
+          <ul className="flex flex-col">
+            {recentFish.data?.map((fish) => (
+              <li key={fish.id} className="panel">
+                <FishRow fish={fish} detail={`${formatDate(fish.record.visited_on)} · ${fish.record.place.name}`} />
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ErrorText error={past.error ?? recorded.error} />
+        {waiting.length > 0 && (
+          <section aria-labelledby="waiting-events" className="border-t border-line">
+            <h3 id="waiting-events" className="title text-lg px-5 pt-5 pb-3">기록을 기다리는 지난 일정</h3>
+            <ul className="flex flex-col divide-y divide-soft border-t border-line">
+              {waiting.map((event) => (
+                <li key={event.id} className="flex items-center justify-between gap-2 px-5 py-3">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="mono-label">{formatDate(event.date)}</span>
+                    <span>{event.title}</span>
+                    <span className="text-sm text-muted">{event.place?.name}</span>
+                  </span>
+                  <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
+                    기록 남기기
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </section>
 
       {recordEvent && recordPlace && (

@@ -8,7 +8,7 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
 const fulfill = (route: Route, { status, contentType, body }: FakeResponse) => route.fulfill({ status, contentType, headers: CORS, body });
 const json = (route: Route, body: unknown) => fulfill(route, { status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
-export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn = true } = {}) => {
+export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn = true, intro = false } = {}) => {
   const server = createFakeServer(seed);
 
   await page.route('https://dapi.kakao.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: KAKAO_SDK }));
@@ -28,6 +28,9 @@ export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn =
     }
     return fulfill(route, server.handle(path, { method: request.method(), url: request.url(), accept: request.headers().accept ?? '', body }));
   });
+
+  // 인트로는 탭마다 한 번만 재생됩니다. 인트로를 검사할 때가 아니면 본 것으로 둡니다.
+  if (!intro) await page.addInitScript(() => sessionStorage.setItem('ngmg:intro', '1'));
 
   if (signedIn) {
     await page.addInitScript((value) => {

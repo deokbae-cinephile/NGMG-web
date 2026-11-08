@@ -12,11 +12,7 @@ const SELECT =
 type Row = Omit<PlaceRecord, 'photos' | 'fish'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[] };
 
 // 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
-const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
-  const paths = rows.flatMap((row) => [
-    ...row.photos.map((photo) => photo.storage_path),
-    ...(row.fish ?? []).flatMap((fish) => fish.photo_path ?? []),
-  ]);
+const signPhotos = async (paths: string[]) => {
   const urls = new Map<string, string>();
   if (paths.length) {
     const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
@@ -24,6 +20,13 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
       if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
     });
   }
+  return urls;
+};
+
+const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
+  const urls = await signPhotos(
+    rows.flatMap((row) => [...row.photos.map((photo) => photo.storage_path), ...(row.fish ?? []).flatMap((fish) => fish.photo_path ?? [])]),
+  );
   return rows.map((row) => ({
     ...row,
     photos: [...row.photos]
@@ -116,6 +119,25 @@ export const useStatRecords = () =>
         rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })) })));
         if (data.length < 1000) return rows;
       }
+    },
+  });
+
+export type RecentFish = FishCatch & { record: { visited_on: string; place: { name: string } } };
+
+/** 최근에 남긴 잡은 물고기 */
+export const useRecentFish = (limit = 8) =>
+  useQuery({
+    queryKey: ['records', 'recent-fish', limit],
+    queryFn: async (): Promise<RecentFish[]> => {
+      const { data, error } = await supabase
+        .from('fish_catches')
+        .select('id, angler, species, length_cm, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw new Error('잡은 물고기를 불러오지 못했습니다.');
+      const rows = data as unknown as RecentFish[];
+      const urls = await signPhotos(rows.flatMap((fish) => fish.photo_path ?? []));
+      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined }));
     },
   });
 

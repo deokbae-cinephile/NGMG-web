@@ -25,7 +25,16 @@ export const KAKAO_SDK = `
       getCenter() { return new LatLng(36, 127); } getLevel() { return 13; }
       relayout() {} panTo() {} setMapTypeId() {}
     }
-    class CustomOverlay { constructor(o) { this.o = o; } }
+    class CustomOverlay {
+      constructor(o) {
+        this.o = o;
+        if (!o.map) return;
+        o.content.style.position = 'absolute';
+        o.content.style.left = '50%';
+        o.content.style.top = '50%';
+        o.map.el.appendChild(o.content);
+      }
+    }
     class MarkerClusterer {
       constructor({ map, markers }) {
         this.items = markers.map((m) => {
@@ -65,7 +74,7 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
   records: RECORD_DEFAULTS,
   events: { memo: '', end_time: null, place_id: null },
   checklist_items: { checked: false },
-  fish_catches: { species: '', photo_path: null, position: 0 },
+  fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
 };
 
 const json = (body: unknown, status = 200): FakeResponse => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -101,6 +110,10 @@ export const createFakeServer = (seed: Seed = {}) => {
     if (table === 'records') {
       const of = (list: Row[]) => list.filter((item) => item.record_id === row.id);
       return { ...row, place, photos: of(db.record_photos!), fish: of(db.fish_catches!) };
+    }
+    if (table === 'fish_catches') {
+      const record = db.records!.find((item) => item.id === row.record_id);
+      return { ...row, record: { ...record, place: db.places!.find((item) => item.id === record?.place_id) } };
     }
     return row;
   };

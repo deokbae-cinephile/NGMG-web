@@ -34,7 +34,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
       </div>
       <ErrorText error={error ?? lastAction.error} />
       {!isPending && !error && items.length === 0 && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>
           <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => addDefaults.mutate()}>
             기본 목록 불러오기

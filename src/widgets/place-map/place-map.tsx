@@ -12,7 +12,19 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
 };
 
-const DEFAULT_VIEW = { latitude: 36.3, longitude: 127.8, level: 13 };
+/** 지도를 처음 열 때의 중심과 기준 핀 */
+const BASE = { name: '무악재역', latitude: 37.5825632, longitude: 126.950231, level: 5 };
+// 메뉴를 오갔다 돌아오면 보던 곳을 이어서 보여 줍니다. 사이트에 새로 들어오면 다시 무악재역에서 시작합니다.
+let lastView = { latitude: BASE.latitude, longitude: BASE.longitude, level: BASE.level };
+
+const createBasePin = () => {
+  const pin = document.createElement('div');
+  pin.className = 'pin pin-base';
+  pin.setAttribute('role', 'img');
+  pin.setAttribute('aria-label', `기준 위치: ${BASE.name}`);
+  pin.innerHTML = `${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE.name}</span>`;
+  return pin;
+};
 
 // 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
 const createPin = (place: Place, selected: boolean, onSelect: (id: string) => void) => {
@@ -45,10 +57,16 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
     loadKakao()
       .then((kakao) => {
         if (cancelled || !container.current) return;
-        const view = getPreference('map-view', DEFAULT_VIEW);
+        const view = lastView;
         const instance = new kakao.maps.Map(container.current, {
           center: new kakao.maps.LatLng(view.latitude, view.longitude),
           level: view.level,
+        });
+        new kakao.maps.CustomOverlay({
+          map: instance,
+          position: new kakao.maps.LatLng(BASE.latitude, BASE.longitude),
+          content: createBasePin(),
+          yAnchor: 1.2,
         });
         kakao.maps.event.addListener(instance, 'click', (event: Kakao) => {
           if (!latest.current.picking) return;
@@ -56,7 +74,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
         });
         kakao.maps.event.addListener(instance, 'idle', () => {
           const center = instance.getCenter();
-          setPreference('map-view', { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() });
+          lastView = { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() };
         });
         observer = new ResizeObserver(() => instance.relayout());
         observer.observe(container.current);
