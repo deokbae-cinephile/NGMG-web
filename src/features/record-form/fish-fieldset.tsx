@@ -73,7 +73,7 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
           {fish.file ? (
             <RemovablePhoto file={fish.file} alt={`${label} 새 사진 미리보기`} removeLabel={`${label} 새 사진 빼기`} onRemove={() => set({ file: null })} />
           ) : (
-            fish.photo_url &&
+            fish.photo_path &&
             !fish.removePhoto && <RemovablePhoto src={fish.photo_url} alt={`${label} 사진`} removeLabel={`${label} 사진 삭제`} onRemove={() => set({ removePhoto: true })} />
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -88,7 +88,7 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
           </div>
         </div>
         <div className="flex justify-end">
-          <button type="button" className="text-action text-action-danger" onClick={onRemove}>
+          <button type="button" className="text-action text-action-accent" onClick={onRemove}>
             {`${label} 빼기`}
           </button>
         </div>

@@ -2,14 +2,15 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuTotal, parseMenu, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
+import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
-type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string; price: string };
+type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string };
 type Props = {
   place: Pick<Place, 'id' | 'kind'>;
   record?: PlaceRecord;
@@ -29,7 +30,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
       memo: record?.memo ?? '',
       rating: record?.rating?.toString() ?? '',
-      price: record?.price?.toString() ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
     },
   });
@@ -49,6 +49,13 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     })),
   );
   const [checkedFish, setCheckedFish] = useState(false);
+  const [menu, setMenu] = useState<MenuRow[]>(() => {
+    const items = parseMenu(record?.menu ?? '');
+    // 예전 기록은 메뉴가 하나면 적어 둔 가격을 그 줄에 넣습니다.
+    if (items.length === 1 && !items[0]!.price && record?.price != null) items[0]!.price = String(record.price);
+    return items.length ? items.map(newMenuRow) : [newMenuRow()];
+  });
+  const [checkedMenu, setCheckedMenu] = useState(false);
   const registeredGear = useGear();
   const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
   // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
@@ -75,6 +82,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     const keptFish = kind === 'fishing' ? fish : [];
     setCheckedFish(true);
     if (keptFish.some((item) => fishError(item))) return;
+    setCheckedMenu(true);
+    if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
     if (tooMany || save.isPending) return;
     save.mutate(
       {
@@ -87,8 +96,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
-        price: kind === 'restaurant' && values.price ? Number(values.price) : null,
+        price: kind === 'restaurant' ? (menuTotal(menu) ?? record?.price ?? null) : null, // 가격을 줄마다 적지 않은 예전 기록의 합계는 지우지 않습니다.
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
+        ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
@@ -158,22 +168,13 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           <ErrorText error={gear.error} />
         </>
       )}
+      {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
           <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
         ))}
-        {kind === 'restaurant' && (
-          <Field
-            label="가격 (원)"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            error={errors.price?.message}
-            {...register('price', { validate: (value) => !value || Number(value) >= 0 || '0 이상으로 입력해 주세요.' })}
-          />
-        )}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="record-rating" className="mono-label">별점</label>
+          <label htmlFor="record-rating" className="mono-label">평점</label>
           <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
             <option value="">선택 안 함</option>
             {[5, 4, 3, 2, 1].map((score) => (
@@ -241,7 +242,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       <ErrorText error={save.error ?? remove.error} />
       <div className="flex flex-wrap justify-end gap-2">
         {record && (
-          <button type="button" className="button button-danger mr-auto" disabled={remove.isPending} onClick={onDelete}>
+          <button type="button" className="button button-accent mr-auto" disabled={remove.isPending} onClick={onDelete}>
             삭제
           </button>
         )}

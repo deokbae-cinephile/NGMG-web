@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { GEAR_CATEGORIES, GEAR_ICON, GEAR_SECTIONS, gearLabel, gearSubcategory, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
+import { GEAR_CATEGORIES, GEAR_SECTIONS, gearIcon, gearLabel, gearSubcategory, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
 import { gearList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
@@ -22,6 +22,7 @@ export const GearPage = () => {
   const [dragging, setDragging] = useState<Dragging>();
   const [drop, setDrop] = useState<Drop>();
   const [message, setMessage] = useState('');
+  const [activeAngler, setActiveAngler] = useState<string>(ANGLERS[0]);
   const stopDrag = useRef<() => void>(undefined);
   const refocus = useRef<{ id: string; button: 'up' | 'down' }>(undefined);
 
@@ -141,8 +142,15 @@ export const GearPage = () => {
       <title>장비 | 낚고먹고</title>
       <h1 className="sr-only">조사별 장비</h1>
       <p role="status" className="sr-only">{message}</p>
+      <div role="group" aria-label="조사 고르기" className="grid grid-cols-2 lg:hidden">
+        {ANGLERS.map((angler) => (
+          <button key={angler} type="button" className="tab-button" aria-pressed={angler === activeAngler} onClick={() => setActiveAngler(angler)}>
+            {angler}
+          </button>
+        ))}
+      </div>
       {ANGLERS.map((angler, index) => (
-        <section key={angler} aria-labelledby={`gear-${index}`} className="pane" data-gear-pane={angler}>
+        <section key={angler} aria-labelledby={`gear-${index}`} className={`pane max-lg:border-t max-lg:border-line ${angler === activeAngler ? '' : 'max-lg:hidden'}`} data-gear-pane={angler}>
           <div className="cell-head">
             <h2 id={`gear-${index}`} className="title text-xl">{`${angler} 장비`}</h2>
             <button type="button" className="button button-primary" aria-label={`${angler} 장비 추가`} onClick={() => setForm({ angler })}>
@@ -162,7 +170,12 @@ export const GearPage = () => {
                     const ItemHeading = area.subcategory ? 'h5' : 'h4';
                     return (
                       <div key={area.subcategory || category} data-gear-section={category} data-gear-sub={area.subcategory} data-angler={angler}>
-                        {area.subcategory && <h4 className="mono-label pt-3">{area.subcategory}</h4>}
+                        {area.subcategory && (
+                          <h4 className="mono-label flex items-center gap-1.5 pt-3">
+                            <Icon name={gearIcon({ category, subcategory: area.subcategory })} size={18} />
+                            {area.subcategory}
+                          </h4>
+                        )}
                         {items.length === 0 && !atEnd && <p className="py-3 text-sm text-muted">등록한 장비가 없습니다.</p>}
                         <ul className={`flex flex-col ${atEnd ? 'gear-drop-end' : ''}`}>
                           {items.map((item) => (
@@ -181,7 +194,7 @@ export const GearPage = () => {
                                 </a>
                               ) : (
                                 <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
-                                  <Icon name={GEAR_ICON[item.category] ?? 'backpack'} size={30} />
+                                  <Icon name={gearIcon(item)} size={30} />
                                 </span>
                               )}
                               <div className="min-w-0 flex-1">
@@ -198,7 +211,7 @@ export const GearPage = () => {
                                   <button type="button" className="text-action" aria-label={`${gearLabel(item)} 수정`} onClick={() => setForm({ angler, gear: item })}>
                                     수정
                                   </button>
-                                  <button type="button" className="text-action text-action-danger" aria-label={`${gearLabel(item)} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
+                                  <button type="button" className="text-action text-action-accent" aria-label={`${gearLabel(item)} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
                                     삭제
                                   </button>
                                 </div>

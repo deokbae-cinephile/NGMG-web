@@ -14,8 +14,11 @@ export const GEAR_SECTIONS: { category: string; subcategory: string }[] = GEAR_C
 export const gearSubcategory = (gear: Pick<Gear, 'category' | 'subcategory'>) =>
   gear.category === '라인' ? gear.subcategory || LINE_SUBCATEGORIES[0] : '';
 
-/** 사진이 없을 때 보여 주는 분류별 아이콘 */
-export const GEAR_ICON: Record<string, IconName> = { 로드: 'rod', 릴: 'reel', 라인: 'line', 채비: 'hook', 미끼: 'bait', 기타: 'backpack' };
+const CATEGORY_ICON: Record<string, IconName> = { 로드: 'rod', 릴: 'reel', 채비: 'hook', 미끼: 'bait', 기타: 'backpack' };
+
+/** 분류별 아이콘. 라인은 원줄(감긴 실패)과 목줄(도래가 달린 줄)을 다른 그림으로 구분합니다. */
+export const gearIcon = (gear: Pick<Gear, 'category' | 'subcategory'>): IconName =>
+  gear.category === '라인' ? (gearSubcategory(gear) === '목줄' ? 'leader' : 'line') : (CATEGORY_ICON[gear.category] ?? 'backpack');
 
 /** 브랜드가 있으면 '[다이와] 25 레가리스'처럼 씁니다. 기록의 장비 칸과 사용 횟수도 이 이름으로 맞춥니다. */
 export const gearLabel = (gear: Pick<Gear, 'brand' | 'name'>) => (gear.brand ? `[${gear.brand}] ${gear.name}` : gear.name);

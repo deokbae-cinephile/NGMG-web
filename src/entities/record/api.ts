@@ -91,7 +91,7 @@ export const useDayRecords = (date: string) =>
     },
   });
 
-/** 장소별 평균 별점 (place_id → 1~5). 별점을 남긴 기록이 없는 장소는 없습니다. */
+/** 장소별 평균 평점 (place_id → 1~5). 평점을 남긴 기록이 없는 장소는 없습니다. */
 export const usePlaceRatings = () =>
   useQuery({
     queryKey: ['records', 'place-ratings'],
@@ -99,7 +99,7 @@ export const usePlaceRatings = () =>
       const rows: { place_id: string; rating: number }[] = [];
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase.from('records').select('place_id, rating').not('rating', 'is', null).order('id').range(from, from + 999);
-        if (error) throw new Error('별점을 불러오지 못했습니다.');
+        if (error) throw new Error('평점을 불러오지 못했습니다.');
         rows.push(...(data as typeof rows));
         if (data.length < 1000) break;
       }
@@ -132,7 +132,7 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating' | 'menu'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
@@ -146,7 +146,7 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, gear, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
+          .select('id, visited_on, bait, gear, catches, rating, menu, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
           .order('visited_on')
           .order('id')
           .range(from, from + 999);

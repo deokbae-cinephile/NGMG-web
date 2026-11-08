@@ -21,7 +21,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = name.trim().replace(/\s+\/\s+/g, '/'); // ' / '는 기록의 장비 구분자입니다.
     setNameError(trimmed ? undefined : '장비 이름을 입력해 주세요.');
     if (!trimmed || locked.current) return;
     locked.current = true;
@@ -31,7 +31,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
         angler,
         category,
         subcategory: category === '라인' ? subcategory : '',
-        brand: brand.trim().replace(/^\[|\]$/g, ''), // 대괄호는 화면에서 붙입니다.
+        brand: brand.trim().replace(/^\[|\]$/g, '').replace(/\s+\/\s+/g, '/'), // 대괄호는 화면에서 붙입니다.
         name: trimmed,
         memo: memo.trim(),
         photo_path: gear?.photo_path ?? null,

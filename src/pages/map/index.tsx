@@ -157,21 +157,18 @@ export const MapPage = () => {
 
           {isPending && <SkeletonRows />}
           <ul className="flex flex-col">
-            {listed.map((place, index) => {
+            {listed.map((place) => {
               const distance = origin ? distanceKm(origin, place) : null;
               const selected = place.id === selectedId;
               return (
                 <li key={place.id} className={`panel ${selected ? 'panel-active' : ''}`}>
                   <button
                     type="button"
-                    className="flex min-h-11 w-full items-start gap-3 text-left"
+                    className="flex min-h-11 w-full cursor-pointer items-start gap-3 text-left"
                     aria-pressed={selected}
                     onClick={() => setSelectedId(place.id)}
                   >
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span aria-hidden="true" className="mono-label">
-                        {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
-                      </span>
                       <span className="flex flex-wrap items-center gap-2">
                         {place.name} <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>

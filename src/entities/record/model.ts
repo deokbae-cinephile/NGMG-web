@@ -45,7 +45,7 @@ export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; 
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
   ],
-  restaurant: [{ name: 'menu', label: '메뉴', placeholder: '예: 모둠회 중, 매운탕' }],
+  restaurant: [], // 메뉴와 가격은 MenuFieldset에서 줄마다 받습니다.
   etc: [],
 };
 
@@ -60,10 +60,39 @@ export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'menu', label: '메뉴' },
 ];
 
-/** 장비 칸을 낱개로 나눕니다. 쉼표나 ' / '뿐 아니라 '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. 'PE1.2/150m'처럼 붙여 쓴 빗금은 이름의 일부입니다. */
-export const gearList = (text: string) => splitList(text.replace(/[;\n]+|\s+\/\s+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
+/** 장비 칸을 낱개로 나눕니다. '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. 쉼표로 저장한 예전 값에서는 ' / '를 이름의 일부로 둡니다. */
+export const gearList = (text: string) => splitList((text.includes(',') ? text : text.replace(/\s+\/\s+/g, ',')).replace(/[;\n]+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
 /** 장비를 '로드 / 릴 / 채비'처럼 빗금으로 이어 씁니다. */
 export const formatGear = (text: string) => gearList(text).join(' / ');
 
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
+
+export type MenuItem = { name: string; price: string };
+
+/** 메뉴 칸을 줄로 나눕니다. '모둠회 30000원 / 매운탕'처럼 저장하고, 쉼표로 적은 예전 값도 읽습니다. */
+export const parseMenu = (text: string): MenuItem[] =>
+  text
+    .split(/\s+\/\s+|[,;\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const match = item.match(/^(.*\S)\s+(\d+)원$/);
+      return match ? { name: match[1]!, price: match[2]! } : { name: item, price: '' };
+    });
+
+export const formatMenu = (items: MenuItem[]) =>
+  items
+    .map(({ name, price }) => ({ name: name.trim().replace(/\s+\/\s+/g, '/').replace(/[,;\n]+/g, ' '), price }))
+    .filter(({ name }) => name)
+    .map(({ name, price }) => (price ? `${name} ${Number(price)}원` : name))
+    .join(' / ');
+
+/** 줄에 적은 가격의 합계. 가격을 하나도 적지 않았으면 null입니다. */
+export const menuTotal = (items: MenuItem[]) => {
+  const prices = items.filter((item) => item.name.trim() && item.price);
+  return prices.length ? prices.reduce((sum, item) => sum + Number(item.price), 0) : null;
+};
+
+/** 메뉴 한 줄을 '모둠회 - 30,000원'처럼 읽습니다. */
+export const menuLine = ({ name, price }: MenuItem) => (price ? `${name} - ${Number(price).toLocaleString('ko-KR')}원` : name);

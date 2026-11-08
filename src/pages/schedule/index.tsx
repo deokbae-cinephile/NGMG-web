@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react';
 import { useDeleteEvent, useMonthEvents } from '@/entities/event';
-import { DayConditions } from '@/entities/forecast';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
@@ -50,10 +49,6 @@ export const SchedulePage = () => {
   const waiting = events.filter((event) => event.place && !recorded.data?.has(event.id));
   const holiday = holidayName(selected);
 
-  // 물때와 날씨는 그날 낚시 일정의 장소를 우선 기준으로 삼습니다.
-  const places = events.flatMap((event) => event.place ?? []);
-  const conditionPlace = places.find((place) => place.kind === 'fishing') ?? places[0];
-
   const goTo = (key: string) => {
     setMonth(parseDateKey(key));
     setParams({ date: key }, { replace: true });
@@ -76,7 +71,7 @@ export const SchedulePage = () => {
             오늘
           </button>
         </PaneHead>
-        <div className="flex justify-center border-b border-line px-5 py-4">
+        <div className="flex justify-center px-5 py-4">
           <MonthCalendar
             month={month}
             selected={selected}
@@ -151,7 +146,7 @@ export const SchedulePage = () => {
                     </button>
                     <button
                       type="button"
-                      className="text-action text-action-danger"
+                      className="text-action text-action-accent"
                       aria-label={`${event.title} 일정 삭제`}
                       disabled={remove.isPending}
                       onClick={() => onDelete(event)}
@@ -163,12 +158,6 @@ export const SchedulePage = () => {
               ))}
             </ol>
           </section>
-
-          {conditionPlace ? (
-            <DayConditions date={date} place={conditionPlace} />
-          ) : (
-            <p className="text-sm text-muted">장소가 있는 일정을 만들면 그 장소의 물때와 날씨가 여기에 보입니다.</p>
-          )}
 
           {waiting.length > 0 && (
             <section aria-labelledby="waiting-title" className="flex flex-col gap-2">
@@ -190,7 +179,7 @@ export const SchedulePage = () => {
           )}
 
           <section aria-labelledby="records-of-day" className="flex flex-col gap-2">
-            <h3 id="records-of-day" className="title text-lg">이날의 기록</h3>
+            <h3 id="records-of-day" className="title text-lg">기록</h3>
             <ErrorText error={dayRecords.error ?? recorded.error} />
             {dayRecords.isPending && <SkeletonRows count={1} />}
             {dayRecords.data?.length === 0 && <p className="text-muted">이날 남긴 기록이 없습니다.</p>}

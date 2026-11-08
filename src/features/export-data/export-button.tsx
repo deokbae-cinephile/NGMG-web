@@ -51,7 +51,7 @@ const downloadBackup = async () => {
 const COLUMNS: [string, string][] = [
   ['visited_on', '날짜'], ['place_name', '장소'], ['catches', '조과'], ['people', '인원'], ['companions', '동행'],
   ['gear', '장비'], ['rig', '채비'], ['bait', '미끼'], ['weather', '날씨'], ['tide', '물때'], ['wind', '바람'],
-  ['water_temp', '수온'], ['menu', '메뉴'], ['price', '가격'], ['rating', '별점'], ['memo', '메모'],
+  ['water_temp', '수온'], ['menu', '메뉴'], ['price', '가격'], ['rating', '평점'], ['memo', '메모'],
 ];
 const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
