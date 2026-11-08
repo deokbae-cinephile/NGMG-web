@@ -179,7 +179,7 @@ select {
     opacity: 0.3;
   }
 
-  /* 올릴 사진 오른쪽 위의 빼기 버튼. 어떤 사진 위에서도 보이도록 반투명 검정 바탕을 깝니다. */
+  /* 사진 오른쪽 위의 X 버튼. 어떤 사진 위에서도 보이도록 반투명 검정 바탕을 깝니다. */
   .photo-remove {
     position: absolute;
     top: 0.25rem;
@@ -554,16 +554,17 @@ select {
     filter: grayscale(0.85) contrast(1.05);
   }
 
-  /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 채움 색과 안쪽 아이콘으로 구분합니다. */
+  /* 지도 핀: 지도 메뉴 아이콘처럼 물방울 안에 원이 있는 모양. 뾰족한 끝이 장소 위치이고, 분류는 물방울 색과 아이콘, 평균 별점은 안쪽 원의 색으로 나타냅니다. */
   .pin {
     --pin-fill: var(--color-ink);
+    --pin-inner: var(--color-paper);
     position: relative;
     display: flex;
     width: 2.625rem;
     height: 3.25rem;
     justify-content: center;
-    padding-top: 0.5625rem;
-    color: var(--color-paper);
+    padding-top: 0.83rem; /* 16px 아이콘의 중심을 안쪽 원의 중심(위에서 약 21px)에 맞춥니다. */
+    color: var(--color-ink);
     cursor: pointer;
     transform-origin: bottom center;
   }
@@ -579,17 +580,18 @@ select {
     stroke: var(--color-ink);
     stroke-width: 1.1;
   }
+  .pin-shape circle {
+    fill: var(--pin-inner);
+  }
   .pin-restaurant {
     --pin-fill: var(--color-paper);
-    color: var(--color-ink);
   }
   .pin-etc {
-    --pin-fill: var(--color-soft); /* 5점 색과 겹치지 않게 연회색을 씁니다. */
-    color: var(--color-ink);
+    --pin-fill: var(--color-soft); /* 흰 물방울과 구분되는 연회색을 씁니다. */
   }
-  /* 평균 별점 색(월드 오브 워크래프트 아이템 등급 색). 핀과 별점 표시에 함께 씁니다. 별점이 없으면 분류별 기본 색입니다. */
+  /* 평균 별점 색(월드 오브 워크래프트 아이템 등급 색). 핀 안쪽 원과 별점 표시에 함께 씁니다. 별점이 없으면 안쪽 원은 흰색입니다. */
   .pin.rate-1 {
-    --pin-fill: #9d9d9d;
+    --pin-inner: #9d9d9d;
     background: none;
     color: #0a0a0a;
   }
@@ -598,7 +600,7 @@ select {
     color: #0a0a0a;
   }
   .pin.rate-2 {
-    --pin-fill: #1eff00;
+    --pin-inner: #1eff00;
     background: none;
     color: #0a0a0a;
   }
@@ -607,7 +609,7 @@ select {
     color: #0a0a0a;
   }
   .pin.rate-3 {
-    --pin-fill: #0070dd;
+    --pin-inner: #0070dd;
     background: none;
     color: #fafafa;
   }
@@ -616,7 +618,7 @@ select {
     color: #fafafa;
   }
   .pin.rate-4 {
-    --pin-fill: #a335ee;
+    --pin-inner: #a335ee;
     background: none;
     color: #fafafa;
   }
@@ -625,7 +627,7 @@ select {
     color: #fafafa;
   }
   .pin.rate-5 {
-    --pin-fill: #ff8000;
+    --pin-inner: #ff8000;
     background: none;
     color: #0a0a0a;
   }

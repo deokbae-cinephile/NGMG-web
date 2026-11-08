@@ -41,7 +41,7 @@ export const WEATHER_STATES = ['맑음', '구름', '흐림', '비', '폭우', '�
 /** 기록 폼에서 입력받는 항목 */
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
   fishing: [
-    { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대, 2500번 릴' },
+    { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대 / 2500번 릴' },
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
   ],
@@ -60,10 +60,10 @@ export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'menu', label: '메뉴' },
 ];
 
-/** 장비 칸을 낱개로 나눕니다. 쉼표 없이 '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. */
-export const gearList = (text: string) => splitList(text.replace(/[;\n]+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
-/** 장비를 '로드, 릴, 채비'처럼 쉼표로 이어 씁니다. */
-export const formatGear = (text: string) => gearList(text).join(', ');
+/** 장비 칸을 낱개로 나눕니다. 쉼표나 ' / '뿐 아니라 '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. 'PE1.2/150m'처럼 붙여 쓴 빗금은 이름의 일부입니다. */
+export const gearList = (text: string) => splitList(text.replace(/[;\n]+|\s+\/\s+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
+/** 장비를 '로드 / 릴 / 채비'처럼 빗금으로 이어 씁니다. */
+export const formatGear = (text: string) => gearList(text).join(' / ');
 
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);

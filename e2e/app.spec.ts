@@ -457,7 +457,7 @@ test('기본값: 새 기록의 장비 칸에 등록한 로드·릴이 들어간�
   await fakeBackend(page, gearSeed());
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
-  await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나, 로드둘, [다이와] 릴하나');
+  await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나 / 로드둘 / [다이와] 릴하나');
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {
@@ -536,7 +536,7 @@ test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼�
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
 });
 
-test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표로 이어 보인다', async ({ page }) => {
+test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 빗금으로 이어 보인다', async ({ page }) => {
   await fakeBackend(page, {
     ...seed(),
     events: [
@@ -548,7 +548,7 @@ test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('button', { name: '남은 출조 기록 남기기' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다녀온 출조 기록 남기기' })).toHaveCount(0);
-  await expect(page.getByText('[A] 로드, [B] 릴, [C] 채비').first()).toBeVisible();
+  await expect(page.getByText('[A] 로드 / [B] 릴 / [C] 채비').first()).toBeVisible();
 });
 
 test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴다', async ({ page }) => {

@@ -5,7 +5,7 @@ import { defaultGearLabels, useGear } from '@/entities/gear';
 import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
-import { ErrorText, Field, FilePreview, Icon, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
@@ -50,7 +50,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
   );
   const [checkedFish, setCheckedFish] = useState(false);
   const registeredGear = useGear();
-  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(', ');
+  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
   // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
   useEffect(() => {
     if (!record && kind === 'fishing' && defaultGear && !getValues('gear')) setValue('gear', defaultGear);
@@ -184,25 +184,19 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       </div>
       <TextareaField label="메모" {...register('memo')} />
 
-      {record && record.photos.length > 0 && (
+      {kept.length > 0 && (
         <fieldset>
-          <legend className="mono-label pb-1.5">올린 사진 (체크하면 삭제)</legend>
+          <legend className="mono-label pb-1.5">올린 사진 (X를 누르고 저장하면 삭제)</legend>
           <ul className="grid grid-cols-3 gap-2">
-            {record.photos.map((photo, index) => (
+            {kept.map((photo, index) => (
               <li key={photo.id}>
-                <label className="flex flex-col gap-1">
-                  <img src={photo.url} alt="" className="aspect-square w-full border border-line object-cover" />
-                  <span className="flex min-h-11 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="size-5 accent-ink"
-                      onChange={(event) =>
-                        setRemoved((list) => (event.target.checked ? [...list, photo] : list.filter((item) => item !== photo)))
-                      }
-                    />
-                    {`사진 ${index + 1} 삭제`}
-                  </span>
-                </label>
+                <RemovablePhoto
+                  src={photo.url}
+                  alt={`올린 사진 ${index + 1}`}
+                  removeLabel={`올린 사진 ${index + 1} 삭제`}
+                  className="aspect-square w-full"
+                  onRemove={() => setRemoved((list) => [...list, photo])}
+                />
               </li>
             ))}
           </ul>
@@ -227,11 +221,15 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         <section aria-label="올릴 사진 미리보기">
           <ul className="grid grid-cols-3 gap-2">
             {files.map((file, index) => (
-              <li key={`${file.name}-${file.lastModified}-${index}`} className="relative">
-                <FilePreview file={file} alt={`올릴 사진 ${index + 1} 미리보기`} className="aspect-square w-full" />
-                <button type="button" className="photo-remove" aria-label={`사진 ${index + 1} 빼기`} onClick={() => setFiles((list) => list.filter((_, at) => at !== index))}>
-                  <Icon name="close" size={16} />
-                </button>
+              <li key={`${file.name}-${file.lastModified}-${index}`}>
+                <RemovablePhoto
+                  file={file}
+                  alt={`올릴 사진 ${index + 1} 미리보기`}
+                  removeLabel={`사진 ${index + 1} 빼기`}
+                  className="aspect-square w-full"
+                  inputBefore
+                  onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
+                />
               </li>
             ))}
           </ul>

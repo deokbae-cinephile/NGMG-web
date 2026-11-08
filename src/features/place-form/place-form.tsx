@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { PlaceSearch, SUGGESTED_TAGS, useSavePlace } from '@/entities/place';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
-import { ErrorText, Field, FilePreview, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { KindFieldset } from './kind-fieldset';
 import { TagField } from './tag-field';
 
@@ -83,23 +83,17 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
         <Field label="경도" inputMode="decimal" error={errors.longitude?.message} {...register('longitude', { validate: coordinate(180) })} />
       </div>
       <TextareaField label="메모" {...register('memo')} />
-      {initial?.photo_url && !photo && (
-        <div className="flex items-center gap-3">
-          <img src={initial.photo_url} alt="지금 장소 사진" className={`size-20 border border-line object-cover ${removePhoto ? 'opacity-30' : ''}`} />
-          <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" className="size-5 accent-ink" checked={removePhoto} onChange={(event) => setRemovePhoto(event.target.checked)} />
-            장소 사진 삭제
-          </label>
-        </div>
+      {initial?.photo_url && !photo && !removePhoto && (
+        <RemovablePhoto src={initial.photo_url} alt="지금 장소 사진" removeLabel="장소 사진 삭제" onRemove={() => setRemovePhoto(true)} />
       )}
       <Field
-        label={initial?.photo_url ? '장소 사진 바꾸기' : '장소 사진'}
+        label={initial?.photo_url && !removePhoto ? '장소 사진 바꾸기' : '장소 사진'}
         type="file"
         accept="image/*"
         hint="대표 사진 한 장을 올립니다. 올리기 전에 자동으로 줄입니다."
         onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
       />
-      {photo && <FilePreview file={photo} alt="올릴 장소 사진 미리보기" className="size-24" />}
+      {photo && <RemovablePhoto file={photo} alt="올릴 장소 사진 미리보기" removeLabel="올릴 장소 사진 빼기" inputBefore onRemove={() => setPhoto(null)} />}
       <ErrorText error={save.error} />
       <div className="flex flex-wrap justify-end gap-2">
         <button type="submit" className="button button-primary" disabled={save.isPending}>
