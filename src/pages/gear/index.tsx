@@ -170,12 +170,7 @@ export const GearPage = () => {
                     const ItemHeading = area.subcategory ? 'h5' : 'h4';
                     return (
                       <div key={area.subcategory || category} data-gear-section={category} data-gear-sub={area.subcategory} data-angler={angler}>
-                        {area.subcategory && (
-                          <h4 className="mono-label flex items-center gap-1.5 pt-3">
-                            <Icon name={gearIcon({ category, subcategory: area.subcategory })} size={18} />
-                            {area.subcategory}
-                          </h4>
-                        )}
+                        {area.subcategory && <h4 className="mono-label pt-3">{area.subcategory}</h4>}
                         {items.length === 0 && !atEnd && <p className="py-3 text-sm text-muted">등록한 장비가 없습니다.</p>}
                         <ul className={`flex flex-col ${atEnd ? 'gear-drop-end' : ''}`}>
                           {items.map((item) => (

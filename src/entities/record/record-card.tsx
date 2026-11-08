@@ -29,8 +29,17 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
       </div>
       {record.rating !== null && (
         <p>
-          <span className="sr-only">{`평점 5점 중 ${record.rating}점`}</span>
-          <span aria-hidden="true">{'★'.repeat(record.rating) + '☆'.repeat(5 - record.rating)}</span>
+          {record.place.kind === 'restaurant' ? (
+            <>
+              <span className="mono-label mr-2">{menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</span>
+              {`${record.rating.toFixed(1)}점`}
+            </>
+          ) : (
+            <>
+              <span className="sr-only">{`평점 5점 중 ${record.rating}점`}</span>
+              <span aria-hidden="true">{'★'.repeat(record.rating) + '☆'.repeat(5 - record.rating)}</span>
+            </>
+          )}
         </p>
       )}
       {record.catches && record.fish.length === 0 && (

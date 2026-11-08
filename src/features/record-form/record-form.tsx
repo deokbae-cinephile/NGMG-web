@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuTotal, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuAverage, menuTotal, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
@@ -53,6 +53,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
   const [checkedMenu, setCheckedMenu] = useState(false);
   const [savedMenu] = useState(() => formatMenu(menu)); // 메뉴를 고치지 않으면 저장된 합계를 그대로 둡니다.
   // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
+  // 메뉴 평점이 생기기 전에 기록에 남긴 평점입니다. 메뉴에 평점을 주면 평균으로 바뀝니다.
+  const [legacyRating] = useState(() => (record?.menu_items.some((item) => item.rating !== null) ? null : (record?.rating ?? null)));
   const [legacyTotal] = useState(() => {
     const items = record?.menu_items ?? [];
     return items.length !== 1 && !items.some((item) => item.price !== null) ? (record?.price ?? null) : null;
@@ -96,7 +98,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         end_date: values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
-        rating: values.rating ? Number(values.rating) : null,
+        rating: kind === 'restaurant' ? (menuAverage(keptMenu) ?? legacyRating) : values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' ? (record && formatMenu(menu) === savedMenu ? record.price : (menuTotal(menu) ?? legacyTotal)) : null,
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
@@ -181,20 +183,22 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         </>
       )}
       {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map((field) => (
-          <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
-        ))}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="record-rating" className="mono-label">평점</label>
-          <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
-            <option value="">선택 안 함</option>
-            {[5, 4, 3, 2, 1].map((score) => (
-              <option key={score} value={score}>{`${score}점`}</option>
-            ))}
-          </select>
+      {kind !== 'restaurant' && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {fields.map((field) => (
+            <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
+          ))}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="record-rating" className="mono-label">평점</label>
+            <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
+              <option value="">선택 안 함</option>
+              {[5, 4, 3, 2, 1].map((score) => (
+                <option key={score} value={score}>{`${score}점`}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
       <TextareaField label="메모" {...register('memo')} />
 
       {kept.length > 0 && (
@@ -216,37 +220,42 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         </fieldset>
       )}
 
-      <Field
-        label="사진 추가"
-        type="file"
-        accept="image/*"
-        multiple
-        hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${Math.max(0, left - files.length)}장 더 고를 수 있습니다.`}
-        error={tooMany ? `사진을 ${files.length - left}장 줄여 주세요.` : undefined}
-        onChange={(event) => {
-          // 여러 번 나눠 골라도 쌓이게 하고, 입력 칸은 비워 같은 파일도 다시 고를 수 있게 합니다.
-          const picked = [...(event.target.files ?? [])];
-          setFiles((list) => [...list, ...picked]);
-          event.target.value = '';
-        }}
-      />
-      {files.length > 0 && (
-        <section aria-label="올릴 사진 미리보기">
-          <ul className="grid grid-cols-3 gap-2">
-            {files.map((file, index) => (
-              <li key={`${file.name}-${file.lastModified}-${index}`}>
-                <RemovablePhoto
-                  file={file}
-                  alt={`올릴 사진 ${index + 1} 미리보기`}
-                  removeLabel={`사진 ${index + 1} 빼기`}
-                  className="aspect-square w-full"
-                  inputBefore
-                  onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* 맛집은 메뉴마다 사진을 올립니다. */}
+      {kind !== 'restaurant' && (
+        <>
+          <Field
+            label="사진 추가"
+            type="file"
+            accept="image/*"
+            multiple
+            hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${Math.max(0, left - files.length)}장 더 고를 수 있습니다.`}
+            error={tooMany ? `사진을 ${files.length - left}장 줄여 주세요.` : undefined}
+            onChange={(event) => {
+              // 여러 번 나눠 골라도 쌓이게 하고, 입력 칸은 비워 같은 파일도 다시 고를 수 있게 합니다.
+              const picked = [...(event.target.files ?? [])];
+              setFiles((list) => [...list, ...picked]);
+              event.target.value = '';
+            }}
+          />
+          {files.length > 0 && (
+            <section aria-label="올릴 사진 미리보기">
+              <ul className="grid grid-cols-3 gap-2">
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${file.lastModified}-${index}`}>
+                    <RemovablePhoto
+                      file={file}
+                      alt={`올릴 사진 ${index + 1} 미리보기`}
+                      removeLabel={`사진 ${index + 1} 빼기`}
+                      className="aspect-square w-full"
+                      inputBefore
+                      onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
 
       {kind === 'fishing' && <FishFieldset value={fish} showErrors={checkedFish} onChange={setFish} />}
