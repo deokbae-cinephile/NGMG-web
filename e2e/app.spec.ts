@@ -203,10 +203,9 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
 
   await dialog.getByLabel('할 일').fill('점심');
   await dialog.getByLabel('시작 시간').fill('12:00');
-  await dialog.getByLabel('종료 시간').fill('11:00');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-08');
   await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog.getByText('시작 시간 뒤로 입력해 주세요.')).toBeVisible();
-  await dialog.getByLabel('종료 시간').fill('13:00');
+  await expect(dialog.getByText('시작 날짜 이후로 입력해 주세요.')).toBeVisible();
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
@@ -214,7 +213,7 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await page.getByRole('button', { name: '일정 추가' }).click();
   await dialog.getByLabel('할 일').fill('점심');
   await dialog.getByLabel('시작 시간').fill('12:00');
-  await dialog.getByLabel('종료 시간').fill('13:00');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-10');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('백도');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
   await dialog.getByRole('button', { name: /백도 횟집/ }).click();
@@ -225,7 +224,11 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await expect(page.getByRole('link', { name: '백도 횟집' })).toBeVisible();
   expect(db.places).toHaveLength(4);
   expect(db.places!.at(-1)).toMatchObject({ kind: 'restaurant' });
-  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', start_time: '12:00', end_time: '13:00', place_id: 'gen-1' });
+  // 연박 일정은 다음 날에도 보이고 달력에 이어서 표시됩니다.
+  await page.getByRole('button', { name: /^10 일 \(화\), 2026년 11월, 일정 1건, 연박 일정/ }).click();
+  await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();
+  await page.getByRole('button', { name: /^9 일 \(월\), 2026년 11월/ }).click();
+  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', end_date: '2026-11-10', start_time: '12:00', end_time: null });
 
   await page.getByRole('button', { name: '점심 일정 삭제' }).click();
   await expect(page.getByRole('heading', { name: '점심' })).toBeHidden();
@@ -263,7 +266,7 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page.locator('#main')).toBeFocused();
 });
 
-test('앱 설치 버튼은 메뉴(GNB) 밖, 머리글 맨 오른쪽에 따로 놓인다', async ({ page }, testInfo) => {
+test('앱 설치 버튼은 메뉴(GNB) 밖에 따로 놓인다', async ({ page }, testInfo) => {
   await fakeBackend(page, seed());
   await page.goto('/schedule');
   await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toBeVisible();
@@ -280,12 +283,103 @@ test('앱 설치 버튼은 메뉴(GNB) 밖, 머리글 맨 오른쪽에 따로 �
   await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '앱 설치' })).toHaveCount(0);
 
   const install = (await button.boundingBox())!;
-  const header = (await page.locator('header.topbar').boundingBox())!;
-  expect(Math.round(install.x + install.width)).toBe(Math.round(header.x + header.width));
-
   if (testInfo.project.name === 'desktop') {
+    const header = (await page.locator('header.topbar').boundingBox())!;
+    expect(Math.round(install.x + install.width)).toBe(Math.round(header.x + header.width));
     const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;
     expect(install.x - (nav.x + nav.width)).toBeGreaterThanOrEqual(16); // 메뉴와 간격을 두고 따로 묶인다
   }
   await expectFits(page);
+});
+
+test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 팝업과 지도 전환 이름이 동작한다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByRole('button', { name: '장소 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  await dialog.getByLabel('이름').fill('새 포인트');
+  await dialog.getByLabel('위도').fill('34.5');
+  await dialog.getByLabel('경도').fill('127.5');
+  await dialog.getByRole('button', { name: '저장' }).dblclick();
+  await expect(dialog).toBeHidden();
+  expect(db.places).toHaveLength(4);
+
+  await page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' }).dispatchEvent('click'); // 시험 데이터의 핀이 한 지점에 겹쳐 있습니다.
+  const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
+  await expect(popup.getByText('전남 여수시 삼산면')).toBeVisible();
+  await expect(popup.getByRole('link', { name: '상세 보기' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(popup).toBeHidden();
+
+  await page.getByRole('button', { name: '위성 지도' }).click();
+  await expect(page.getByRole('button', { name: '일반 지도' })).toBeVisible();
+});
+
+test('달력: 연도와 월을 골라 이동한다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  await page.getByRole('button', { name: /연도와 월 고르기/ }).click();
+  const picker = page.getByRole('group', { name: '연도와 월 고르기' });
+  await expect(picker.getByRole('button', { name: '11월' })).toBeFocused();
+  await expectAccessible(page);
+  await picker.getByRole('button', { name: '다음 해' }).click();
+  await picker.getByRole('button', { name: '3월' }).click();
+  await expect(page.getByRole('heading', { name: /2027년 3월/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^1 일 \(월\), 2027년 3월/ })).toBeVisible();
+});
+
+test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연박 날짜를 저장한다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선', weather: '맑음' };
+  const db = await fakeBackend(page, base);
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 수정' }).first().click();
+  const dialog = page.getByRole('dialog', { name: '기록 수정' });
+  for (const label of ['인원', '동행', '날씨', '물때', '바람', '수온']) await expect(dialog.getByLabel(label, { exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '물때·날씨 불러오기' })).toHaveCount(0);
+  await dialog.getByLabel('종료 날짜').fill('2026-10-31');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.records![0]).toMatchObject({ end_date: '2026-10-31', people: 2, companions: '국환, 창선', weather: '맑음' });
+});
+
+test('장비: 조사별로 추가, 수정, 삭제하고 사진을 미리 본다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./gear');
+  await page.getByRole('button', { name: '류 조사 장비 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 장비' });
+  await expect(dialog.getByRole('radio', { name: '류 조사' })).toBeChecked();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog.getByText('장비 이름을 입력해 주세요.')).toBeVisible();
+  await dialog.getByLabel('장비 이름').fill('뜰채');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  await dialog.getByLabel('사진', { exact: true }).setInputFiles({ name: '뜰채.png', mimeType: 'image/png', buffer: png });
+  await expect(dialog.getByRole('img', { name: '올릴 장비 사진 미리보기' })).toBeVisible();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name: '뜰채' })).toBeVisible();
+  expect(db.angler_gear![0]).toMatchObject({ angler: '류 조사', name: '뜰채' });
+  await expectFits(page);
+
+  await page.getByRole('button', { name: '뜰채 수정' }).click();
+  await page.getByRole('dialog', { name: '장비 수정' }).getByLabel('장비 이름').fill('큰 뜰채');
+  await page.getByRole('dialog', { name: '장비 수정' }).getByRole('button', { name: '저장' }).click();
+  await expect(page.getByRole('heading', { name: '큰 뜰채' })).toBeVisible();
+  await page.getByRole('button', { name: '큰 뜰채 삭제' }).click();
+  await expect(page.getByRole('heading', { name: '큰 뜰채' })).toBeHidden();
+  expect(db.angler_gear).toHaveLength(0);
+});
+
+test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile');
+  await fakeBackend(page, seed());
+  await page.goto('./records');
+  await expect(page.getByText('감성돔 1마리')).toBeVisible();
+  await expect(page.locator('.topbar-logo')).toBeHidden();
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+  await page.getByRole('link', { name: '통계' }).click();
+  await expect(page.getByRole('heading', { name: '조사별 조과' })).toBeAttached();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });

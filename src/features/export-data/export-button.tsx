@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/shared/api';
+import { supabase, type PlaceRecord } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText } from '@/shared/ui';
 
-const TABLES = ['places', 'records', 'record_photos', 'fish_catches', 'events', 'checklist_items'] as const;
+const TABLES = ['places', 'records', 'record_photos', 'fish_catches', 'angler_gear', 'events', 'checklist_items'] as const;
 const PAGE = 1000; // Supabase가 한 번에 돌려주는 기본 최대 행 수
 
 const fetchAll = async (table: (typeof TABLES)[number]) => {
@@ -24,6 +24,24 @@ const download = (content: string, type: string, name: string) => {
   link.click();
   URL.revokeObjectURL(url);
 };
+
+/** 기록 하나(물고기 포함)를 JSON 파일로 내려받습니다. 잠깐만 유효한 사진 주소는 뺍니다. */
+export const DownloadRecordButton = ({ record }: { record: PlaceRecord }) => (
+  <button
+    type="button"
+    className="text-action"
+    aria-label={`${record.place.name} ${record.visited_on} 기록 내려받기`}
+    onClick={() =>
+      download(
+        JSON.stringify(record, (key, value: unknown) => (key === 'url' || key === 'photo_url' ? undefined : value), 2),
+        'application/json',
+        `ngmg-record-${record.visited_on}-${record.id.slice(0, 8)}.json`,
+      )
+    }
+  >
+    내려받기
+  </button>
+);
 
 const downloadBackup = async () => {
   const tables = Object.fromEntries(await Promise.all(TABLES.map(async (table) => [table, await fetchAll(table)])));

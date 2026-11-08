@@ -79,7 +79,7 @@ export const useDayRecords = (date: string) =>
   useQuery({
     queryKey: ['records', 'day', date],
     queryFn: async () => {
-      const { data, error } = await supabase.from('records').select(SELECT).eq('visited_on', date).order('id');
+      const { data, error } = await supabase.from('records').select(SELECT).lte('visited_on', date).gte('end_date', date).order('id');
       if (error) throw new Error('기록을 불러오지 못했습니다.');
       return withPhotoUrls(data as unknown as Row[]);
     },
@@ -161,6 +161,7 @@ export type RecordInput = RecordDetails & {
   place_id: string;
   event_id: string | null;
   visited_on: string;
+  end_date: string;
   catches: string;
   memo: string;
   rating: number | null;

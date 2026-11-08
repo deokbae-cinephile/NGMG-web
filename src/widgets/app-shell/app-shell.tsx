@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { InstallButton } from '@/features/install-app';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
@@ -8,6 +8,7 @@ const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/schedule', label: '일정', icon: 'calendar' },
   { to: '/records', label: '기록', icon: 'notebook' },
   { to: '/stats', label: '통계', icon: 'stats' },
+  { to: '/gear', label: '장비', icon: 'backpack' },
 ];
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
@@ -15,14 +16,18 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const first = useRef(true);
 
-  // 화면이 바뀌면 스크린리더와 키보드 사용자를 본문으로 옮깁니다.
+  // 화면이 바뀌면 맨 위부터 보여 줍니다. 그리기 전에 옮기고, 새 화면이 그려진 다음에도 한 번 더 옮깁니다.
+  useLayoutEffect(() => {
+    if (first.current) return;
+    window.scrollTo(0, 0);
+    const frame = requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  // 스크린리더와 키보드 사용자를 본문으로 옮깁니다.
   useEffect(() => {
     if (first.current) first.current = false;
-    else {
-      // 화면이 바뀌면 맨 위부터 보여 줍니다. 초점을 옮기면서 브라우저가 스크롤을 움직이지 않게 합니다.
-      window.scrollTo(0, 0);
-      main.current?.focus({ preventScroll: true });
-    }
+    else main.current?.focus({ preventScroll: true });
   }, [pathname]);
 
   return (

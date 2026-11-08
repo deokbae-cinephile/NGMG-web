@@ -11,6 +11,8 @@ type Props = {
   label: (day: Date) => string;
   /** 일정 있음, 공휴일 같은 표시용 클래스 */
   classOf: (day: Date) => string;
+  /** 칸(td)에 붙일 클래스. 연박 일정 표시용 */
+  cellClassOf: (day: Date) => string;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -38,8 +40,12 @@ const weeksOf = (month: Date) => {
  * 한 달 달력. WAI-ARIA 날짜 표(grid) 패턴을 따릅니다.
  * 날짜 하나에만 탭으로 들어가고, 화살표(하루·한 주), Home/End(주의 처음·끝), PageUp/PageDown(한 달, Shift는 한 해)으로 옮깁니다.
  */
-export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label, classOf }: Props) => {
+export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label, classOf, cellClassOf }: Props) => {
   const captionId = useId();
+  const panelId = useId();
+  const captionButton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const [pickYear, setPickYear] = useState<number>(); // 값이 있으면 연도·월 고르기를 보여 줍니다.
   const grid = useRef<HTMLTableElement>(null);
   const [focused, setFocused] = useState<Date>();
   const moved = useRef(false);
@@ -53,6 +59,31 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
     moved.current = false;
     grid.current?.querySelector<HTMLButtonElement>(`[data-day="${toDateKey(active)}"]`)?.focus();
   });
+
+  // 고르기를 열면 지금 달에 초점을 둡니다.
+  const picking = pickYear !== undefined;
+  useEffect(() => {
+    if (!picking) return;
+    const current = panel.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');
+    (current ?? panel.current?.querySelector<HTMLButtonElement>('button'))?.focus();
+  }, [picking]);
+
+  const closePicker = () => {
+    setPickYear(undefined);
+    captionButton.current?.focus();
+  };
+
+  // Esc로 고르기를 닫습니다.
+  useEffect(() => {
+    if (!picking) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setPickYear(undefined);
+      captionButton.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [picking]);
 
   const move = (day: Date) => {
     moved.current = true;
@@ -79,16 +110,67 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
   return (
     <div className="cal">
       <div className="cal-head">
-        <h3 id={captionId} aria-live="polite" className="title text-lg">{`${month.getFullYear()}년 ${month.getMonth() + 1}월`}</h3>
-        <div className="flex">
-          <button type="button" className="icon-button" aria-label="이전 달" onClick={() => onMonthChange(addMonths(startOfMonth(month), -1))}>
-            <Icon name="chevronLeft" size={22} />
+        <h3 id={captionId} aria-live="polite" className="title text-lg">
+          <button
+            ref={captionButton}
+            type="button"
+            className="cal-caption"
+            aria-expanded={picking}
+            aria-controls={panelId}
+            aria-label={`${month.getFullYear()}년 ${month.getMonth() + 1}월, 연도와 월 고르기`}
+            onClick={() => (picking ? closePicker() : setPickYear(month.getFullYear()))}
+          >
+            {`${month.getFullYear()}년 ${month.getMonth() + 1}월`}
+            <Icon name="chevronDown" size={18} />
           </button>
-          <button type="button" className="icon-button" aria-label="다음 달" onClick={() => onMonthChange(addMonths(startOfMonth(month), 1))}>
-            <Icon name="chevronRight" size={22} />
-          </button>
-        </div>
+        </h3>
+        {!picking && (
+          <div className="flex">
+            <button type="button" className="icon-button" aria-label="이전 달" onClick={() => onMonthChange(addMonths(startOfMonth(month), -1))}>
+              <Icon name="chevronLeft" size={22} />
+            </button>
+            <button type="button" className="icon-button" aria-label="다음 달" onClick={() => onMonthChange(addMonths(startOfMonth(month), 1))}>
+              <Icon name="chevronRight" size={22} />
+            </button>
+          </div>
+        )}
       </div>
+      {picking && (
+        <div
+          ref={panel}
+          id={panelId}
+          role="group"
+          aria-label="연도와 월 고르기"
+          className="flex flex-col gap-2"
+        >
+          <div className="flex items-center justify-between">
+            <button type="button" className="icon-button" aria-label="이전 해" onClick={() => setPickYear(pickYear - 1)}>
+              <Icon name="chevronLeft" size={22} />
+            </button>
+            <p aria-live="polite">{`${pickYear}년`}</p>
+            <button type="button" className="icon-button" aria-label="다음 해" onClick={() => setPickYear(pickYear + 1)}>
+              <Icon name="chevronRight" size={22} />
+            </button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {Array.from({ length: 12 }, (_, index) => (
+              <button
+                key={index}
+                type="button"
+                className="button px-0"
+                aria-pressed={pickYear === month.getFullYear() && index === month.getMonth()}
+                onClick={() => {
+                  onMonthChange(new Date(pickYear, index, 1));
+                  closePicker();
+                }}
+              >
+                {`${index + 1}월`}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {!picking && (
       <table ref={grid} role="grid" aria-labelledby={captionId} className="cal-grid">
         <thead aria-hidden="true">
           <tr>
@@ -102,7 +184,7 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
             <tr key={toDateKey(week.find(Boolean)!)}>
               {week.map((day, index) =>
                 day ? (
-                  <td key={index} aria-selected={sameDay(day, selected)}>
+                  <td key={index} aria-selected={sameDay(day, selected)} className={cellClassOf(day)}>
                     <button
                       type="button"
                       data-day={toDateKey(day)}
@@ -127,6 +209,7 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 };

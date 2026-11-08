@@ -7,7 +7,7 @@ import { DayChecklist } from '@/features/day-checklist';
 import { EventForm } from '@/features/event-form';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
-import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
+import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
 import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
 import { MonthCalendar } from './month-calendar';
 
@@ -36,8 +36,17 @@ export const SchedulePage = () => {
   const allPlaces = usePlaces();
 
   const counts = new Map<string, number>();
-  monthEvents.data?.forEach((event) => counts.set(event.date, (counts.get(event.date) ?? 0) + 1));
-  const events = dayEvents.data?.filter((event) => event.date === date) ?? [];
+  // 연박 일정이 걸친 날. 앞뒤 날과 이어지는지 함께 둡니다.
+  const stays = new Map<string, { left: boolean; right: boolean }>();
+  monthEvents.data?.forEach((event) =>
+    eachDay(event.date, event.end_date).forEach((key) => {
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      if (event.end_date === event.date) return;
+      const stay = stays.get(key) ?? { left: false, right: false };
+      stays.set(key, { left: stay.left || key > event.date, right: stay.right || key < event.end_date });
+    }),
+  );
+  const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
   const recorded = useRecordedEventIds(events.map((event) => event.id));
   const waiting = events.filter((event) => event.place && !recorded.data?.has(event.id));
   const holiday = holidayName(selected);
@@ -78,17 +87,21 @@ export const SchedulePage = () => {
             label={(day) => {
               const count = counts.get(toDateKey(day));
               const name = holidayName(day);
-              return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}`;
+              return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}${stays.has(toDateKey(day)) ? ', 연박 일정' : ''}`;
             }}
             classOf={(day) =>
               [
-                counts.has(toDateKey(day)) && 'has-event',
+                counts.has(toDateKey(day)) && !stays.has(toDateKey(day)) && 'has-event',
                 (holidayName(day) || day.getDay() === 0) && 'is-sun',
                 day.getDay() === 6 && !holidayName(day) && 'is-sat',
               ]
                 .filter(Boolean)
                 .join(' ')
             }
+            cellClassOf={(day) => {
+              const stay = stays.get(toDateKey(day));
+              return stay ? `cal-stay ${stay.left ? 'cal-stay-left' : ''} ${stay.right ? 'cal-stay-right' : ''}` : '';
+            }}
           />
         </div>
         <ErrorText error={monthEvents.error ?? upcoming.error} />
@@ -105,10 +118,10 @@ export const SchedulePage = () => {
                 <li key={event.id}>
                   <button type="button" className="result" onClick={() => goTo(event.date)}>
                     <span className="flex items-center gap-2">
-                      <span className="badge badge-solid">{formatDday(event.date)}</span>
+                      <span className="badge badge-solid">{event.date < toDateKey(new Date()) ? '진행 중' : formatDday(event.date)}</span>
                       <span>{event.title}</span>
                     </span>
-                    <span className="text-sm text-muted">{`${formatDate(event.date)} ${formatTime(event.start_time)}`}</span>
+                    <span className="text-sm text-muted">{`${formatDateRange(event.date, event.end_date)} ${formatTime(event.start_time)} ${formatStay(event.date, event.end_date)}`.trim()}</span>
                   </button>
                 </li>
               ))}
@@ -147,6 +160,9 @@ export const SchedulePage = () => {
                   <p className="mono-label shrink-0 sm:w-28 sm:pt-1">{formatTimeRange(event.start_time, event.end_time)}</p>
                   <div className="min-w-0 flex-1">
                     <h4 className="break-words">{event.title}</h4>
+                    {event.end_date !== event.date && (
+                      <p className="text-sm text-muted">{`${formatStay(event.date, event.end_date)} · ${formatDateRange(event.date, event.end_date)}`}</p>
+                    )}
                     {event.place && (
                       <Link to={`/places/${event.place.id}`} className="text-sm underline underline-offset-4">
                         {event.place.name}
@@ -253,6 +269,7 @@ export const SchedulePage = () => {
             place={fullPlace ?? { ...recordPlace, latitude: 36.3, longitude: 127.8 }}
             record={recordForm.record}
             date={recordForm.event?.date ?? date}
+            endDate={recordForm.event?.end_date}
             eventId={recordForm.event?.id}
             onDone={() => setRecordForm(undefined)}
           />

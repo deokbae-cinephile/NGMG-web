@@ -60,17 +60,17 @@ export const StatsPage = () => {
       </div>
       <ErrorText error={error} />
 
-      <dl className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
+      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. */}
+      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-5">
         {[
           ['출조 횟수', `${stats.trips}`, '회'],
           ['전체 기록', `${stats.total}`, '건'],
           ['맛집 방문', `${stats.restaurants}`, '번'],
-          ['평균 별점', stats.averageRating === null ? '-' : stats.averageRating.toFixed(1), stats.averageRating === null ? '' : '점'],
+          ['낚시 평균 별점', stats.fishingRating === null ? '-' : stats.fishingRating.toFixed(1), stats.fishingRating === null ? '' : '점'],
+          ['맛집 평균 별점', stats.restaurantRating === null ? '-' : stats.restaurantRating.toFixed(1), stats.restaurantRating === null ? '' : '점'],
         ].map(([label, value, unit], index) => (
-          <div key={label} className={`flex flex-col gap-2 p-5 ${index % 2 ? 'border-l border-line' : ''} ${index >= 2 ? 'border-t border-line lg:border-t-0' : ''} ${index === 2 ? 'lg:border-l' : ''}`}>
-            <dt className="flex items-baseline gap-2">
-              <span className="mono-label">{label}</span>
-            </dt>
+          <div key={label} className={`flex flex-col gap-2 bg-paper p-5 ${index === 0 ? 'col-span-2 lg:col-span-1' : ''}`}>
+            <dt className="mono-label">{label}</dt>
             <dd className="flex items-baseline gap-1">
               <span className="display-number">{value}</span>
               <span>{unit}</span>

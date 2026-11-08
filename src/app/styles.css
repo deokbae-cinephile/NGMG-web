@@ -55,6 +55,13 @@ select {
   padding-right: 2.75rem !important;
 }
 
+/* 휴대폰은 머리글을 숨기고(메뉴는 하단 탭) 그만큼 내용 영역을 넓게 씁니다. */
+@media (width < 64rem) {
+  :root {
+    --spacing-topbar: 0rem;
+  }
+}
+
 @layer components {
   /* 영문 대문자 라벨. 장식이라 읽지 않게 하고, 읽는 이름은 옆의 한글 제목이 맡습니다. */
   .title {
@@ -314,6 +321,25 @@ select {
     border-bottom: 1px solid var(--color-line);
     background: var(--color-paper);
   }
+  @media (width < 64rem) {
+    .topbar {
+      border-bottom: 0;
+    }
+    .topbar-logo {
+      display: none !important;
+    }
+    /* 머리글이 없으므로 설치 버튼은 하단 탭 위에 띄웁니다. */
+    .install-button {
+      position: fixed;
+      right: 0.75rem;
+      bottom: calc(4.25rem + env(safe-area-inset-bottom));
+      z-index: 30;
+      min-height: 2.75rem;
+      border: 1px solid var(--color-ink);
+      background: var(--color-paper);
+      padding: 0 0.875rem;
+    }
+  }
   .topbar-logo {
     display: flex;
     align-items: center;
@@ -325,7 +351,7 @@ select {
     inset: auto 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid var(--color-line);
     background: var(--color-paper);
     padding-bottom: env(safe-area-inset-bottom);
@@ -479,6 +505,33 @@ select {
     font-size: 0.8125rem;
     white-space: nowrap;
   }
+  /* 핀을 고르면 뜨는 말풍선. 핀 위에 놓이도록 아래를 비우고, 꼬리로 핀을 가리킵니다. */
+  .map-popup {
+    position: relative;
+    display: flex;
+    width: 14rem;
+    max-width: 70vw;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    margin-bottom: 3.75rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.625rem 0.75rem;
+    color: var(--color-ink);
+  }
+  .map-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -0.3125rem;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 1px solid var(--color-ink);
+    border-bottom: 1px solid var(--color-ink);
+    background: inherit;
+    transform: translateX(-50%) rotate(45deg);
+  }
   .pin[aria-pressed='true'] {
     z-index: 1;
     outline: 2px solid var(--color-ink);
@@ -557,6 +610,13 @@ select {
   justify-content: space-between;
   padding-bottom: 0.5rem;
 }
+.cal-caption {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
 .cal-grid {
   width: 100%;
   border-collapse: collapse;
@@ -584,6 +644,26 @@ select {
   justify-content: center;
   color: var(--color-ink);
   cursor: pointer;
+}
+/* 연박 일정: 칸 아래 막대가 이어져 하루씩이 아니라 한 일정임을 보여 줍니다. */
+.cal-stay {
+  position: relative;
+}
+.cal-stay::after {
+  content: '';
+  position: absolute;
+  right: 12%;
+  bottom: 0;
+  left: 12%;
+  height: 0.25rem;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+.cal-stay-left::after {
+  left: 0;
+}
+.cal-stay-right::after {
+  right: 0;
 }
 .cal-day:hover {
   background: var(--color-surface);

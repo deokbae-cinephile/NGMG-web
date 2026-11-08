@@ -21,8 +21,8 @@ const load = (): Seed | undefined => {
 const server = createFakeServer(load() ?? demoSeed(new Date()));
 const save = () => {
   try {
-    const { places, records, record_photos, fish_catches, events, checklist_items } = server;
-    sessionStorage.setItem(STORE, JSON.stringify({ places, records, record_photos, fish_catches, events, checklist_items }));
+    const { places, records, record_photos, fish_catches, angler_gear, events, checklist_items } = server;
+    sessionStorage.setItem(STORE, JSON.stringify({ places, records, record_photos, fish_catches, angler_gear, events, checklist_items }));
   } catch {
     // 저장소를 못 쓰면 새로고침할 때 처음 데이터로 돌아갑니다.
   }

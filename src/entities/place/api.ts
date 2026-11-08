@@ -26,12 +26,15 @@ export const collectTags = (places: Pick<Place, 'tags'>[]) => {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([tag]) => tag);
 };
 
-type SaveInput = PlaceDraft & { photo?: File | null; removePhoto?: boolean };
+type SaveInput = PlaceDraft & { photo?: File | null; removePhoto?: boolean; isNew?: boolean };
 
-/** id가 있으면 수정, 없으면 새로 저장하고 저장된 장소를 돌려줍니다. */
-export const savePlace = async ({ id, photo, removePhoto, ...values }: SaveInput) => {
+/**
+ * 저장된 장소를 돌려줍니다. 새 장소는 폼을 열 때 정한 id와 isNew로 넣어, 일부만 저장된 뒤 다시 눌러도 장소가 둘이 되지 않습니다.
+ * id 없이 부르면 여기서 id를 정합니다.
+ */
+export const savePlace = async ({ id, isNew, photo, removePhoto, ...values }: SaveInput) => {
   const previous = values.photo_path ?? null;
-  const query = id ? supabase.from('places').update(values).eq('id', id) : supabase.from('places').insert(values);
+  const query = id && !isNew ? supabase.from('places').update(values).eq('id', id) : supabase.from('places').upsert({ ...values, id: id ?? crypto.randomUUID() });
   const { data, error } = await query.select().single();
   if (error) throw new Error('장소를 저장하지 못했습니다.');
   let saved = data as Place;
