@@ -84,6 +84,12 @@ export const menuTotal = (items: MenuDraft[]) => {
   return prices.length ? prices.reduce((sum, item) => sum + Number(item.price), 0) : null;
 };
 
+/** 맛집 기록의 평점: 평점을 준 메뉴들의 평균(소수 첫째 자리). 하나도 없으면 null입니다. */
+export const menuAverage = (items: { name: string; rating: string }[]) => {
+  const ratings = items.filter((item) => item.name.trim() && item.rating).map((item) => Number(item.rating));
+  return ratings.length ? Math.round((ratings.reduce((sum, value) => sum + value, 0) / ratings.length) * 10) / 10 : null;
+};
+
 /** 메뉴 한 줄을 '모둠회 - 30,000원 (4점)'처럼 읽습니다. */
 export const menuLine = ({ name, price, rating }: Pick<MenuItem, 'name' | 'price' | 'rating'>) =>
   `${name}${price === null ? '' : ` - ${price.toLocaleString('ko-KR')}원`}${rating === null ? '' : ` (${rating}점)`}`;
