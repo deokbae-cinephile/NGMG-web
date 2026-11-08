@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Place, type PlaceDraft } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
+import { SAVE_KEY } from '@/shared/ui';
 
 // 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
 const withPhotoUrls = async (places: Place[]) => {
@@ -59,6 +60,7 @@ export const savePlace = async ({ id, isNew, photo, removePhoto, ...values }: Sa
 export const useSavePlace = () => {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: SAVE_KEY,
     mutationFn: savePlace,
     onSuccess: () => client.invalidateQueries(),
   });

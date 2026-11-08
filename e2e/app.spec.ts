@@ -614,3 +614,20 @@ test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 �
   await expect(page.getByRole('group', { name: '거문도 방파제 정보' }).getByText('4.5')).toBeVisible();
   await expectAccessible(page);
 });
+
+test('저장하는 동안 저장 중 화면을 띄우고 닫기를 막는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  // 저장 요청을 잠시 늦춥니다.
+  await page.route('**/fake-supabase/rest/**', async (route) => {
+    if (route.request().method() === 'POST') await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.fallback();
+  });
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog.getByText('저장하는 중입니다.')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeHidden();
+});

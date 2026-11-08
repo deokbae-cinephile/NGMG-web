@@ -760,6 +760,28 @@ select {
     animation-direction: alternate-reverse;
   }
 
+  /* 저장 중 화면. 입력과 닫기를 막고 진행 중임을 알립니다. */
+  .saving-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgb(250 250 250 / 0.88);
+    color: var(--color-ink);
+  }
+  .saving-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 3px solid var(--color-soft);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: saving-spin 0.8s linear infinite;
+  }
+
   /* 내용이 올 자리 */
   .skeleton {
     display: block;
@@ -920,6 +942,11 @@ select {
     transform: rotate(16deg);
   }
 }
+@keyframes saving-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes skeleton-pulse {
   to {
     opacity: 0.45;
@@ -928,6 +955,9 @@ select {
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
+    animation: none;
+  }
+  .saving-spinner {
     animation: none;
   }
   * {

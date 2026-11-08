@@ -1,16 +1,22 @@
+import { useIsMutating } from '@tanstack/react-query';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icon } from './icon';
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
+
+/** 이 키로 표시한 저장 요청이 진행되는 동안 팝업 위에 저장 중 화면을 띄웁니다. */
+export const SAVE_KEY = ['save'];
 
 /** 네이티브 dialog라 초점 가두기와 Esc 닫기를 브라우저가 처리합니다. */
 export const Modal = ({ title, onClose, children }: Props) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const edited = useRef(false);
+  const saving = useIsMutating({ mutationKey: SAVE_KEY }) > 0;
 
   // 입력한 내용이 있으면 실수로 닫아 잃지 않도록 먼저 묻습니다. 저장하면 화면이 바로 onClose 없이 사라집니다.
   const requestClose = () => {
+    if (saving) return; // 저장이 끝날 때까지 닫지 않습니다.
     if (!edited.current || window.confirm('작성 중인 내용을 버리고 닫을까요?')) onClose();
   };
 
@@ -48,6 +54,13 @@ export const Modal = ({ title, onClose, children }: Props) => {
         </button>
       </div>
       {children}
+      {/* dialog는 맨 위 층에 그려지므로 저장 중 화면도 그 안에 둡니다. */}
+      {saving && (
+        <div role="status" className="saving-overlay">
+          <span aria-hidden="true" className="saving-spinner" />
+          저장하는 중입니다.
+        </div>
+      )}
     </dialog>
   );
 };
