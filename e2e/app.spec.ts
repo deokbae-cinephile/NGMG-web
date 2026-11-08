@@ -397,7 +397,8 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
     return nav;
   };
   const nav = await check('./schedule', '조건 및 기록');
-  expect(Math.round(nav.x + nav.width)).toBe(1280);
+  // 스크롤바 자리를 비우는 환경이 있어 고정 값 대신 실제 화면 폭과 비교합니다.
+  expect(Math.round(nav.x + nav.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
   await check('./records', '최근 조과');
   await page.evaluate(() => {
     window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
