@@ -59,5 +59,10 @@ export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'menu', label: '메뉴' },
 ];
 
+/** 장비 칸을 낱개로 나눕니다. 쉼표 없이 '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. */
+export const gearList = (text: string) => splitList(text.replace(/[;\n]+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
+/** 장비를 '로드, 릴, 채비'처럼 쉼표로 이어 씁니다. */
+export const formatGear = (text: string) => gearList(text).join(', ');
+
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);

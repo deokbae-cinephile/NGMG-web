@@ -85,7 +85,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 출발지(`route-origin`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 

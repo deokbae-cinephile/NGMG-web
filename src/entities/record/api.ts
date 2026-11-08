@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type CalendarEvent, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { cleanKeyword, recordSearchFilter } from './model';
 
@@ -90,15 +90,26 @@ export const useDayRecords = (date: string) =>
     },
   });
 
-/** 이 일정들 중 이미 기록을 남긴 일정의 id */
-export const useRecordedEventIds = (eventIds: string[]) =>
+/** 이 일정들 중 이미 기록을 남긴 일정의 id. 일정에서 남긴 기록과, 같은 장소·같은 날짜에 따로 남긴 기록을 모두 봅니다. */
+export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 'end_date' | 'place_id'>[]) =>
   useQuery({
-    queryKey: ['records', 'events', eventIds],
-    enabled: eventIds.length > 0,
+    queryKey: ['records', 'events', events.map((event) => `${event.id}:${event.date}:${event.end_date}:${event.place_id}`)],
+    enabled: events.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('records').select('event_id').in('event_id', eventIds);
-      if (error) throw new Error('기록을 불러오지 못했습니다.');
-      return new Set(data.map((row) => row.event_id as string));
+      const columns = 'event_id, place_id, visited_on, end_date';
+      const places = [...new Set(events.flatMap((event) => event.place_id ?? []))];
+      // 일정의 장소를 나중에 바꿔도 연결된 기록을 찾도록 일정 id로도 조회합니다.
+      const [byPlace, byEvent] = await Promise.all([
+        places.length ? supabase.from('records').select(columns).in('place_id', places) : { data: [], error: null },
+        supabase.from('records').select(columns).in('event_id', events.map((event) => event.id)),
+      ]);
+      if (byPlace.error || byEvent.error) throw new Error('기록을 불러오지 못했습니다.');
+      const rows = [...byPlace.data, ...byEvent.data] as Pick<PlaceRecord, 'event_id' | 'place_id' | 'visited_on' | 'end_date'>[];
+      return new Set(
+        events
+          .filter((event) => rows.some((row) => row.event_id === event.id || (row.place_id === event.place_id && row.visited_on <= event.end_date && row.end_date >= event.date)))
+          .map((event) => event.id),
+      );
     },
   });
 

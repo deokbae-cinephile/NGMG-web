@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
-import { RECORD_LABELS } from './model';
+import { formatGear, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
@@ -39,7 +39,7 @@ const Photos = ({ record }: { record: PlaceRecord }) => {
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const details = [
-    ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: record[field.name] }] : [])),
+    ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: field.name === 'gear' ? formatGear(record.gear) : record[field.name] }] : [])),
     ...(record.price !== null ? [{ label: '가격', value: `${record.price.toLocaleString('ko-KR')}원` }] : []),
   ];
 

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
+import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, FilePreview, Icon, TextareaField } from '@/shared/ui';
@@ -11,7 +11,7 @@ import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
 type Values = TextValues & { visited_on: string; end_date: string; catches: string; memo: string; rating: string; price: string };
 type Props = {
-  place: Pick<Place, 'id' | 'kind' | 'latitude' | 'longitude'>;
+  place: Pick<Place, 'id' | 'kind'>;
   record?: PlaceRecord;
   date?: string;
   endDate?: string;
@@ -87,7 +87,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' && values.price ? Number(values.price) : null,
-        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? values[name].trim() : (record?.[name] ?? '')])) as TextValues),
+        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,

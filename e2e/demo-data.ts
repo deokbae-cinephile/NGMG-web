@@ -63,6 +63,10 @@ export const demoSeed = (start: Date): Seed => {
     angler_gear: ['김 조사', '류 조사'].flatMap((angler, index) => [
       { id: `g${index}r`, angler, category: '로드', brand: 'JS컴퍼니', name: '닉스 인쇼어 버전2 S862ML', position: 0 },
       { id: `g${index}l`, angler, category: '릴', brand: '다이와', name: '25 레가리스 LT 3000-CXH', position: 0 },
+      { id: `g${index}m`, angler, category: '라인', subcategory: '원줄', brand: '셉트', name: '이너샤 8합사 1호', position: 0 },
+      { id: `g${index}f`, angler, category: '라인', subcategory: '목줄', brand: '선라인', name: '베이직 FC 카본 3호', position: 0 },
+      { id: `g${index}j`, angler, category: '채비', brand: '썬베이트', name: '지그헤드 1/4oz', position: 0 },
+      { id: `g${index}b`, angler, category: '미끼', brand: '다미끼', name: '와우 그럽웜 3인치', position: 0 },
     ]),
     record_photos: [
       { id: 'ph1', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },

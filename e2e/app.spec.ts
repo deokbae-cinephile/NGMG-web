@@ -74,7 +74,7 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
-  await expect(page.getByRole('img', { name: '기준 위치: 무악재역' })).toBeVisible();
+  await expect(page.getByRole('img', { name: '출발지: 무악재역' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -540,4 +540,59 @@ test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', asyn
   await expect.poll(() => db.angler_gear!.find((item) => item.id === 'm')!.subcategory).toBe('목줄');
   await expect(page.locator('[data-gear-sub="목줄"][data-angler="김 조사"]').getByRole('heading', { name: '[셉트] 합사' })).toBeVisible();
   await expectAccessible(page);
+});
+
+test('출발지: 초기값은 무악재역이고, 장소를 출발지로 정하면 길찾기와 지도 핀에 반영된다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./places/p2');
+  const route = page.getByRole('link', { name: '길찾기 (새 창)' });
+  await expect(page.getByText('출발지: 무악재역')).toBeVisible();
+  await expect(route).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
+  await page.getByRole('button', { name: '출발지', exact: true }).click();
+  await expect(page.getByRole('button', { name: '출발지', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('출발지: 바다횟집')).toBeVisible();
+  await page.goto('./places/p1');
+  await expect(page.getByText('출발지: 바다횟집')).toBeVisible();
+  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/.*\/.*/);
+  await page.goto('./');
+  await expect(page.getByRole('img', { name: '출발지: 바다횟집' })).toBeAttached();
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '출발지', exact: true }).click();
+  await expect(page.getByText('출발지: 무악재역')).toBeVisible();
+});
+
+test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표로 이어 보인다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    events: [
+      { id: 'done', date: '2026-11-07', start_time: '06:00:00', title: '다녀온 출조', place_id: 'p1', memo: '' },
+      { id: 'todo', date: '2026-11-07', start_time: '09:00:00', title: '남은 출조', place_id: 'p2', memo: '' },
+    ],
+    records: [{ id: 'x', place_id: 'p1', visited_on: '2026-11-07', gear: '[A] 로드\n[B] 릴 [C] 채비', catches: '' }],
+  });
+  await page.goto('./schedule?date=2026-11-07');
+  await expect(page.getByRole('button', { name: '남은 출조 기록 남기기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다녀온 출조 기록 남기기' })).toHaveCount(0);
+  await expect(page.getByText('[A] 로드, [B] 릴, [C] 채비')).toBeVisible();
+});
+
+test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./records');
+  await page.getByRole('button', { name: /거문도 방파제 .*기록 수정/ }).first().click();
+  const dialog = page.getByRole('dialog', { name: '기록 수정' });
+  await dialog.getByLabel('조과').fill('수정한 조과');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('수정한 조과')).toBeVisible();
+  expect(db.records).toHaveLength(25);
+
+  await page.goto('./gear');
+  await expect(page.getByRole('region', { name: '김 조사 미끼' })).toBeVisible();
+  await page.getByRole('button', { name: '김 조사 장비 추가' }).click();
+  const gear = page.getByRole('dialog', { name: '새 장비' });
+  await gear.getByLabel('분류', { exact: true }).selectOption('미끼');
+  await gear.getByLabel('장비 이름').fill('크릴');
+  await gear.getByRole('button', { name: '저장' }).click();
+  await expect(page.getByRole('region', { name: '김 조사 미끼' }).getByRole('heading', { name: '크릴' })).toBeVisible();
 });

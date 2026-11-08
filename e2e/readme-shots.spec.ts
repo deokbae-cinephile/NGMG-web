@@ -22,6 +22,15 @@ test('휴대폰 화면', async ({ page }, info) => {
   await page.goto('./stats');
   await page.getByRole('heading', { level: 2 }).first().waitFor();
   await page.screenshot({ path: `${dir}/stats.jpg`, type: 'jpeg', quality: 80 });
+  await page.goto('./gear');
+  await page.getByRole('heading', { name: '김 조사 장비' }).waitFor();
+  await page.getByRole('heading', { name: /닉스 인쇼어/ }).first().waitFor();
+  await page.screenshot({ path: `${dir}/gear.jpg`, type: 'jpeg', quality: 80 });
+  await page.getByRole('button', { name: '김 조사 장비 추가' }).click();
+  await page.getByRole('dialog').getByLabel('분류', { exact: true }).selectOption('라인');
+  await page.getByRole('dialog').getByLabel('브랜드').fill('선라인');
+  await page.getByRole('dialog').getByLabel('장비 이름').fill('베이직 FC 카본 3호');
+  await page.screenshot({ path: `${dir}/gear-form.jpg`, type: 'jpeg', quality: 80 });
 });
 
 test('넓은 화면', async ({ page }, info) => {
