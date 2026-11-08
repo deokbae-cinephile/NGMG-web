@@ -220,37 +220,42 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         </fieldset>
       )}
 
-      <Field
-        label="사진 추가"
-        type="file"
-        accept="image/*"
-        multiple
-        hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${Math.max(0, left - files.length)}장 더 고를 수 있습니다.`}
-        error={tooMany ? `사진을 ${files.length - left}장 줄여 주세요.` : undefined}
-        onChange={(event) => {
-          // 여러 번 나눠 골라도 쌓이게 하고, 입력 칸은 비워 같은 파일도 다시 고를 수 있게 합니다.
-          const picked = [...(event.target.files ?? [])];
-          setFiles((list) => [...list, ...picked]);
-          event.target.value = '';
-        }}
-      />
-      {files.length > 0 && (
-        <section aria-label="올릴 사진 미리보기">
-          <ul className="grid grid-cols-3 gap-2">
-            {files.map((file, index) => (
-              <li key={`${file.name}-${file.lastModified}-${index}`}>
-                <RemovablePhoto
-                  file={file}
-                  alt={`올릴 사진 ${index + 1} 미리보기`}
-                  removeLabel={`사진 ${index + 1} 빼기`}
-                  className="aspect-square w-full"
-                  inputBefore
-                  onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* 맛집은 메뉴마다 사진을 올립니다. 예전에 올린 기록 사진은 위에서 보고 지울 수 있습니다. */}
+      {kind !== 'restaurant' && (
+        <>
+          <Field
+            label="사진 추가"
+            type="file"
+            accept="image/*"
+            multiple
+            hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${Math.max(0, left - files.length)}장 더 고를 수 있습니다.`}
+            error={tooMany ? `사진을 ${files.length - left}장 줄여 주세요.` : undefined}
+            onChange={(event) => {
+              // 여러 번 나눠 골라도 쌓이게 하고, 입력 칸은 비워 같은 파일도 다시 고를 수 있게 합니다.
+              const picked = [...(event.target.files ?? [])];
+              setFiles((list) => [...list, ...picked]);
+              event.target.value = '';
+            }}
+          />
+          {files.length > 0 && (
+            <section aria-label="올릴 사진 미리보기">
+              <ul className="grid grid-cols-3 gap-2">
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${file.lastModified}-${index}`}>
+                    <RemovablePhoto
+                      file={file}
+                      alt={`올릴 사진 ${index + 1} 미리보기`}
+                      removeLabel={`사진 ${index + 1} 빼기`}
+                      className="aspect-square w-full"
+                      inputBefore
+                      onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
 
       {kind === 'fishing' && <FishFieldset value={fish} showErrors={checkedFish} onChange={setFish} />}
