@@ -112,6 +112,13 @@ select {
   .panel-roomy:first-child {
     padding-top: 0;
   }
+  /* 일정 및 기록 화면의 기록 카드는 내용이 길어 더 띄웁니다. */
+  .panes-schedule article.panel-roomy {
+    padding-block: 3rem;
+  }
+  .panes-schedule article.panel-roomy:first-child {
+    padding-top: 0;
+  }
   .panel-active {
     background: var(--color-surface);
     box-shadow: inset 4px 0 0 var(--color-ink);
@@ -551,12 +558,12 @@ select {
   .pin {
     position: relative;
     display: flex;
-    width: 2.25rem;
+    width: 3.25rem;
     height: 2.25rem;
     align-items: center;
     justify-content: center;
     border: 1.5px solid var(--color-ink);
-    border-radius: 0.375rem;
+    border-radius: 0;
     background: var(--color-ink);
     color: var(--color-paper);
     cursor: pointer;
@@ -581,7 +588,7 @@ select {
     background: var(--color-accent);
     color: var(--color-ink);
   }
-  /* 평균 별점 색(월드 오브 워크래프트 아이템 등급 색). 핀과 별점 표시에 함께 씁니다. 5점은 아직 색이 없습니다. 별점이 없으면 분류별 기본 색입니다. */
+  /* 평균 별점 색(월드 오브 워크래프트 아이템 등급 색). 핀과 별점 표시에 함께 씁니다. 별점이 없으면 분류별 기본 색입니다. */
   .pin.rate-1,
   .rate-1 {
     background: #9d9d9d;
@@ -601,6 +608,11 @@ select {
   .rate-4 {
     background: #a335ee;
     color: #fafafa;
+  }
+  .pin.rate-5,
+  .rate-5 {
+    background: #ff8000;
+    color: #0a0a0a;
   }
   .pin-score {
     position: absolute;
@@ -648,8 +660,8 @@ select {
     outline-offset: 3px;
   }
   .pin-base {
-    background: var(--color-sun);
-    color: var(--color-paper);
+    background: var(--color-accent);
+    color: var(--color-ink);
     cursor: default;
     pointer-events: none;
   }

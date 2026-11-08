@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.18.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.18.1-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 장비와 어종 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -17,7 +17,7 @@
 
 | 휴대폰 일정                                                                                     | 어종 도감                                                                     |
 | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| <img src="docs/images/schedule-mobile.jpg" alt="휴대폰 폭의 달력과 선택한 날짜, 하단 아이콘 탭 메뉴" width="240"> | <img src="docs/images/dex.jpg" alt="번호가 붙은 어종 카드에 빅원 길이, 잡은 조사, 잡은 곳, 마릿수가 있는 도감" width="240"> |
+| <img src="docs/images/schedule-mobile.jpg" alt="휴대폰 폭의 달력과 선택한 날짜, 하단 아이콘 탭 메뉴" width="240"> | <img src="docs/images/dex.jpg" alt="번호가 붙은 어종 카드에 빅원 길이, 조사, 시간 및 장소, 마릿수가 있는 도감" width="240"> |
 | **통계**                                                                                     | **로그인**                                                                    |
 | <img src="docs/images/stats.jpg" alt="전체 기록, 출조 횟수, 낚시 평균 별점, 맛집 방문, 맛집 평균 별점과 월별 출조 막대그래프" width="240"> | <img src="docs/images/login.jpg" alt="가운데 생선 접시 로고 아래 이메일, 비밀번호 입력란" width="240"> |
 | **장비**                                                                                     | **장비 추가**                                                                 |

@@ -51,7 +51,7 @@ const pinOffsets = (places: Place[]) => {
     groups.set(key, [...(groups.get(key) ?? []), place.id]);
   });
   const offsets = new Map<string, number>();
-  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 42)));
+  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 60)));
   return offsets;
 };
 
@@ -194,8 +194,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
     const bounds = map.instance.getBounds();
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
-    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude));
-  }, [map, selected]);
+    // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
+    const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
+    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0)));
+  }, [map, selected, offsets]);
 
   useEffect(() => {
     basePin.current?.setAttribute('data-selected', String(isBase));
@@ -261,9 +263,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     <div className="relative h-full w-full">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 4점대까지">
+      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 5점까지">
         <strong className="font-normal">별점</strong>
-        {[1, 2, 3, 4].map((score) => (
+        {[1, 2, 3, 4, 5].map((score) => (
           <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
         ))}
       </div>
