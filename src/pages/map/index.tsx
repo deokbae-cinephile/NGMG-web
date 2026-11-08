@@ -1,10 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
-import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference } from '@/shared/lib';
+import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 

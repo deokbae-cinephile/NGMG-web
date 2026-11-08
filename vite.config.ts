@@ -29,4 +29,6 @@ export default defineConfig(({ mode }) => ({
         }
       : {},
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // 작은 글꼴 조각을 CSS에 base64로 넣으면 첫 화면이 모든 조각을 한꺼번에 받습니다. 글꼴은 파일로 두어 필요한 조각만 받게 합니다.
+  build: { assetsInlineLimit: (file: string) => (/\.woff2?$/.test(file) ? false : undefined) },
 }));

@@ -171,6 +171,16 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await expectFits(page);
   await expectAccessible(page);
 
+  // 달력 키보드: 화살표로 하루, PageDown/PageUp으로 한 달씩 옮깁니다.
+  await page.getByRole('button', { name: /^7 일 \(토\), 2026년 11월/ }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('button', { name: /^8 일 \(일\), 2026년 11월/ })).toBeFocused();
+  await page.keyboard.press('PageDown');
+  await expect(page.getByRole('heading', { name: '2026년 12월' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^8 일 \(화\), 2026년 12월/ })).toBeFocused();
+  await page.keyboard.press('PageUp');
+  await expect(page.getByRole('button', { name: /^8 일 \(일\), 2026년 11월/ })).toBeFocused();
+
   await page.getByRole('button', { name: '9 일 (월), 2026년 11월' }).click();
   await expect(page.getByRole('heading', { name: '2026년 11월 9일 (월)' })).toBeVisible();
   await page.getByRole('button', { name: '일정 추가' }).click();

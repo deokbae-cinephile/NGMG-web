@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
 import { usePastEvents } from '@/entities/event';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
 import { RecordCard, useRecordedEventIds, useRecordPages } from '@/entities/record';
 import { ExportButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceKind } from '@/shared/api';
-import { formatDate, getPreference, setPreference } from '@/shared/lib';
+import { formatDate, getPreference, setPreference, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';

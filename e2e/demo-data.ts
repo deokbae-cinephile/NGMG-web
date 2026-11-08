@@ -1,4 +1,4 @@
-import { addDays, format } from 'date-fns';
+import { addDays, toDateKey } from '../src/shared/lib/date.ts';
 import type { Seed } from './fake-server.ts';
 
 // 데모와 README 스크린샷에 쓰는 가상 데이터입니다.
@@ -9,7 +9,7 @@ const place = (id: string, name: string, kind: string, latitude: number, longitu
 const BAITS = ['크릴', '크릴, 홍갯지렁이', '청갯지렁이', '크릴'];
 
 export const demoSeed = (start: Date): Seed => {
-  const day = (offset: number) => format(addDays(start, offset), 'yyyy-MM-dd');
+  const day = (offset: number) => toDateKey(addDays(start, offset));
   return {
     places: [
       place('p1', '가상도 동쪽 방파제', 'fishing', 34.03, 127.3, '전남 가상군 가상면 1', ['방파제', '찌낚시', '주차 편함']),

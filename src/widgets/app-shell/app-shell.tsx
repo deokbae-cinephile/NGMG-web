@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { InstallButton } from '@/features/install-app';
+import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Loader, Logo, type IconName } from '@/shared/ui';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
@@ -10,7 +10,7 @@ const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/stats', label: '통계', icon: 'stats' },
 ];
 
-export const AppShell = () => {
+export const AppShell = ({ children }: { children: ReactNode }) => {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const first = useRef(true);
@@ -43,7 +43,7 @@ export const AppShell = () => {
       </header>
       <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
         <Suspense fallback={<Loader />}>
-          <Outlet />
+          {children}
         </Suspense>
       </main>
     </div>

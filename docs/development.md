@@ -75,34 +75,33 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 데이터 백업
 
-기록 화면의 "데이터 백업"은 장소, 기록, 사진 목록, 일정, 준비물을 JSON 파일로 저장합니다. 사진 파일 자체는 포함되지 않습니다. 파일을 불러오는 기능은 없으므로 복원이 필요하면 Supabase에 직접 넣습니다.
+기록 화면의 "데이터 백업"은 장소, 기록, 사진 목록, 잡은 물고기, 일정, 준비물을 JSON 파일로 저장합니다. 사진 파일 자체는 포함되지 않습니다. 파일을 불러오는 기능은 없으므로 복원이 필요하면 Supabase에 직접 넣습니다.
 
-## 쿠키
+## 화면 설정 저장
 
-`js-cookie`는 지도 위치(`map-view`)와 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 저장합니다. 로그인 세션은 Supabase가 localStorage에 관리합니다.
+지도 위치(`map-view`)와 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 
 `src/app/styles.css`의 `@theme`에 있습니다.
 
-| 토큰 | 값 | 용도 |
-| --- | --- | --- |
-| `ink` / `night` | `#030302` / `#0b0a08` | 배경 / 패널 |
-| `paper` / `cream` | `#daceb0` / `#fdf4df` | 스티커·주요 버튼 / 본문 |
-| `tape` | `#e0b02c` | 테이프 장식, 초점, 선택 상태 |
-| `muted` | `#a89f87` | 보조 글자 |
-| `fishing` / `restaurant` | `#8fc7d9` / `#f0a07a` | 분류. 색 외에 글자와 모양으로도 구분합니다. |
-
-레퍼런스: [Nocturnal Dream](https://www.nocturnaldream.com/)의 분위기만 참고했고, 그림과 유료 폰트는 쓰지 않습니다.
-
 | 토큰 | 값 | 쓰임 |
 | --- | --- | --- |
 | `paper` / `surface` | `#fafafa` / `#f0f0f0` | 바탕 / 입력란·강조 영역 |
-| `ink` / `muted` | `#0a0a0a` / `#595959` | 본문 글자·제목 밑줄 / 보조 글자·라벨 |
-| `line` / `field` | `#d4d4d4` / `#8c8c8c` | 구분선 / 입력란 테두리 |
-| `accent` / `accent-ink` | `#2f7bd8` / `#1f5fb4` | 가는 선·점·초점 표시 / 파란 글자(오늘 날짜) |
+| `ink` / `muted` | `#0a0a0a` / `#595959` | 글자·칸 선 / 보조 글자·라벨 |
+| `soft` / `field` | `#d9d9d9` / `#8c8c8c` | 옅은 구분선 / 입력란 테두리 |
+| `accent` | `#f0932b` | 선택된 메뉴·필터·핀, 그래프 칠하기(그 위 글자는 검정) |
+| `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
 | `danger` | `#b3221e` | 삭제·오류 |
 
-화면 제목은 `.page-title`(가로선 위의 큰 글자)과 그 위의 `.eyebrow`(자간을 넓힌 작은 라벨)로 씁니다. 장소 분류는 색 대신 채움으로 구분합니다(낚시: 테두리, 맛집: 검정 채움).
+제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 주황).
 
-장식용 애니메이션과 추가 글꼴은 쓰지 않습니다. 화면이 가볍게 유지되도록 도현(Do Hyeon) 하나와 색·선·여백으로만 표현합니다. 도현은 `@fontsource/do-hyeon`으로 앱에 포함하며, 한글이 93개 조각으로 나뉘어 화면에 쓰인 조각만 받습니다. 굵기가 하나뿐이라 `font-synthesis: none`으로 가짜 굵게를 막습니다.
+글꼴은 도현(Do Hyeon) 하나를 `@fontsource/do-hyeon`으로 포함합니다. 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
+
+## 경량화 원칙
+
+- 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
+- Supabase는 `supabase-js` 대신 쓰는 클라이언트(`auth-js`, `postgrest-js`, `storage-js`)만 묶어 실시간 기능을 뺐습니다(`src/shared/api/supabase.ts`).
+- 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
+- 사진 여러 장은 라이브러리 없이 가로 스크롤과 `scroll-snap`으로 넘깁니다.
+

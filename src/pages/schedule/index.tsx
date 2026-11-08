@@ -1,7 +1,4 @@
 import { useState, type ReactNode } from 'react';
-import { DayPicker } from 'react-day-picker';
-import { ko } from 'react-day-picker/locale';
-import { Link, useSearchParams } from 'react-router';
 import { useDeleteEvent, useMonthEvents, useUpcomingEvents } from '@/entities/event';
 import { DayConditions } from '@/entities/forecast';
 import { KindBadge, usePlaces } from '@/entities/place';
@@ -10,8 +7,9 @@ import { DayChecklist } from '@/features/day-checklist';
 import { EventForm } from '@/features/event-form';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
-import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, holidayName, normalizeDateKey, parseDateKey, toDateKey } from '@/shared/lib';
+import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
 import { ErrorText, Modal } from '@/shared/ui';
+import { MonthCalendar } from './month-calendar';
 
 const PaneHead = ({ id, title, children }: { id: string; title: string; children?: ReactNode }) => (
   <div className="cell-head">
@@ -71,29 +69,26 @@ export const SchedulePage = () => {
             오늘
           </button>
         </PaneHead>
-        <div className="flex justify-center border-b border-line px-2 py-4">
-          <DayPicker
-            mode="single"
-            required
-            locale={ko}
+        <div className="flex justify-center border-b border-line px-5 py-4">
+          <MonthCalendar
             month={month}
-            onMonthChange={setMonth}
             selected={selected}
+            onMonthChange={setMonth}
             onSelect={(day) => setParams({ date: toDateKey(day) }, { replace: true })}
-            modifiers={{
-              hasEvent: (day) => counts.has(toDateKey(day)),
-              holiday: (day) => Boolean(holidayName(day)),
-              sunday: (day) => day.getDay() === 0,
-              saturday: (day) => day.getDay() === 6,
+            label={(day) => {
+              const count = counts.get(toDateKey(day));
+              const name = holidayName(day);
+              return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}`;
             }}
-            modifiersClassNames={{ hasEvent: 'has-event', holiday: 'rdp-holiday', sunday: 'rdp-sunday', saturday: 'rdp-saturday' }}
-            labels={{
-              labelDayButton: (day) => {
-                const count = counts.get(toDateKey(day));
-                const name = holidayName(day);
-                return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}`;
-              },
-            }}
+            classOf={(day) =>
+              [
+                counts.has(toDateKey(day)) && 'has-event',
+                (holidayName(day) || day.getDay() === 0) && 'is-sun',
+                day.getDay() === 6 && !holidayName(day) && 'is-sat',
+              ]
+                .filter(Boolean)
+                .join(' ')
+            }
           />
         </div>
         <ErrorText error={monthEvents.error ?? upcoming.error} />

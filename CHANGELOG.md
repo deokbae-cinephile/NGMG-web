@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.0 - 2026-11-09
+
+경량화 리팩토링. 첫 화면에 받는 JS·CSS가 gzip 기준 약 487KB에서 약 141KB로 줄었습니다.
+
+- 글꼴 조각 126개가 CSS에 base64로 박혀 CSS가 314KB(gzip)였던 문제 수정 → 23KB
+- `supabase-js` 대신 `auth-js`·`postgrest-js`·`storage-js`만 묶어 실시간 기능 제거 (로그인 상태는 그대로 유지)
+- `react-router`를 History API 기반의 작은 라우터로, `react-day-picker`를 직접 만든 달력(키보드 조작 포함)으로 교체 → 일정 화면 19.8KB → 6KB
+- `date-fns`를 Date·Intl로, `js-cookie`를 localStorage로 교체 (지도 위치·필터 설정은 한 번 초기화됨)
+- 로그인 폼을 기본 HTML 폼으로 바꿔 `react-hook-form`은 폼을 열 때만 받음
+- 쓰지 않는 CSS 정리, 휴대폰 달력 좌우 여백을 다른 칸과 맞춤
+
 ## 1.8.0 - 2026-11-09
 
 - 잡은 물고기 기록 추가: 낚시 기록마다 조사(김 조사·류 조사), 어종, 길이(cm), 사진 한 장을 여러 마리 남기고 기록 카드에 표시

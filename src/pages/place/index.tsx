@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
 import { KindBadge, PlaceActions, useDeletePlace, usePlaces } from '@/entities/place';
 import { RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
 import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
-import { formatDate } from '@/shared/lib';
+import { formatDate, navigate } from '@/shared/lib';
 import { ErrorText, Loader, Modal } from '@/shared/ui';
 
-export const PlacePage = () => {
-  const { id = '' } = useParams();
-  const navigate = useNavigate();
+export const PlacePage = ({ id }: { id: string }) => {
   const places = usePlaces();
   const records = usePlaceRecords(id);
   const remove = useDeletePlace();

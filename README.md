@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.8.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.9.0-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 준비물, 조과 기록과 통계를 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -40,11 +40,11 @@
 
 | 구분        | 사용 기술                                                              |
 | ----------- | ---------------------------------------------------------------------- |
-| 프레임워크  | React 19, TypeScript, Vite, React Router                               |
-| UI          | Tailwind CSS, 네이티브 dialog, react-day-picker, lottie-web, 도현(Do Hyeon) |
+| 프레임워크  | React 19, TypeScript, Vite (라우터·달력·날짜 계산은 직접 구현)          |
+| UI          | Tailwind CSS, 네이티브 dialog, lottie-web, 도현(Do Hyeon)              |
 | 지도·검색   | Kakao Maps JavaScript SDK, Open-Meteo                                  |
-| 상태·데이터 | TanStack Query, React Hook Form, date-fns, js-cookie                   |
-| 서버        | Supabase (Postgres, RLS, Auth, Storage)                                |
+| 상태·데이터 | TanStack Query, React Hook Form                                        |
+| 서버        | Supabase (Postgres, RLS, Auth, Storage — auth-js·postgrest-js·storage-js) |
 | 품질        | ESLint, Playwright, axe                                                |
 | 배포        | GitHub Pages(ngmg.kr), GitHub Actions                                  |
 

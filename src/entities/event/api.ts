@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { endOfMonth, startOfMonth } from 'date-fns';
 import { supabase, type CalendarEvent } from '@/shared/api';
-import { toDateKey } from '@/shared/lib';
+import { endOfMonth, startOfMonth, toDateKey } from '@/shared/lib';
 
 export const useMonthEvents = (month: Date) => {
   const from = toDateKey(startOfMonth(month));

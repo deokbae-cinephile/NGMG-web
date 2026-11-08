@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { useSession } from '@/entities/session';
 import { LoginPage } from '@/pages/login';
+import { Navigate, useLocation } from '@/shared/lib';
 import { ErrorBoundary, Loader } from '@/shared/ui';
 import { AppShell } from '@/widgets/app-shell';
 
@@ -12,8 +12,6 @@ const RecordsPage = lazy(() => import('@/pages/records').then((page) => ({ defau
 const StatsPage = lazy(() => import('@/pages/stats').then((page) => ({ default: page.StatsPage })));
 const PlacePage = lazy(() => import('@/pages/place').then((page) => ({ default: page.PlacePage })));
 
-/** 예전 주소(/calendar?date=...)로 들어와도 고른 날짜를 그대로 이어 갑니다. */
-const CalendarRedirect = () => <Navigate to={{ pathname: '/schedule', search: useLocation().search }} replace />;
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
 
@@ -23,6 +21,19 @@ const NotFound = () => (
     <h1 className="title text-2xl">페이지를 찾을 수 없습니다</h1>
   </div>
 );
+
+/** 주소에 맞는 화면. 예전 주소(/calendar?date=...)로 들어와도 고른 날짜를 그대로 이어 갑니다. */
+const Page = () => {
+  const { pathname, search } = useLocation();
+  if (pathname === '/') return <MapPage />;
+  if (pathname === '/schedule') return <SchedulePage />;
+  if (pathname === '/calendar') return <Navigate to={`/schedule${search}`} />;
+  if (pathname === '/records') return <RecordsPage />;
+  if (pathname === '/stats') return <StatsPage />;
+  const place = /^\/places\/([^/]+)$/.exec(pathname);
+  if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;
+  return <NotFound />;
+};
 
 /** 첫 화면의 글꼴 조각을 다 받을 때까지 로딩을 덮어 글자가 바뀌며 흔들리지 않게 합니다. 오래 걸려도 3초 뒤에는 엽니다. */
 const useFontsReady = () => {
@@ -53,19 +64,9 @@ export const App = () => {
           {session === null ? (
             <LoginPage />
           ) : (
-            <BrowserRouter basename={import.meta.env.BASE_URL}>
-              <Routes>
-                <Route element={<AppShell />}>
-                  <Route index element={<MapPage />} />
-                  <Route path="schedule" element={<SchedulePage />} />
-                  <Route path="calendar" element={<CalendarRedirect />} />
-                  <Route path="records" element={<RecordsPage />} />
-                  <Route path="stats" element={<StatsPage />} />
-                  <Route path="places/:id" element={<PlacePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
+            <AppShell>
+              <Page />
+            </AppShell>
           )}
         </QueryClientProvider>
       )}

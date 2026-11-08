@@ -1,9 +1,9 @@
-import { addDays, format, getDay } from 'date-fns';
+import { addDays, toDateKey } from './date';
 
 // 음력은 브라우저 내장 단기 달력으로 구합니다. 윤달은 '4bis'처럼 표시되어 명절과 겹치지 않습니다.
 const lunar = new Intl.DateTimeFormat('en-u-ca-dangi', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' });
 const lunarKey = (date: Date) => {
-  const parts = lunar.formatToParts(new Date(`${format(date, 'yyyy-MM-dd')}T12:00:00+09:00`));
+  const parts = lunar.formatToParts(new Date(`${toDateKey(date)}T12:00:00+09:00`));
   return `${parts.find((part) => part.type === 'month')?.value}/${parts.find((part) => part.type === 'day')?.value}`;
 };
 
@@ -25,7 +25,7 @@ const WEEKEND = new Set(['삼일절', '어린이날', '광복절', '개천절', 
 /** 그날의 공휴일 이름들. 어린이날과 부처님오신날처럼 둘이 겹칠 수 있습니다. */
 const baseHolidays = (date: Date) => {
   const names: string[] = [];
-  const solar = SOLAR[format(date, 'MM-dd')];
+  const solar = SOLAR[toDateKey(date).slice(5)];
   if (solar) names.push(solar);
   const named = LUNAR[lunarKey(date)] ?? (lunarKey(addDays(date, 1)) === '1/1' ? '설날' : undefined); // 설 전날
   if (named) names.push(named);
@@ -43,19 +43,19 @@ export const holidaysOf = (year: number) => {
   for (let date = new Date(year, 0, 1); date.getFullYear() === year; date = addDays(date, 1)) {
     const names = baseHolidays(date);
     if (!names.length) continue;
-    result.set(format(date, 'yyyy-MM-dd'), names.join('·'));
-    const day = getDay(date);
+    result.set(toDateKey(date), names.join('·'));
+    const day = date.getDay();
     if (names.some((name) => (SUNDAY_ONLY.has(name) && day === 0) || (WEEKEND.has(name) && (day === 0 || day === 6)))) overlaps.push(date);
     for (let extra = 1; extra < names.length; extra += 1) overlaps.push(date);
   }
   // 대체공휴일: 겹친 날 다음의 첫 평일(공휴일이 아닌 날)
   for (const date of overlaps) {
     let next = addDays(date, 1);
-    while (getDay(next) === 0 || getDay(next) === 6 || result.has(format(next, 'yyyy-MM-dd'))) next = addDays(next, 1);
-    result.set(format(next, 'yyyy-MM-dd'), '대체공휴일');
+    while (next.getDay() === 0 || next.getDay() === 6 || result.has(toDateKey(next))) next = addDays(next, 1);
+    result.set(toDateKey(next), '대체공휴일');
   }
   cache.set(year, result);
   return result;
 };
 
-export const holidayName = (date: Date) => holidaysOf(date.getFullYear()).get(format(date, 'yyyy-MM-dd'));
+export const holidayName = (date: Date) => holidaysOf(date.getFullYear()).get(toDateKey(date));
