@@ -194,8 +194,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
     const bounds = map.instance.getBounds();
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
-    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude));
-  }, [map, selected]);
+    // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
+    const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
+    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0)));
+  }, [map, selected, offsets]);
 
   useEffect(() => {
     basePin.current?.setAttribute('data-selected', String(isBase));
