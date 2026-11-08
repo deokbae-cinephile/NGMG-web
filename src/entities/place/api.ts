@@ -20,13 +20,6 @@ const fetchPlaces = async () => {
 
 export const usePlaces = () => useQuery({ queryKey: ['places'], queryFn: fetchPlaces });
 
-/** 여러 장소의 태그를 많이 쓴 순서로 모읍니다. */
-export const collectTags = (places: Pick<Place, 'tags'>[]) => {
-  const counts = new Map<string, number>();
-  places.forEach((place) => place.tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1)));
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([tag]) => tag);
-};
-
 type SaveInput = PlaceDraft & { photo?: File | null; removePhoto?: boolean; isNew?: boolean };
 
 /**

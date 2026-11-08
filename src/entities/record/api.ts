@@ -8,7 +8,7 @@ export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
 
 const SELECT =
-  '*, place:places!inner(id, name, kind, tags), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position)';
+  '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position)';
 
 type Row = Omit<PlaceRecord, 'photos' | 'fish'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[] };
 
@@ -39,11 +39,10 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
   }));
 };
 
-const fetchPage = async (page: number, kind?: PlaceKind, keyword = '', tag?: string) => {
+const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
   const from = page * PAGE_SIZE;
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
-  if (tag) query = query.filter('place.tags', 'cs', `{"${tag.replace(/"/g, '')}"}`);
   const text = cleanKeyword(keyword);
   if (text) {
     // 어종은 다른 표에 있어 그 어종을 잡은 기록을 먼저 찾아 조건에 더합니다.
@@ -59,10 +58,10 @@ const fetchPage = async (page: number, kind?: PlaceKind, keyword = '', tag?: str
   return withPhotoUrls(data as unknown as Row[]);
 };
 
-export const useRecordPages = (kind?: PlaceKind, keyword?: string, tag?: string) =>
+export const useRecordPages = (kind?: PlaceKind, keyword?: string) =>
   useInfiniteQuery({
-    queryKey: ['records', 'all', kind, keyword, tag],
-    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword, tag),
+    queryKey: ['records', 'all', kind, keyword],
+    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword),
     initialPageParam: 0,
     getNextPageParam: (last, _pages, lastParam) => (last.length === PAGE_SIZE ? lastParam + 1 : undefined),
   });

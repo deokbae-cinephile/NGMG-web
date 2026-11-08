@@ -91,9 +91,9 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
   await expect(page.getByRole('button', { name: /백도 횟집/ }).first()).toBeVisible();
   expect(db.places).toHaveLength(4);
 
-  await page.getByLabel('이름·주소·태그로 찾기').fill('거문도');
+  await page.getByLabel('이름·주소로 찾기').fill('거문도');
   await expect(page.getByRole('status').last()).toHaveText('장소 1곳');
-  await page.getByLabel('이름·주소·태그로 찾기').clear();
+  await page.getByLabel('이름·주소로 찾기').clear();
 
   await page.getByRole('button', { name: '맛집', exact: true }).click();
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeHidden();

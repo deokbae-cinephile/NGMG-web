@@ -52,7 +52,6 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
         ...values,
         id,
         isNew: !initial?.id,
-        tags: initial?.tags ?? [], // 입력은 없앴지만 예전에 단 태그는 지우지 않습니다.
         photo_path: initial?.photo_path ?? null,
         latitude: Number(values.latitude),
         longitude: Number(values.longitude),

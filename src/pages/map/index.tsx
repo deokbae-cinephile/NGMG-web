@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
-import { BASE_PLACE, collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
+import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
@@ -9,15 +9,12 @@ import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
-type Sort = 'name' | 'tag' | 'near' | 'recent';
+type Sort = 'name' | 'near' | 'recent';
 const SORTS: { value: Sort; label: string }[] = [
   { value: 'name', label: '이름순' },
-  { value: 'tag', label: '태그순' },
   { value: 'near', label: '가까운 순' },
   { value: 'recent', label: '최근 추가순' },
 ];
-
-const firstTag = (place: Place) => [...place.tags].sort((a, b) => a.localeCompare(b, 'ko'))[0];
 
 const NO_PLACES: Place[] = [];
 
@@ -25,7 +22,6 @@ export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
   const { data: ratings, error: ratingsError } = usePlaceRatings();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
-  const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
   const [selectedId, setSelectedId] = useState<string>();
   const closePopup = useCallback(() => setSelectedId(undefined), []);
@@ -36,29 +32,22 @@ export const MapPage = () => {
   const locate = useMutation({ mutationFn: getCurrentLocation });
   const origin = locate.data;
 
-  // 이름, 주소, 태그에서 찾습니다. '#방파제'처럼 써도 됩니다.
-  const search = keyword.trim().replace(/^#/, '').toLowerCase();
+  const search = keyword.trim().toLowerCase();
   // 지도가 핀을 불필요하게 다시 그리지 않도록 조건이 바뀔 때만 새로 만듭니다.
   const visible = useMemo(
     () =>
       places.filter(
         (place) =>
           (filter === 'all' || place.kind === filter) &&
-          (!tag || place.tags.includes(tag)) &&
-          `${place.name} ${place.address} ${place.tags.join(' ')}`.toLowerCase().includes(search),
+          `${place.name} ${place.address}`.toLowerCase().includes(search),
       ),
-    [places, filter, tag, search],
+    [places, filter, search],
   );
   const listed = [...visible].sort((a, b) => {
     if (sort === 'near' && origin) return distanceKm(origin, a) - distanceKm(origin, b);
-    if (sort === 'tag') {
-      const [x, y] = [firstTag(a), firstTag(b)];
-      if (x !== y) return !x ? 1 : !y ? -1 : x.localeCompare(y, 'ko');
-    }
     if (sort === 'recent') return (b.created_at ?? '').localeCompare(a.created_at ?? '');
     return a.name.localeCompare(b.name, 'ko');
   });
-  const tags = collectTags(places);
 
   const changeFilter = (next: Filter) => {
     setFilter(next);
@@ -115,27 +104,8 @@ export const MapPage = () => {
             </div>
           </fieldset>
 
-          {tags.length > 0 && (
-            <fieldset>
-              <legend className="mono-label pb-1.5">태그</legend>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className="button min-h-9 px-3 text-sm"
-                    aria-pressed={tag === item}
-                    onClick={() => setTag(tag === item ? undefined : item)}
-                  >
-                    {`#${item}`}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
-
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-            <Field label="이름·주소·태그로 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+            <Field label="이름·주소로 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
             <div className="flex flex-col gap-1.5">
               <label htmlFor="place-sort" className="mono-label">정렬</label>
               <select
@@ -173,13 +143,6 @@ export const MapPage = () => {
                         {place.name} <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
-                      {place.tags.length > 0 && (
-                        <span className="flex flex-wrap gap-x-2">
-                          {place.tags.map((item) => (
-                            <span key={item} className="tag">{item}</span>
-                          ))}
-                        </span>
-                      )}
                       {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
                     </span>
                     {place.photo_url && <img src={place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line object-cover" />}

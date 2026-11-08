@@ -9,7 +9,6 @@ export const BASE_PLACE: Place = {
   latitude: 37.5825632,
   longitude: 126.950231,
   memo: '',
-  tags: [],
   photo_path: null,
 };
 

@@ -2,8 +2,8 @@ import { addDays, toDateKey } from '../src/shared/lib/date.ts';
 import type { Seed } from './fake-server.ts';
 
 // 데모와 README 스크린샷에 쓰는 가상 데이터입니다.
-const place = (id: string, name: string, kind: string, latitude: number, longitude: number, address: string, tags: string[]) => ({
-  id, name, kind, latitude, longitude, address, memo: '', tags, photo_path: null, created_at: `2026-0${id.slice(1)}-01T00:00:00Z`,
+const place = (id: string, name: string, kind: string, latitude: number, longitude: number, address: string) => ({
+  id, name, kind, latitude, longitude, address, memo: '', photo_path: null, created_at: `2026-0${id.slice(1)}-01T00:00:00Z`,
 });
 
 const BAITS = ['크릴', '크릴, 홍갯지렁이', '청갯지렁이', '크릴'];
@@ -12,10 +12,10 @@ export const demoSeed = (start: Date): Seed => {
   const day = (offset: number) => toDateKey(addDays(start, offset));
   return {
     places: [
-      place('p1', '가상도 동쪽 방파제', 'fishing', 34.03, 127.3, '전남 가상군 가상면 1', ['방파제', '찌낚시', '주차 편함']),
-      place('p2', '달빛 갯바위', 'fishing', 34.6, 128.2, '경남 가상시 달빛로 2', ['갯바위', '야간']),
-      place('p3', '밤바다 횟집', 'restaurant', 34.74, 127.74, '전남 가상시 밤바다길 3', ['회', '가성비']),
-      place('p4', '바늘 낚시점', 'etc', 34.4, 127.1, '전남 가상군 항구로 4', ['낚시점']),
+      place('p1', '가상도 동쪽 방파제', 'fishing', 34.03, 127.3, '전남 가상군 가상면 1'),
+      place('p2', '달빛 갯바위', 'fishing', 34.6, 128.2, '경남 가상시 달빛로 2'),
+      place('p3', '밤바다 횟집', 'restaurant', 34.74, 127.74, '전남 가상시 밤바다길 3'),
+      place('p4', '바늘 낚시점', 'etc', 34.4, 127.1, '전남 가상군 항구로 4'),
     ],
     events: [
       { id: 'e1', date: day(0), end_date: day(1), start_time: '05:30:00', end_time: null, title: '새벽 출조', place_id: 'p1', memo: '썰물 시작 전 도착' },
