@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useFishDex, useMenuDex } from '@/entities/record';
-import { formatDate } from '@/shared/lib';
+import { formatDate, Link } from '@/shared/lib';
 import { ErrorText, Icon, PageSkeleton, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
 
@@ -19,21 +19,34 @@ const Summary = ({ title, status, error }: { title: string; status: string; erro
   </>
 );
 
-/** 도감 한 칸. 사진이 없으면 아이콘을 보여 줍니다. */
-const DexCard = ({ number, title, icon, photo, children }: { number: number; title: string; icon: IconName; photo?: ReactNode; children: ReactNode }) => (
-  <li className="flex flex-col bg-paper">
-    {photo ?? (
-      <span aria-hidden="true" className="flex aspect-[4/3] items-center justify-center bg-surface text-muted">
-        <Icon name={icon} size={56} />
+/** 도감 한 칸. 사진이 없으면 아이콘을 보여 주고, to가 있으면 칸 전체가 링크입니다. */
+const DexCard = ({ number, title, icon, photo, to, children }: { number: number; title: string; icon: IconName; photo?: ReactNode; to?: string; children: ReactNode }) => {
+  const body = (
+    <>
+      {photo ?? (
+        <span aria-hidden="true" className="flex aspect-[4/3] items-center justify-center bg-surface text-muted">
+          <Icon name={icon} size={56} />
+        </span>
+      )}
+      <span className="flex flex-col gap-2 p-4">
+        <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>
+        <h3 className="title text-lg break-words">{title}</h3>
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
       </span>
-    )}
-    <div className="flex flex-col gap-2 p-4">
-      <p className="mono-label">{`No.${String(number).padStart(3, '0')}`}</p>
-      <h3 className="title text-lg break-words">{title}</h3>
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
-    </div>
-  </li>
-);
+    </>
+  );
+  return (
+    <li className="flex flex-col bg-paper">
+      {to ? (
+        <Link to={to} className="flex h-full flex-col hover:bg-surface">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+    </li>
+  );
+};
 
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = () => {
@@ -93,13 +106,8 @@ const MenuDex = () => {
             number={number}
             title={name}
             icon="food"
-            photo={
-              photo ? (
-                <a href={photo} target="_blank" rel="noreferrer">
-                  <img src={photo} alt={`${name} 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
-                </a>
-              ) : undefined
-            }
+            to={`/schedule?date=${latest.record.visited_on}`}
+            photo={photo ? <img src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
           >
             <dt className="mono-label">평점</dt>
             <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>

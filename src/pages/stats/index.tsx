@@ -49,14 +49,11 @@ export const StatsPage = () => {
         <div className="flex items-baseline gap-3">
           <h2 className="title text-xl">{`${year}년 통계`}</h2>
         </div>
-        <label className="flex items-center gap-2">
-          <span className="mono-label">연도</span>
-          <select className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setYear(Number(event.target.value))}>
-            {years.map((item) => (
-              <option key={item} value={item}>{`${item}년`}</option>
-            ))}
-          </select>
-        </label>
+        <select aria-label="연도" className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setYear(Number(event.target.value))}>
+          {years.map((item) => (
+            <option key={item} value={item}>{`${item}년`}</option>
+          ))}
+        </select>
       </div>
       <ErrorText error={error} />
 

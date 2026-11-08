@@ -6,6 +6,6 @@ export const RatingChip = ({ rating }: { rating?: number }) =>
   rating === undefined ? null : (
     <span className={`rating-chip ${ratingClass(rating)}`}>
       <span className="sr-only">평균 평점</span>
-      {rating.toFixed(1)}
+      <span className="relative top-px">{rating.toFixed(1)}</span>
     </span>
   );

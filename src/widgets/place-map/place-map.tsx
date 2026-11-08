@@ -19,14 +19,14 @@ type Props = {
 const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE.longitude, level: 5 };
 
 /** 물방울 모양 핀의 바탕. 지도 메뉴 아이콘과 같은 모양이고, 그림의 아래 끝이 장소 위치입니다. */
-const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 22" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="6"/></svg>';
+const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 22" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
 
 const createBasePin = () => {
   const pin = document.createElement('div');
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
   pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
-  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 16)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
+  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
   return pin;
 };
 
@@ -63,7 +63,7 @@ const pinOffsets = (places: Place[]) => {
 const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
-  pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 16);
+  pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 18);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
   if (offset) pin.style.transform = `translateX(${offset}px)`;
