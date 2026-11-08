@@ -2,40 +2,32 @@ import { useSyncExternalStore } from 'react';
 import type { Place } from '@/shared/api';
 import { getPreference, setPreference } from '@/shared/lib';
 
-export type RouteOrigin = Pick<Place, 'name' | 'latitude' | 'longitude'>;
+type Point = Pick<Place, 'name' | 'latitude' | 'longitude'>;
 
-/** 출발지 초기값 */
-export const DEFAULT_ORIGIN: RouteOrigin = { name: '무악재역', latitude: 37.5825632, longitude: 126.950231 };
+/** 길찾기의 기본 출발지 */
+export const BASE_ORIGIN: Point = { name: '무악재역', latitude: 37.5825632, longitude: 126.950231 };
 
-/** 저장된 값이 깨져 있으면 초기값을 씁니다. */
-const readOrigin = () => {
-  const saved = getPreference<Partial<RouteOrigin> | null>('route-origin', DEFAULT_ORIGIN);
-  return typeof saved?.name === 'string' && typeof saved.latitude === 'number' && typeof saved.longitude === 'number' ? (saved as RouteOrigin) : DEFAULT_ORIGIN;
-};
-
-let origin = readOrigin();
+let fromBase = getPreference('route-from-base', true) === true;
 const listeners = new Set<() => void>();
 
-export const sameLocation = (a: RouteOrigin, b: RouteOrigin) => a.name === b.name && a.latitude === b.latitude && a.longitude === b.longitude;
-
-/** 출발지를 바꿉니다. 없이 부르면 초기값으로 돌아갑니다. 어느 화면에서 바꿔도 지도와 길찾기에 함께 반영됩니다. */
-export const setRouteOrigin = (next: RouteOrigin = DEFAULT_ORIGIN) => {
-  origin = { name: next.name, latitude: next.latitude, longitude: next.longitude };
-  setPreference('route-origin', origin);
+/** 무악재역을 출발지로 쓸지 정합니다. 어느 화면에서 바꿔도 함께 반영됩니다. */
+export const setRouteFromBase = (next: boolean) => {
+  fromBase = next;
+  setPreference('route-from-base', next);
   listeners.forEach((listener) => listener());
 };
 
-export const useRouteOrigin = () =>
+export const useRouteFromBase = () =>
   useSyncExternalStore(
     (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    () => origin,
+    () => fromBase,
   );
 
-/** 카카오맵 자동차 길찾기 주소. 이름의 쉼표는 주소 구분자와 겹치므로 뺍니다. */
-export const directionsUrl = (from: RouteOrigin, to: RouteOrigin) => {
-  const point = (place: RouteOrigin) => `${encodeURIComponent(place.name.replaceAll(',', ' '))},${place.latitude},${place.longitude}`;
-  return sameLocation(from, to) ? `https://map.kakao.com/link/to/${point(to)}` : `https://map.kakao.com/link/by/car/${point(from)}/${point(to)}`;
+/** 카카오맵 길찾기 주소. 출발지를 쓰지 않으면 도착지만 넘겨 카카오맵에서 출발지를 정합니다. 이름의 쉼표는 주소 구분자와 겹치므로 뺍니다. */
+export const directionsUrl = (to: Point, useBase: boolean) => {
+  const point = (place: Point) => `${encodeURIComponent(place.name.replaceAll(',', ' '))},${place.latitude},${place.longitude}`;
+  return useBase ? `https://map.kakao.com/link/by/car/${point(BASE_ORIGIN)}/${point(to)}` : `https://map.kakao.com/link/to/${point(to)}`;
 };

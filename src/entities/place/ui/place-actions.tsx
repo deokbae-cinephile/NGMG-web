@@ -2,17 +2,14 @@ import { useState } from 'react';
 import type { Place } from '@/shared/api';
 import { copyText, sharePlace } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
-import { directionsUrl, sameLocation, setRouteOrigin, useRouteOrigin } from '../model/route-origin';
+import { BASE_ORIGIN, directionsUrl, setRouteFromBase, useRouteFromBase } from '../model/route-origin';
 
-type Target = Pick<Place, 'name' | 'latitude' | 'longitude'>;
-
-/** 이 장소를 출발지로 정합니다. 다시 누르면 초기값(무악재역)으로 돌아갑니다. */
-export const OriginButton = ({ place, className = 'button' }: { place: Target; className?: string }) => {
-  const origin = useRouteOrigin();
-  const active = sameLocation(origin, place);
+/** 길찾기 출발지로 무악재역을 쓸지 켜고 끕니다. 기본은 켜짐입니다. */
+export const OriginButton = ({ className = 'button' }: { className?: string }) => {
+  const fromBase = useRouteFromBase();
   return (
-    <button type="button" className={className} aria-pressed={active} onClick={() => setRouteOrigin(active ? undefined : place)}>
-      출발지
+    <button type="button" className={className} aria-pressed={fromBase} onClick={() => setRouteFromBase(!fromBase)}>
+      {`출발지 ${BASE_ORIGIN.name}`}
     </button>
   );
 };
@@ -20,7 +17,7 @@ export const OriginButton = ({ place, className = 'button' }: { place: Target; c
 /** 길찾기, 출발지, 주소 복사, 공유 버튼. 결과는 바로 아래에 읽어 줍니다. */
 export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' | 'latitude' | 'longitude'> }) => {
   const [message, setMessage] = useState('');
-  const origin = useRouteOrigin();
+  const fromBase = useRouteFromBase();
 
   const copy = async () => {
     const text = place.address || `${place.latitude}, ${place.longitude}`;
@@ -38,12 +35,12 @@ export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' 
           className="button"
           target="_blank"
           rel="noreferrer"
-          href={directionsUrl(origin, place)}
+          href={directionsUrl(place, fromBase)}
         >
           <Icon name="map" size={16} />
           길찾기 (새 창)
         </a>
-        <OriginButton place={place} />
+        <OriginButton />
         <button type="button" className="button" onClick={() => void copy()}>
           <Icon name="copy" size={16} />
           주소 복사
@@ -53,7 +50,6 @@ export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' 
           공유
         </button>
       </div>
-      <p className="text-sm text-muted">{`출발지: ${origin.name}`}</p>
       <p role="status" className="text-sm text-muted">
         {message}
       </p>

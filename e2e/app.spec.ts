@@ -74,7 +74,7 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
-  await expect(page.getByRole('img', { name: '출발지: 무악재역' })).toBeVisible();
+  await expect(page.getByRole('img', { name: '기준 위치: 무악재역' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -515,23 +515,19 @@ test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', asyn
   await expectAccessible(page);
 });
 
-test('출발지: 초기값은 무악재역이고, 장소를 출발지로 정하면 길찾기와 지도 핀에 반영된다', async ({ page }) => {
+test('출발지: 무악재역 토글을 끄면 길찾기에서 출발지를 지정하지 않고, 상태를 기억한다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./places/p2');
+  const toggle = page.getByRole('button', { name: '출발지 무악재역' });
   const route = page.getByRole('link', { name: '길찾기 (새 창)' });
-  await expect(page.getByText('출발지: 무악재역')).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(route).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
-  await page.getByRole('button', { name: '출발지', exact: true }).click();
-  await expect(page.getByRole('button', { name: '출발지', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('출발지: 바다횟집')).toBeVisible();
-  await page.goto('./places/p1');
-  await expect(page.getByText('출발지: 바다횟집')).toBeVisible();
-  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/.*\/.*/);
-  await page.goto('./');
-  await expect(page.getByRole('img', { name: '출발지: 바다횟집' })).toBeAttached();
-  await page.goto('./places/p2');
-  await page.getByRole('button', { name: '출발지', exact: true }).click();
-  await expect(page.getByText('출발지: 무악재역')).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(route).toHaveAttribute('href', /link\/to\//);
+  await page.reload();
+  await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/to\//);
 });
 
 test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표로 이어 보인다', async ({ page }) => {

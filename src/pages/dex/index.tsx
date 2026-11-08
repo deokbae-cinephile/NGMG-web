@@ -15,7 +15,7 @@ export const DexPage = () => {
       <h1 className="sr-only">어종 도감</h1>
       <div className="cell-head">
         <h2 className="title text-xl">어종 도감</h2>
-        <p role="status" className="mono-label">{`${entries.length}종 발견 · 총 ${data.length}마리`}</p>
+        {!error && <p role="status" className="mono-label">{`${entries.length}종 발견 · 총 ${data.length}마리`}</p>}
       </div>
       <ErrorText error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 낚시 기록에 잡은 물고기를 추가하면 어종이 하나씩 등록됩니다.</p>}

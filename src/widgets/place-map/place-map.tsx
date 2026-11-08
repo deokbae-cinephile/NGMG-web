@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { KIND_ICON, KIND_LABEL, KindBadge, KINDS, OriginButton, useRouteOrigin, DEFAULT_ORIGIN } from '@/entities/place';
+import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS, OriginButton } from '@/entities/place';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -15,19 +15,14 @@ type Props = {
 };
 
 /** 저장된 위치가 없을 때의 지도 중심 */
-const START_VIEW = { latitude: DEFAULT_ORIGIN.latitude, longitude: DEFAULT_ORIGIN.longitude, level: 5 };
+const START_VIEW = { latitude: BASE_ORIGIN.latitude, longitude: BASE_ORIGIN.longitude, level: 5 };
 
-const createOriginPin = (name: string) => {
+const createBasePin = () => {
   const pin = document.createElement('div');
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
-  pin.setAttribute('aria-label', `출발지: ${name}`);
-  pin.innerHTML = iconSvg('train', 18);
-  const label = document.createElement('span');
-  label.className = 'pin-label';
-  label.setAttribute('aria-hidden', 'true');
-  label.textContent = name; // 장소 이름은 사용자 입력이라 textContent로 넣습니다.
-  pin.append(label);
+  pin.setAttribute('aria-label', `기준 위치: ${BASE_ORIGIN.name}`);
+  pin.innerHTML = `${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_ORIGIN.name}</span>`;
   return pin;
 };
 
@@ -79,7 +74,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [error, setError] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
 
-  const origin = useRouteOrigin();
   const [popupHost] = useState(() => document.createElement('div'));
   const popup = useRef<HTMLDivElement>(null);
   const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
@@ -180,17 +174,17 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     map.instance.panTo(new map.kakao.maps.LatLng(place.latitude + latitudePerPixel * 90, place.longitude));
   }, [map, places, selectedId]);
 
-  // 출발지 핀. 출발지를 바꾸면 따라 옮겨집니다.
+  // 기준 위치(무악재역) 핀
   useEffect(() => {
     if (!map) return;
     const overlay = new map.kakao.maps.CustomOverlay({
       map: map.instance,
-      position: new map.kakao.maps.LatLng(origin.latitude, origin.longitude),
-      content: createOriginPin(origin.name),
+      position: new map.kakao.maps.LatLng(BASE_ORIGIN.latitude, BASE_ORIGIN.longitude),
+      content: createBasePin(),
       yAnchor: 1.2,
     });
     return () => overlay.setMap(null);
-  }, [map, origin]);
+  }, [map]);
 
   // 고른 장소 위에 정보 팝업을 띄웁니다.
   useEffect(() => {
@@ -272,7 +266,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 상세 보기
               </Link>
-              <OriginButton place={selected} className="map-popup-origin" />
+              <OriginButton className="map-popup-origin" />
             </div>
           </div>,
           popupHost,
