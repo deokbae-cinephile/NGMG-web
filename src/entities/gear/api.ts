@@ -41,7 +41,7 @@ export const useSaveGear = () => {
 /** 끌어서 옮긴 장비의 분류와 순서를 저장합니다. */
 const reorderGear = async (rows: Gear[]) => {
   const { error } = await supabase.from('angler_gear').upsert(
-    rows.map(({ id, angler, category, brand, name, memo, photo_path, position, created_at }) => ({ id, angler, category, brand, name, memo, photo_path, position, created_at })),
+    rows.map(({ id, angler, category, subcategory, brand, name, memo, photo_path, position, created_at }) => ({ id, angler, category, subcategory, brand, name, memo, photo_path, position, created_at })),
   );
   if (error) throw new Error('장비 순서를 저장하지 못했습니다.');
 };

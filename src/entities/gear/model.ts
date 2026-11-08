@@ -3,6 +3,16 @@ import type { IconName } from '@/shared/ui';
 
 export const GEAR_CATEGORIES = ['로드', '릴', '라인', '채비', '기타'] as const;
 export type GearCategory = (typeof GEAR_CATEGORIES)[number];
+export const LINE_SUBCATEGORIES = ['원줄', '목줄'] as const;
+
+/** 장비 화면의 구역 순서. 라인만 원줄과 목줄로 나눕니다. */
+export const GEAR_SECTIONS: { category: string; subcategory: string }[] = GEAR_CATEGORIES.flatMap((category): { category: string; subcategory: string }[] =>
+  category === '라인' ? LINE_SUBCATEGORIES.map((subcategory) => ({ category, subcategory })) : [{ category, subcategory: '' }],
+);
+
+/** 세부 분류. 세부 분류가 없던 라인은 원줄로 봅니다. */
+export const gearSubcategory = (gear: Pick<Gear, 'category' | 'subcategory'>) =>
+  gear.category === '라인' ? gear.subcategory || LINE_SUBCATEGORIES[0] : '';
 
 /** 사진이 없을 때 보여 주는 분류별 아이콘 */
 export const GEAR_ICON: Record<string, IconName> = { 로드: 'rod', 릴: 'reel', 라인: 'line', 채비: 'hook', 기타: 'backpack' };

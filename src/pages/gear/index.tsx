@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { GEAR_CATEGORIES, GEAR_ICON, gearLabel, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
+import { GEAR_CATEGORIES, GEAR_ICON, GEAR_SECTIONS, gearLabel, gearSubcategory, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
 import { splitList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
 import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
-import { byPosition, moveGear } from './model';
+import { byPosition, inSection, moveGear, type GearSection } from './model';
 
-type Drop = { category: string; beforeId: string | null };
+type Drop = GearSection & { beforeId: string | null };
+
+const sameSection = (a: GearSection, b: GearSection) => a.category === b.category && a.subcategory === b.subcategory;
+const sectionName = (section: GearSection) => section.subcategory || section.category;
 type Dragging = { item: Gear; x: number; y: number };
 
 /** 조사별 장비 목록. 손잡이를 끌거나 위·아래 버튼으로 순서와 분류를 바꿉니다. */
@@ -44,33 +47,34 @@ export const GearPage = () => {
     if (window.confirm(`${gearLabel(item)}을(를) 삭제할까요?`)) remove.mutate(item);
   };
 
-  const place = (item: Gear, category: string, beforeId: string | null) => {
-    const rows = moveGear(data.filter((other) => other.angler === item.angler), item.id, category, beforeId);
+  const place = (item: Gear, section: GearSection, beforeId: string | null) => {
+    const rows = moveGear(data.filter((other) => other.angler === item.angler), item.id, section, beforeId);
     if (!rows.length) return;
     reorder.mutate(rows);
-    setMessage(`${gearLabel(item)}을(를) ${category}(으)로 옮겼습니다.`);
+    setMessage(`${gearLabel(item)}을(를) ${sectionName(section)}(으)로 옮겼습니다.`);
   };
 
-  const sectionOf = (item: Gear, category = item.category) =>
-    data.filter((other) => other.angler === item.angler && other.category === category).sort(byPosition);
+  const currentSection = (item: Gear): GearSection => ({ category: item.category, subcategory: gearSubcategory(item) });
+  const itemsIn = (angler: string, section: GearSection) => data.filter((other) => other.angler === angler && inSection(other, section)).sort(byPosition);
+  const neighborOf = (item: Gear, direction: -1 | 1) => GEAR_SECTIONS[GEAR_SECTIONS.findIndex((section) => sameSection(section, currentSection(item))) + direction];
 
-  /** 위·아래 버튼. 분류의 끝에서는 이웃 분류로 넘어갑니다. */
+  /** 위·아래 버튼. 구역의 끝에서는 이웃 구역으로 넘어갑니다. */
   const step = (item: Gear, direction: -1 | 1) => {
     if (reorder.isPending) return; // 저장 중에는 버튼을 끄지 않고 무시합니다. 끄면 키보드 초점을 잃습니다.
-    const section = sectionOf(item);
+    const current = currentSection(item);
+    const section = itemsIn(item.angler, current);
     const index = section.findIndex((other) => other.id === item.id);
-    const neighbor = GEAR_CATEGORIES[GEAR_CATEGORIES.indexOf(item.category as (typeof GEAR_CATEGORIES)[number]) + direction];
+    const neighbor = neighborOf(item, direction);
     refocus.current = { id: item.id, button: direction < 0 ? 'up' : 'down' };
-    if (direction < 0 && index > 0) return place(item, item.category, section[index - 1]!.id);
-    if (direction > 0 && index < section.length - 1) return place(item, item.category, section[index + 2]?.id ?? null);
-    if (neighbor) place(item, neighbor, direction < 0 ? null : (sectionOf(item, neighbor)[0]?.id ?? null));
+    if (direction < 0 && index > 0) return place(item, current, section[index - 1]!.id);
+    if (direction > 0 && index < section.length - 1) return place(item, current, section[index + 2]?.id ?? null);
+    if (neighbor) place(item, neighbor, direction < 0 ? null : (itemsIn(item.angler, neighbor)[0]?.id ?? null));
   };
 
   const canStep = (item: Gear, direction: -1 | 1) => {
-    const section = sectionOf(item);
+    const section = itemsIn(item.angler, currentSection(item));
     const edge = direction < 0 ? section[0]?.id === item.id : section.at(-1)?.id === item.id;
-    const neighbor = GEAR_CATEGORIES[GEAR_CATEGORIES.indexOf(item.category as (typeof GEAR_CATEGORIES)[number]) + direction];
-    return !edge || Boolean(neighbor);
+    return !edge || Boolean(neighborOf(item, direction));
   };
 
   /** 손잡이를 잡아 끕니다. 터치와 마우스를 함께 처리합니다. */
@@ -83,15 +87,15 @@ export const GearPage = () => {
       const element = document.elementFromPoint(x, y);
       const section = element?.closest<HTMLElement>('[data-gear-section]');
       if (!section || section.dataset.angler !== item.angler) return undefined;
-      const category = section.dataset.gearSection!;
+      const area = { category: section.dataset.gearSection!, subcategory: section.dataset.gearSub ?? '' };
       const row = element?.closest<HTMLElement>('[data-gear-item]');
-      if (!row) return { category, beforeId: null };
+      if (!row) return { ...area, beforeId: null };
       if (row.dataset.gearItem === item.id) return undefined;
       const box = row.getBoundingClientRect();
-      if (y < box.top + box.height / 2) return { category, beforeId: row.dataset.gearItem! };
+      if (y < box.top + box.height / 2) return { ...area, beforeId: row.dataset.gearItem! };
       let next = row.nextElementSibling as HTMLElement | null;
       if (next?.dataset.gearItem === item.id) next = next.nextElementSibling as HTMLElement | null;
-      return { category, beforeId: next?.dataset.gearItem ?? null };
+      return { ...area, beforeId: next?.dataset.gearItem ?? null };
     };
 
     const onMove = (move: PointerEvent) => {
@@ -117,7 +121,7 @@ export const GearPage = () => {
     const onUp = () => {
       const done = target;
       stop();
-      if (done) place(item, done.category, done.beforeId);
+      if (done) place(item, done, done.beforeId);
     };
     const onKey = (key: KeyboardEvent) => {
       if (key.key === 'Escape') stop();
@@ -149,58 +153,64 @@ export const GearPage = () => {
             <ErrorText error={error ?? remove.error ?? reorder.error} />
             {isPending && <SkeletonRows count={3} />}
             {!isPending &&
-              GEAR_CATEGORIES.map((category) => {
-                const items = data.filter((item) => item.angler === angler && item.category === category).sort(byPosition);
-                const atEnd = drop?.category === category && drop.beforeId === null && dragging?.item.angler === angler;
-                return (
-                  <section key={category} aria-label={`${angler} ${category}`} data-gear-section={category} data-angler={angler}>
-                    <h3 className="title border-b border-line pb-2 text-lg">{category}</h3>
-                    {items.length === 0 && !atEnd && <p className="py-3 text-sm text-muted">등록한 장비가 없습니다.</p>}
-                    <ul className={`flex flex-col ${atEnd ? 'gear-drop-end' : ''}`}>
-                      {items.map((item) => (
-                        <li
-                          key={item.id}
-                          data-gear-item={item.id}
-                          className={`panel flex items-start gap-2 ${dragging?.item.id === item.id ? 'opacity-40' : ''} ${drop?.beforeId === item.id ? 'gear-drop-before' : ''}`}
-                        >
-                          {/* 끌기 전용 손잡이입니다. 키보드와 끌 수 없는 환경에서는 아래 위·아래 버튼을 씁니다. */}
-                          <span aria-hidden="true" className="gear-handle" title="끌어서 옮기기" onPointerDown={(event) => startDrag(event, item)}>
-                            <Icon name="grip" size={18} />
-                          </span>
-                          {item.photo_url ? (
-                            <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                              <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
-                            </a>
-                          ) : (
-                            <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
-                              <Icon name={GEAR_ICON[item.category] ?? 'backpack'} size={30} />
-                            </span>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <h4 className="break-words">{gearLabel(item)}</h4>
-                            {item.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{item.memo}</p>}
-                            <p className="mono-label mt-1">{`사용 ${usage.get(gearLabel(item)) ?? 0}회`}</p>
-                            <div className="mt-1 flex flex-wrap items-center">
-                              <button type="button" data-move="up" className="icon-button-sm" aria-label={`${gearLabel(item)} 위로`} disabled={!canStep(item, -1)} onClick={() => step(item, -1)}>
-                                <Icon name="chevronUp" size={18} />
-                              </button>
-                              <button type="button" data-move="down" className="icon-button-sm" aria-label={`${gearLabel(item)} 아래로`} disabled={!canStep(item, 1)} onClick={() => step(item, 1)}>
-                                <Icon name="chevronDown" size={18} />
-                              </button>
-                              <button type="button" className="text-action" aria-label={`${gearLabel(item)} 수정`} onClick={() => setForm({ angler, gear: item })}>
-                                수정
-                              </button>
-                              <button type="button" className="text-action text-action-danger" aria-label={`${gearLabel(item)} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
-                                삭제
-                              </button>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              })}
+              GEAR_CATEGORIES.map((category) => (
+                <section key={category} aria-label={`${angler} ${category}`}>
+                  <h3 className="title border-b border-line pb-2 text-lg">{category}</h3>
+                  {GEAR_SECTIONS.filter((area) => area.category === category).map((area) => {
+                    const items = itemsIn(angler, area);
+                    const atEnd = Boolean(drop && sameSection(drop, area) && drop.beforeId === null && dragging?.item.angler === angler);
+                    const ItemHeading = area.subcategory ? 'h5' : 'h4';
+                    return (
+                      <div key={area.subcategory || category} data-gear-section={category} data-gear-sub={area.subcategory} data-angler={angler}>
+                        {area.subcategory && <h4 className="mono-label pt-3">{area.subcategory}</h4>}
+                        {items.length === 0 && !atEnd && <p className="py-3 text-sm text-muted">등록한 장비가 없습니다.</p>}
+                        <ul className={`flex flex-col ${atEnd ? 'gear-drop-end' : ''}`}>
+                          {items.map((item) => (
+                            <li
+                              key={item.id}
+                              data-gear-item={item.id}
+                              className={`panel flex items-start gap-2 ${dragging?.item.id === item.id ? 'opacity-40' : ''} ${drop?.beforeId === item.id ? 'gear-drop-before' : ''}`}
+                            >
+                              {/* 끌기 전용 손잡이입니다. 키보드와 끌 수 없는 환경에서는 아래 위·아래 버튼을 씁니다. */}
+                              <span aria-hidden="true" className="gear-handle" title="끌어서 옮기기" onPointerDown={(event) => startDrag(event, item)}>
+                                <Icon name="grip" size={18} />
+                              </span>
+                              {item.photo_url ? (
+                                <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
+                                  <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+                                </a>
+                              ) : (
+                                <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
+                                  <Icon name={GEAR_ICON[item.category] ?? 'backpack'} size={30} />
+                                </span>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <ItemHeading className="break-words">{gearLabel(item)}</ItemHeading>
+                                {item.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{item.memo}</p>}
+                                <p className="mono-label mt-1">{`사용 ${usage.get(gearLabel(item)) ?? 0}회`}</p>
+                                <div className="mt-1 flex flex-wrap items-center">
+                                  <button type="button" data-move="up" className="icon-button-sm" aria-label={`${gearLabel(item)} 위로`} disabled={!canStep(item, -1)} onClick={() => step(item, -1)}>
+                                    <Icon name="chevronUp" size={18} />
+                                  </button>
+                                  <button type="button" data-move="down" className="icon-button-sm" aria-label={`${gearLabel(item)} 아래로`} disabled={!canStep(item, 1)} onClick={() => step(item, 1)}>
+                                    <Icon name="chevronDown" size={18} />
+                                  </button>
+                                  <button type="button" className="text-action" aria-label={`${gearLabel(item)} 수정`} onClick={() => setForm({ angler, gear: item })}>
+                                    수정
+                                  </button>
+                                  <button type="button" className="text-action text-action-danger" aria-label={`${gearLabel(item)} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
+                                    삭제
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </section>
+              ))}
           </div>
         </section>
       ))}

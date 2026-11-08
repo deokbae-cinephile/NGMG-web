@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { GEAR_CATEGORIES, useSaveGear } from '@/entities/gear';
+import { GEAR_CATEGORIES, gearSubcategory, LINE_SUBCATEGORIES, useSaveGear } from '@/entities/gear';
 import { ANGLERS, type Gear } from '@/shared/api';
 import { ErrorText, Field, FilePreview, TextareaField } from '@/shared/ui';
 
@@ -9,6 +9,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
   const [id] = useState(() => gear?.id ?? crypto.randomUUID());
   const [angler, setAngler] = useState(gear?.angler ?? initialAngler);
   const [category, setCategory] = useState<string>(gear?.category ?? GEAR_CATEGORIES[0]);
+  const [subcategory, setSubcategory] = useState<string>(gear ? gearSubcategory(gear) || LINE_SUBCATEGORIES[0] : LINE_SUBCATEGORIES[0]);
   const [brand, setBrand] = useState(gear?.brand ?? '');
   const [name, setName] = useState(gear?.name ?? '');
   const [memo, setMemo] = useState(gear?.memo ?? '');
@@ -29,6 +30,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
         id,
         angler,
         category,
+        subcategory: category === '라인' ? subcategory : '',
         brand: brand.trim().replace(/^\[|\]$/g, ''), // 대괄호는 화면에서 붙입니다.
         name: trimmed,
         memo: memo.trim(),
@@ -66,6 +68,16 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
           ))}
         </select>
       </div>
+      {category === '라인' && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="gear-subcategory" className="mono-label">세부 분류</label>
+          <select id="gear-subcategory" className="min-h-11 border border-field bg-surface px-3 text-ink" value={subcategory} onChange={(event) => setSubcategory(event.target.value)}>
+            {LINE_SUBCATEGORIES.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <Field label="브랜드" placeholder="예: 다이와" hint="목록에는 [다이와] 처럼 대괄호로 표시됩니다." maxLength={40} value={brand} onChange={(event) => setBrand(event.target.value)} />
       <Field label="장비 이름" placeholder="예: 25 레가리스 LT 3000-CXH" maxLength={60} error={nameError} value={name} onChange={(event) => setName(event.target.value)} />
       <TextareaField label="메모" maxLength={500} value={memo} onChange={(event) => setMemo(event.target.value)} />

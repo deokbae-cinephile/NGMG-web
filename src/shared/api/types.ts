@@ -37,6 +37,8 @@ export type Gear = {
   angler: string;
   /** 로드, 릴, 라인, 채비, 기타 */
   category: string;
+  /** 라인의 세부 분류(원줄, 목줄). 다른 분류는 빈 문자열입니다. */
+  subcategory: string;
   brand: string;
   name: string;
   memo: string;
