@@ -277,8 +277,7 @@ body::after {
     color: var(--color-ink);
   }
   .text-action-accent {
-    background: linear-gradient(var(--color-accent), var(--color-accent)) center / 100% 1.5rem no-repeat;
-    color: var(--color-ink);
+    color: var(--color-accent);
   }
   /* 휴대폰의 조사 고르기 탭. 넓은 화면은 두 칸을 함께 보여 줍니다. */
   .tab-button {
@@ -293,7 +292,6 @@ body::after {
   }
   .tab-button[aria-pressed='true'] {
     background: var(--color-accent);
-    box-shadow: inset 0 -3px 0 var(--color-ink); /* 색 없이도 고른 탭이 보입니다. */
   }
 
   .result {
@@ -570,17 +568,16 @@ body::after {
     filter: grayscale(0.85) contrast(1.05);
   }
 
-  /* 지도 핀: 지도 메뉴 아이콘처럼 물방울 안에 원이 있는 모양. 뾰족한 끝이 장소 위치이고, 분류는 아이콘, 평균 평점은 핀 전체의 색으로 나타냅니다. */
+  /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 아이콘, 평균 평점은 핀 전체의 색으로 나타냅니다. */
   .pin {
-    --pin-fill: var(--color-ink);
-    --pin-ring: var(--color-paper); /* 검정 핀에서도 안쪽 원이 보이도록 흰 선을 씁니다. */
+    --pin-fill: var(--color-paper);
     position: relative;
     display: flex;
     width: 2.625rem;
     height: 3.25rem;
     justify-content: center;
-    padding-top: 0.83rem; /* 16px 아이콘의 중심을 안쪽 원의 중심(위에서 약 21px)에 맞춥니다. */
-    color: var(--color-paper);
+    padding-top: 0.77rem; /* 18px 아이콘의 중심을 핀 머리 원의 중심(위에서 약 21px)에 맞춥니다. */
+    color: var(--color-ink);
     cursor: pointer;
     transform-origin: bottom center;
   }
@@ -596,23 +593,12 @@ body::after {
     stroke: var(--color-ink);
     stroke-width: 1.1;
   }
-  .pin-shape circle {
-    stroke: var(--pin-ring);
-  }
-  .pin-restaurant {
-    --pin-fill: var(--color-paper);
-    --pin-ring: var(--color-ink);
-    color: var(--color-ink);
-  }
   .pin-etc {
-    --pin-fill: var(--color-soft); /* 흰 물방울과 구분되는 연회색을 씁니다. */
-    --pin-ring: var(--color-ink);
-    color: var(--color-ink);
+    --pin-fill: var(--color-soft); /* 흰 핀과 구분되는 연회색을 씁니다. */
   }
   /* 평균 평점 색(월드 오브 워크래프트 아이템 등급 색). 핀 전체와 평점 표시에 함께 씁니다. 평점이 없으면 분류별 기본 색입니다. */
   .pin.rate-1 {
     --pin-fill: #9d9d9d;
-    --pin-ring: var(--color-ink);
     background: none;
     color: #0a0a0a;
   }
@@ -622,7 +608,6 @@ body::after {
   }
   .pin.rate-2 {
     --pin-fill: #1eff00;
-    --pin-ring: var(--color-ink);
     background: none;
     color: #0a0a0a;
   }
@@ -632,7 +617,6 @@ body::after {
   }
   .pin.rate-3 {
     --pin-fill: #0070dd;
-    --pin-ring: var(--color-ink);
     background: none;
     color: #fafafa;
   }
@@ -642,7 +626,6 @@ body::after {
   }
   .pin.rate-4 {
     --pin-fill: #a335ee;
-    --pin-ring: var(--color-ink);
     background: none;
     color: #fafafa;
   }
@@ -652,7 +635,6 @@ body::after {
   }
   .pin.rate-5 {
     --pin-fill: #ff8000;
-    --pin-ring: var(--color-ink);
     background: none;
     color: #0a0a0a;
   }
@@ -692,20 +674,40 @@ body::after {
     padding: 0.25rem 0.375rem;
     font-size: 0.8125rem;
   }
+  .map-legend strong,
   .map-legend span {
     display: inline-flex;
-    width: 1.25rem;
     height: 1.25rem;
     align-items: center;
     justify-content: center;
+    line-height: 1;
+  }
+  .map-legend span {
+    width: 1.25rem;
+  }
+  /* 지도 종류 전환. 왼쪽 평점 표시와 높이를 맞춥니다. */
+  .map-layer-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
+    display: flex;
+    width: 1.875rem;
+    height: 1.875rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .map-layer-toggle:hover {
+    background: var(--color-accent);
   }
 
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
   /* 무악재역: 흰 바탕에 검정 윤곽선. 기차 아이콘과 이름표로 구분합니다. */
   .pin-base {
-    --pin-fill: var(--color-paper);
-    --pin-ring: var(--color-ink);
-    color: var(--color-ink);
     cursor: default;
     pointer-events: none;
   }

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { useFishDex, useStatRecords } from '@/entities/record';
-import { formatDate } from '@/shared/lib';
+import { useFishDex, useMenuDex } from '@/entities/record';
+import { formatDate, Link } from '@/shared/lib';
 import { ErrorText, Icon, PageSkeleton, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
 
@@ -19,21 +19,34 @@ const Summary = ({ title, status, error }: { title: string; status: string; erro
   </>
 );
 
-/** 도감 한 칸. 사진이 없으면 아이콘을 보여 줍니다. */
-const DexCard = ({ number, title, icon, photo, children }: { number: number; title: string; icon: IconName; photo?: ReactNode; children: ReactNode }) => (
-  <li className="flex flex-col bg-paper">
-    {photo ?? (
-      <span aria-hidden="true" className="flex aspect-[4/3] items-center justify-center bg-surface text-muted">
-        <Icon name={icon} size={56} />
+/** 도감 한 칸. 사진이 없으면 아이콘을 보여 주고, to가 있으면 칸 전체가 링크입니다. */
+const DexCard = ({ number, title, icon, photo, to, children }: { number: number; title: string; icon: IconName; photo?: ReactNode; to?: string; children: ReactNode }) => {
+  const body = (
+    <>
+      {photo ?? (
+        <span aria-hidden="true" className="flex aspect-[4/3] items-center justify-center bg-surface text-muted">
+          <Icon name={icon} size={56} />
+        </span>
+      )}
+      <span className="flex flex-col gap-2 p-4">
+        <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>
+        <h3 className="title text-lg break-words">{title}</h3>
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
       </span>
-    )}
-    <div className="flex flex-col gap-2 p-4">
-      <p className="mono-label">{`No.${String(number).padStart(3, '0')}`}</p>
-      <h3 className="title text-lg break-words">{title}</h3>
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
-    </div>
-  </li>
-);
+    </>
+  );
+  return (
+    <li className="flex flex-col bg-paper">
+      {to ? (
+        <Link to={to} className="flex h-full flex-col hover:bg-surface">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+    </li>
+  );
+};
 
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = () => {
@@ -75,24 +88,33 @@ const FishDex = () => {
   );
 };
 
-/** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격과 먹은 횟수를 보여 줍니다. */
+/** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격, 평균 평점, 먹은 횟수를 보여 줍니다. */
 const MenuDex = () => {
-  const { data = [], isPending, error } = useStatRecords();
+  const { data = [], isPending, error } = useMenuDex();
   if (isPending) return <PageSkeleton />;
   const entries = buildMenuDex(data);
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
   return (
     <>
-      <Summary title="메뉴 도감" status={`${entries.length}종 발견 / 총 ${total}번`} error={error} />
+      <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {entries.map(({ number, name, count, price, visitedOn, place }) => (
-          <DexCard key={name} number={number} title={name} icon="food">
+        {entries.map(({ number, name, count, price, rating, latest, photo }) => (
+          <DexCard
+            key={name}
+            number={number}
+            title={name}
+            icon="food"
+            to={`/schedule?date=${latest.record.visited_on}`}
+            photo={photo ? <img src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
+          >
+            <dt className="mono-label">평점</dt>
+            <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
             <dt className="mono-label">최근 가격</dt>
             <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
             <dt className="mono-label">시간 및 장소</dt>
-            <dd className="break-words">{`${formatDate(visitedOn)} / ${place}`}</dd>
+            <dd className="break-words">{`${formatDate(latest.record.visited_on)} / ${latest.record.place.name}`}</dd>
             <dt className="mono-label">먹은 횟수</dt>
             <dd>{`${count}번`}</dd>
           </DexCard>

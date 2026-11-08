@@ -30,6 +30,18 @@ export type FishCatch = {
   photo_url?: string;
 };
 
+/** 맛집 기록의 메뉴 한 개 */
+export type MenuItem = {
+  id: string;
+  name: string;
+  price: number | null;
+  /** 1~5점 */
+  rating: number | null;
+  photo_path: string | null;
+  position: number;
+  photo_url?: string;
+};
+
 /** 조사별 장비 한 개 */
 export type Gear = {
   id: string;
@@ -75,6 +87,7 @@ export type PlaceRecord = RecordDetails & {
   place: Pick<Place, 'id' | 'name' | 'kind'>;
   photos: RecordPhoto[];
   fish: FishCatch[];
+  menu_items: MenuItem[];
 };
 
 export type CalendarEvent = {

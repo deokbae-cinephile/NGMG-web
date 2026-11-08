@@ -3,13 +3,13 @@ import type { PlaceRecord } from '@/shared/api';
 import { formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
 import { RecordPhotos } from './photo-slider';
-import { formatGear, menuLine, parseMenu, RECORD_LABELS } from './model';
+import { formatGear, menuLine, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
-  const menu = parseMenu(record.menu);
-  const priced = menu.some((item) => item.price);
+  const menu = record.menu_items;
+  const priced = menu.some((item) => item.price !== null);
   const details = [
     ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: field.name === 'gear' ? formatGear(record.gear) : field.name === 'menu' ? menu.map(menuLine).join('\n') : record[field.name] }] : [])),
     ...(record.price !== null && !(priced && menu.length === 1) ? [{ label: priced ? '합계' : '가격', value: `${record.price.toLocaleString('ko-KR')}원` }] : []),
@@ -61,7 +61,12 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           </ul>
         </section>
       )}
-      {record.memo && <p className="whitespace-pre-wrap break-words">{record.memo}</p>}
+      {record.memo && (
+        <dl>
+          <dt className="mono-label">메모</dt>
+          <dd className="whitespace-pre-wrap break-words">{record.memo}</dd>
+        </dl>
+      )}
       {record.photos.length > 0 && <RecordPhotos record={record} />}
     </article>
   );

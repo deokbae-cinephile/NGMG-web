@@ -69,13 +69,18 @@ const deletePlace = async (place: Pick<Place, 'id' | 'photo_path'>) => {
     .from('fish_catches')
     .select('photo_path, records!inner(place_id)')
     .eq('records.place_id', place.id);
-  if (photoError || fishError) throw new Error('장소를 삭제하지 못했습니다.');
+  const { data: menu, error: menuError } = await supabase
+    .from('menu_items')
+    .select('photo_path, records!inner(place_id)')
+    .eq('records.place_id', place.id);
+  if (photoError || fishError || menuError) throw new Error('장소를 삭제하지 못했습니다.');
   const { error } = await supabase.from('places').delete().eq('id', place.id);
   if (error) throw new Error('장소를 삭제하지 못했습니다.');
   // 장소를 지운 뒤에 파일을 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
   const paths = [
     ...photos.map((photo) => photo.storage_path as string),
     ...fish.flatMap((item) => (item.photo_path as string | null) ?? []),
+    ...menu.flatMap((item) => (item.photo_path as string | null) ?? []),
     ...(place.photo_path ? [place.photo_path] : []),
   ];
   if (paths.length) await supabase.storage.from(PHOTO_BUCKET).remove(paths);

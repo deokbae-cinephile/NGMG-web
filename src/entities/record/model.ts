@@ -1,4 +1,4 @@
-import { ANGLERS, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails } from '@/shared/api';
+import { ANGLERS, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails } from '@/shared/api';
 
 export { ANGLERS };
 
@@ -45,7 +45,7 @@ export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; 
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
   ],
-  restaurant: [], // 메뉴와 가격은 MenuFieldset에서 줄마다 받습니다.
+  restaurant: [], // 메뉴는 MenuFieldset에서 줄마다 받습니다.
   etc: [],
 };
 
@@ -68,31 +68,22 @@ export const formatGear = (text: string) => gearList(text).join(' / ');
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
 
-export type MenuItem = { name: string; price: string };
+type MenuDraft = { name: string; price: string };
 
-/** 메뉴 칸을 줄로 나눕니다. '모둠회 30000원 / 매운탕'처럼 저장하고, 쉼표로 적은 예전 값도 읽습니다. */
-export const parseMenu = (text: string): MenuItem[] =>
-  text
-    .split(/\s+\/\s+|[;\n]+|,(?!\d{3}(?:\D|$))/) // 12,000원의 쉼표는 구분자가 아닙니다.
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item) => {
-      const match = item.match(/^(.*\S)\s+(\d[\d,]*)원$/);
-      return match ? { name: match[1]!, price: match[2]!.replaceAll(',', '') } : { name: item, price: '' };
-    });
-
-export const formatMenu = (items: MenuItem[]) =>
+/** 메뉴 칸에 남길 글. 검색과 내보내기에 씁니다. */
+export const formatMenu = (items: MenuDraft[]) =>
   items
-    .map(({ name, price }) => ({ name: name.trim().replace(/\s+\/\s+/g, '/').replace(/[,;\n]+/g, ' '), price }))
+    .map(({ name, price }) => ({ name: name.trim(), price }))
     .filter(({ name }) => name)
     .map(({ name, price }) => (price ? `${name} ${Number(price)}원` : name))
     .join(' / ');
 
 /** 줄에 적은 가격의 합계. 가격을 하나도 적지 않았으면 null입니다. */
-export const menuTotal = (items: MenuItem[]) => {
+export const menuTotal = (items: MenuDraft[]) => {
   const prices = items.filter((item) => item.name.trim() && item.price);
   return prices.length ? prices.reduce((sum, item) => sum + Number(item.price), 0) : null;
 };
 
-/** 메뉴 한 줄을 '모둠회 - 30,000원'처럼 읽습니다. */
-export const menuLine = ({ name, price }: MenuItem) => (price ? `${name} - ${Number(price).toLocaleString('ko-KR')}원` : name);
+/** 메뉴 한 줄을 '모둠회 - 30,000원 (4점)'처럼 읽습니다. */
+export const menuLine = ({ name, price, rating }: Pick<MenuItem, 'name' | 'price' | 'rating'>) =>
+  `${name}${price === null ? '' : ` - ${price.toLocaleString('ko-KR')}원`}${rating === null ? '' : ` (${rating}점)`}`;

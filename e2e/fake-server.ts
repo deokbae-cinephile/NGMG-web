@@ -1,6 +1,6 @@
 // Supabase와 Kakao SDK 응답을 흉내 내는 가짜 서버입니다. Playwright(fake-backend.ts)와 배포용 데모(demo-entry.ts)가 함께 씁니다.
 export type Row = Record<string, unknown> & { id: string };
-export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'angler_gear' | 'events' | 'checklist_items', Row[]>>;
+export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'menu_items' | 'angler_gear' | 'events' | 'checklist_items', Row[]>>;
 
 export type FakeRequest = { method: string; url: string; accept: string; body: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 export type FakeResponse = { status: number; contentType: string; body: string };
@@ -78,6 +78,7 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
   checklist_items: { checked: false },
   angler_gear: { category: '기타', subcategory: '', brand: '', memo: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
   fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
+  menu_items: { price: null, rating: null, photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
 };
 
 const json = (body: unknown, status = 200): FakeResponse => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -97,7 +98,7 @@ export const createFakeServer = (seed: Seed = {}) => {
     table === 'events' ? { ...row, end_date: row.end_date ?? row.date } : table === 'records' ? { ...row, end_date: row.end_date ?? row.visited_on } : row;
   const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => withEndDate(table, { ...DEFAULTS[table], ...row } as Row));
   const db: Record<string, Row[]> = Object.fromEntries(
-    ['places', 'records', 'record_photos', 'fish_catches', 'angler_gear', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
+    ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'angler_gear', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
   );
   const removedFiles: string[] = [];
   let nextId = 1;
@@ -115,9 +116,9 @@ export const createFakeServer = (seed: Seed = {}) => {
     if (table === 'events') return { ...row, place };
     if (table === 'records') {
       const of = (list: Row[]) => list.filter((item) => item.record_id === row.id);
-      return { ...row, place, photos: of(db.record_photos!), fish: of(db.fish_catches!) };
+      return { ...row, place, photos: of(db.record_photos!), fish: of(db.fish_catches!), menu_items: of(db.menu_items!) };
     }
-    if (table === 'fish_catches') {
+    if (table === 'fish_catches' || table === 'menu_items') {
       const record = db.records!.find((item) => item.id === row.record_id);
       return { ...row, record: { ...record, place: db.places!.find((item) => item.id === record?.place_id) } };
     }

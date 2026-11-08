@@ -3,7 +3,7 @@ import { supabase, type PlaceRecord } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText } from '@/shared/ui';
 
-const TABLES = ['places', 'records', 'record_photos', 'fish_catches', 'angler_gear', 'events', 'checklist_items'] as const;
+const TABLES = ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'angler_gear', 'events', 'checklist_items'] as const;
 const PAGE = 1000; // Supabase가 한 번에 돌려주는 기본 최대 행 수
 
 const fetchAll = async (table: (typeof TABLES)[number]) => {

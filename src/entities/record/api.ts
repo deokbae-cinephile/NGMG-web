@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type CalendarEvent, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { cleanKeyword, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
@@ -8,9 +8,9 @@ export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
 
 const SELECT =
-  '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position)';
+  '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position), menu_items(id, name, price, rating, photo_path, position)';
 
-type Row = Omit<PlaceRecord, 'photos' | 'fish'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[] };
+type Row = Omit<PlaceRecord, 'photos' | 'fish' | 'menu_items'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[]; menu_items?: MenuItem[] };
 
 // 사진 버킷은 비공개라 서명 주소를 받아 표시합니다.
 const signPhotos = async (paths: string[]) => {
@@ -26,7 +26,7 @@ const signPhotos = async (paths: string[]) => {
 
 const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
   const urls = await signPhotos(
-    rows.flatMap((row) => [...row.photos.map((photo) => photo.storage_path), ...(row.fish ?? []).flatMap((fish) => fish.photo_path ?? [])]),
+    rows.flatMap((row) => [...row.photos.map((photo) => photo.storage_path), ...(row.fish ?? []).flatMap((fish) => fish.photo_path ?? []), ...(row.menu_items ?? []).flatMap((item) => item.photo_path ?? [])]),
   );
   return rows.map((row) => ({
     ...row,
@@ -36,6 +36,9 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
     fish: [...(row.fish ?? [])]
       .sort((a, b) => a.position - b.position)
       .map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined })),
+    menu_items: [...(row.menu_items ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({ ...item, photo_url: item.photo_path ? urls.get(item.photo_path) : undefined })),
   }));
 };
 
@@ -131,7 +134,7 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating' | 'menu'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
@@ -145,7 +148,7 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, gear, catches, rating, menu, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
+          .select('id, visited_on, bait, gear, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
           .order('visited_on')
           .order('id')
           .range(from, from + 999);
@@ -198,6 +201,29 @@ export const useFishDex = () =>
     },
   });
 
+export type DexMenu = MenuItem & { record: { visited_on: string; place: { name: string } } };
+
+/** 도감용으로 맛집 메뉴를 모두 받습니다. */
+export const useMenuDex = () =>
+  useQuery({
+    queryKey: ['records', 'menu-dex'],
+    queryFn: async (): Promise<DexMenu[]> => {
+      const rows: DexMenu[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from('menu_items')
+          .select('id, name, price, rating, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
+          .order('id')
+          .range(from, from + 999);
+        if (error) throw new Error('도감을 불러오지 못했습니다.');
+        rows.push(...(data as unknown as DexMenu[]));
+        if (data.length < 1000) break;
+      }
+      const urls = await signPhotos(rows.flatMap((item) => item.photo_path ?? []));
+      return rows.map((item) => ({ ...item, photo_url: item.photo_path ? urls.get(item.photo_path) : undefined }));
+    },
+  });
+
 /** 가장 최근 낚시 기록의 장비·채비·미끼 */
 export const fetchLatestGear = async () => {
   const { data, error } = await supabase
@@ -227,10 +253,15 @@ export type RecordInput = RecordDetails & {
   nextPosition: number;
   fish: FishInput[];
   removedFish: Pick<FishCatch, 'id' | 'photo_path'>[];
+  menuItems: MenuInput[];
+  removedMenu: Pick<MenuItem, 'id' | 'photo_path'>[];
 };
 
 /** 저장할 물고기. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
 export type FishInput = Omit<FishCatch, 'photo_url'> & { file: File | null; removePhoto: boolean };
+
+/** 저장할 메뉴. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
+export type MenuInput = Omit<MenuItem, 'photo_url'> & { file: File | null; removePhoto: boolean };
 
 const removeFiles = async (paths: (string | null)[]) => {
   const list = paths.filter((path): path is string => Boolean(path));
@@ -259,7 +290,28 @@ const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInpu
   }
 };
 
-const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, ...values }: RecordInput) => {
+const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInput['removedMenu']) => {
+  if (removed.length) {
+    const removal = await supabase.from('menu_items').delete().in('id', removed.map((item) => item.id));
+    if (removal.error) throw new Error('메뉴를 삭제하지 못했습니다.');
+    await removeFiles(removed.map((item) => item.photo_path));
+  }
+  for (const { file, removePhoto, ...item } of items) {
+    let photo_path = removePhoto ? null : item.photo_path;
+    if (file) {
+      photo_path = `${recordId}/menu-${item.id}-${file.lastModified}-${file.size}.jpg`;
+      const upload = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(photo_path, await compressImage(file), { upsert: true, contentType: 'image/jpeg' });
+      if (upload.error) throw new Error(`메뉴 사진을 올리지 못했습니다: ${file.name}`);
+    }
+    const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path });
+    if (row.error) throw new Error('메뉴를 저장하지 못했습니다.');
+    if (item.photo_path && item.photo_path !== photo_path) await removeFiles([item.photo_path]); // 바꾸거나 지운 옛 사진
+  }
+};
+
+const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, menuItems, removedMenu, ...values }: RecordInput) => {
   const { error } = await supabase.from('records').upsert(values);
   if (error) throw new Error('기록을 저장하지 못했습니다.');
 
@@ -282,6 +334,7 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
   }
 
   await saveFish(values.id, fish, removedFish);
+  await saveMenu(values.id, menuItems, removedMenu);
 };
 
 export const useSaveRecord = () => {
@@ -297,7 +350,7 @@ const deleteRecord = async (record: PlaceRecord) => {
   // 기록을 먼저 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
   const { error } = await supabase.from('records').delete().eq('id', record.id);
   if (error) throw new Error('기록을 삭제하지 못했습니다.');
-  await removeFiles([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path)]);
+  await removeFiles([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path), ...record.menu_items.map((item) => item.photo_path)]);
 };
 
 export const useDeleteRecord = () => {

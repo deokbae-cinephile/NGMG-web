@@ -1,4 +1,4 @@
-import { parseMenu, type DexFish, type StatRecord } from '@/entities/record';
+import type { DexFish, DexMenu } from '@/entities/record';
 
 export type DexEntry = { number: number; species: string; count: number; big: DexFish };
 
@@ -22,27 +22,26 @@ export const buildDex = (fish: DexFish[]): DexEntry[] => {
   }));
 };
 
-export type MenuDexEntry = { number: number; name: string; count: number; price: number | null; visitedOn: string; place: string };
+export type MenuDexEntry = { number: number; name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photo?: string };
 
-/** 맛집 기록의 메뉴를 이름별로 묶습니다. 번호는 처음 먹은 순서, 가격과 장소는 가장 최근 기록 기준입니다. */
-export const buildMenuDex = (records: StatRecord[]): MenuDexEntry[] => {
-  const entries = new Map<string, MenuDexEntry>();
-  [...records]
-    .filter((record) => record.place.kind === 'restaurant')
-    .sort((a, b) => a.visited_on.localeCompare(b.visited_on))
-    .forEach((record) =>
-      parseMenu(record.menu).forEach((item) => {
-        const name = speciesName(item.name);
-        const before = entries.get(name);
-        entries.set(name, {
-          number: before?.number ?? entries.size + 1,
-          name,
-          count: (before?.count ?? 0) + 1,
-          price: item.price ? Number(item.price) : (before?.price ?? null),
-          visitedOn: record.visited_on,
-          place: record.place.name,
-        });
-      }),
-    );
-  return [...entries.values()];
+/** 맛집 메뉴를 이름별로 묶습니다. 번호는 처음 먹은 순서, 가격·장소·사진은 가장 최근 기록 기준이고 평점은 평균입니다. */
+export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
+  const groups = new Map<string, DexMenu[]>();
+  [...items].sort((a, b) => a.record.visited_on.localeCompare(b.record.visited_on)).forEach((item) => {
+    const name = speciesName(item.name);
+    if (name) groups.set(name, [...(groups.get(name) ?? []), item]);
+  });
+  return [...groups].map(([name, list], index) => {
+    const ratings = list.flatMap((item) => item.rating ?? []);
+    const newest = [...list].reverse();
+    return {
+      number: index + 1,
+      name,
+      count: list.length,
+      price: newest.find((item) => item.price !== null)?.price ?? null,
+      rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null,
+      latest: list.at(-1)!,
+      photo: newest.find((item) => item.photo_url)?.photo_url,
+    };
+  });
 };
