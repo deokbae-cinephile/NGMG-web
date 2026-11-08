@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, navigate } from '@/shared/lib';
-import { ErrorText, Loader, Modal } from '@/shared/ui';
+import { ErrorText, Modal, PageSkeleton } from '@/shared/ui';
 
 export const PlacePage = ({ id }: { id: string }) => {
   const places = usePlaces();
@@ -17,7 +17,7 @@ export const PlacePage = ({ id }: { id: string }) => {
   const place = places.data?.find((item) => item.id === id);
   const summary = summarizeRecords(records.data ?? []);
 
-  if (places.isPending) return <Loader />;
+  if (places.isPending) return <PageSkeleton />;
   if (!place) {
     return (
       <div className="cell-body">

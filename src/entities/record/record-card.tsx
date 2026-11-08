@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate } from '@/shared/lib';
-import { Icon } from '@/shared/ui';
-import { fishLabel, RECORD_FIELDS } from './model';
+import { FishRow } from './fish-row';
+import { RECORD_FIELDS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
@@ -80,20 +80,8 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           <p className="mono-label" aria-hidden="true">{`잡은 물고기 ${record.fish.length}마리`}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {record.fish.map((fish) => (
-              <li key={fish.id} className="flex items-center gap-3 border border-soft p-2">
-                {fish.photo_url ? (
-                  <a href={fish.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                    <img src={fish.photo_url} alt={`${fishLabel(fish)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
-                  </a>
-                ) : (
-                  <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
-                    <Icon name="fish" size={28} />
-                  </span>
-                )}
-                <span className="flex min-w-0 flex-col">
-                  <span className="break-words">{fishLabel(fish)}</span>
-                  <span className="text-sm text-muted">{fish.angler}</span>
-                </span>
+              <li key={fish.id} className="border border-soft p-2">
+                <FishRow fish={fish} />
               </li>
             ))}
           </ul>

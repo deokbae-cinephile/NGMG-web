@@ -16,7 +16,16 @@
     <title>낚고먹고</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- 자바스크립트를 받는 동안 보이는 첫 화면. 인트로의 검은 벽과 이어집니다. React가 그리면 사라집니다. -->
+    <div id="root"><div id="boot" style="position: fixed; inset: 0; background: #0a0a0a"></div></div>
+    <script>
+      try {
+        if (sessionStorage.getItem('ngmg:intro') || matchMedia('(prefers-reduced-motion: reduce)').matches)
+          document.getElementById('boot').style.background = '#fafafa';
+      } catch {
+        document.getElementById('boot').style.background = '#fafafa';
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

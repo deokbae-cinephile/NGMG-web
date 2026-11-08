@@ -1,12 +1,12 @@
 import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { InstallButton } from '@/features/install-app';
 import { NavLink, useLocation } from '@/shared/lib';
-import { Icon, Loader, Logo, type IconName } from '@/shared/ui';
+import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
-  { to: '/', label: '지도', icon: 'map' },
+  { to: '/', label: '지도', icon: 'pin' },
   { to: '/schedule', label: '일정', icon: 'calendar' },
-  { to: '/records', label: '기록', icon: 'records' },
+  { to: '/records', label: '기록', icon: 'notebook' },
   { to: '/stats', label: '통계', icon: 'stats' },
 ];
 
@@ -18,7 +18,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   // 화면이 바뀌면 스크린리더와 키보드 사용자를 본문으로 옮깁니다.
   useEffect(() => {
     if (first.current) first.current = false;
-    else main.current?.focus();
+    else {
+      // 화면이 바뀌면 맨 위부터 보여 줍니다. 초점을 옮기면서 브라우저가 스크롤을 움직이지 않게 합니다.
+      window.scrollTo(0, 0);
+      main.current?.focus({ preventScroll: true });
+    }
   }, [pathname]);
 
   return (
@@ -42,7 +46,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         <InstallButton />
       </header>
       <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={<PageSkeleton />}>
           {children}
         </Suspense>
       </main>

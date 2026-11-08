@@ -59,10 +59,22 @@ test('로그인 화면: 틀리면 안내하고 맞으면 들어간다', async ({
   await expect(page.getByRole('heading', { name: '내 장소', exact: true })).toBeVisible();
 });
 
+test('첫 로딩: 벽을 밀고 로고가 드러난 뒤 앱이 열리고, 새로고침하면 다시 재생하지 않는다', async ({ page }) => {
+  await fakeBackend(page, seed(), { intro: true });
+  await page.goto('./');
+  await expect(page.locator('.intro-wall')).toBeAttached();
+  await expect(page.locator('.intro')).toBeHidden({ timeout: 8000 });
+  await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
+  await expect(page.locator('.intro-wall')).toHaveCount(0);
+});
+
 test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
+  await expect(page.getByRole('img', { name: '기준 위치: 무악재역' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 

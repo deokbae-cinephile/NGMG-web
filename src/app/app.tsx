@@ -1,17 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useCallback, useEffect, useState } from 'react';
 import { useSession } from '@/entities/session';
 import { LoginPage } from '@/pages/login';
 import { Navigate, useLocation } from '@/shared/lib';
-import { ErrorBoundary, Loader } from '@/shared/ui';
+import { ErrorBoundary } from '@/shared/ui';
 import { AppShell } from '@/widgets/app-shell';
+import { Intro } from './intro';
 
-const MapPage = lazy(() => import('@/pages/map').then((page) => ({ default: page.MapPage })));
-const SchedulePage = lazy(() => import('@/pages/schedule').then((page) => ({ default: page.SchedulePage })));
-const RecordsPage = lazy(() => import('@/pages/records').then((page) => ({ default: page.RecordsPage })));
-const StatsPage = lazy(() => import('@/pages/stats').then((page) => ({ default: page.StatsPage })));
-const PlacePage = lazy(() => import('@/pages/place').then((page) => ({ default: page.PlacePage })));
-
+const pages = {
+  map: () => import('@/pages/map').then((page) => ({ default: page.MapPage })),
+  schedule: () => import('@/pages/schedule').then((page) => ({ default: page.SchedulePage })),
+  records: () => import('@/pages/records').then((page) => ({ default: page.RecordsPage })),
+  stats: () => import('@/pages/stats').then((page) => ({ default: page.StatsPage })),
+  place: () => import('@/pages/place').then((page) => ({ default: page.PlacePage })),
+};
+const MapPage = lazy(pages.map);
+const SchedulePage = lazy(pages.schedule);
+const RecordsPage = lazy(pages.records);
+const StatsPage = lazy(pages.stats);
+const PlacePage = lazy(pages.place);
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
 
@@ -51,6 +58,15 @@ const useFontsReady = () => {
 export const App = () => {
   const session = useSession();
   const fontsReady = useFontsReady();
+  const [introDone, setIntroDone] = useState(false);
+  const finishIntro = useCallback(() => setIntroDone(true), []);
+
+  // 로그인 후 다른 메뉴의 코드를 미리 받아 둡니다. 메뉴를 처음 눌러도 로딩 화면 없이 바로 바뀝니다.
+  useEffect(() => {
+    if (!session) return;
+    const timer = window.setTimeout(() => Object.values(pages).forEach((load) => void load()), 1000);
+    return () => window.clearTimeout(timer);
+  }, [session]);
 
   useEffect(() => {
     if (session === null) client.clear(); // 로그아웃되면 화면에 남은 데이터를 지웁니다.
@@ -58,7 +74,7 @@ export const App = () => {
 
   return (
     <ErrorBoundary>
-      {(session === undefined || !fontsReady) && <Loader />}
+      {!introDone && <Intro ready={session !== undefined && fontsReady} onDone={finishIntro} />}
       {session !== undefined && (
         <QueryClientProvider client={client}>
           {session === null ? (

@@ -4,7 +4,7 @@ import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } fr
 import { PlaceForm } from '@/features/place-form';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
-import { ErrorText, Field, Modal } from '@/shared/ui';
+import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
@@ -140,6 +140,7 @@ export const MapPage = () => {
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
           </p>
 
+          {isPending && <SkeletonRows />}
           <ul className="flex flex-col">
             {listed.map((place, index) => {
               const distance = origin ? distanceKm(origin, place) : null;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fishLabel, useStatRecords } from '@/entities/record';
-import { ErrorText, Loader } from '@/shared/ui';
+import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { summarize, yearsOf } from './model';
 
 const Ranking = ({ id, title, rows, unit }: { id: string; title: string; rows: [string, number][]; unit: string }) => {
@@ -39,7 +39,7 @@ export const StatsPage = () => {
   const stats = summarize(records, year);
   const maxMonth = Math.max(1, ...stats.months);
 
-  if (isPending) return <Loader />;
+  if (isPending) return <PageSkeleton />;
 
   return (
     <div>

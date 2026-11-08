@@ -8,7 +8,7 @@ import { EventForm } from '@/features/event-form';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
 import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
-import { ErrorText, Modal } from '@/shared/ui';
+import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
 import { MonthCalendar } from './month-calendar';
 
 const PaneHead = ({ id, title, children }: { id: string; title: string; children?: ReactNode }) => (
@@ -92,6 +92,11 @@ export const SchedulePage = () => {
           />
         </div>
         <ErrorText error={monthEvents.error ?? upcoming.error} />
+        {upcoming.isPending && (
+          <div className="px-5">
+            <SkeletonRows count={3} />
+          </div>
+        )}
         {upcoming.data && upcoming.data.length > 0 && (
           <section aria-labelledby="upcoming-title">
             <h3 id="upcoming-title" className="title text-lg px-5 pt-5 pb-3">다가오는 일정</h3>
@@ -134,6 +139,7 @@ export const SchedulePage = () => {
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
             <h3 id="events-title" className="sr-only">이날 일정</h3>
             <ErrorText error={dayEvents.error ?? remove.error} />
+            {dayEvents.isPending && <SkeletonRows count={2} />}
             {!dayEvents.isPending && events.length === 0 && <p className="text-muted">일정이 없습니다.</p>}
             <ol className="flex flex-col">
               {events.map((event) => (
@@ -202,6 +208,7 @@ export const SchedulePage = () => {
           <section aria-labelledby="records-of-day" className="flex flex-col gap-2">
             <h3 id="records-of-day" className="title text-lg">이날의 기록</h3>
             <ErrorText error={dayRecords.error ?? recorded.error} />
+            {dayRecords.isPending && <SkeletonRows count={1} />}
             {dayRecords.data?.length === 0 && <p className="text-muted">이날 남긴 기록이 없습니다.</p>}
             <div className="flex flex-col">
               {dayRecords.data?.map((record) => (
