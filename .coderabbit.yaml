@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit PR 리뷰 설정. 리뷰는 한국어로, 이 프로젝트의 규칙(가벼움, FSD, 접근성)을 기준으로 봅니다.
+language: ko-KR
+tone_instructions: '한국어 존댓말로 짧고 구체적으로 씁니다. 근거가 약한 추측성 지적은 하지 않습니다.'
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  poem: false
+  in_progress_fortune: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ['main']
+  # 자동 생성되거나 리뷰할 필요가 없는 파일
+  path_filters:
+    - '!pnpm-lock.yaml'
+    - '!docs/images/**'
+    - '!public/screenshots/**'
+    - '!public/*.png'
+    - '!src/shared/assets/**'
+  path_instructions:
+    - path: 'src/**'
+      instructions: |
+        - Feature-Sliced Design v2.1을 따릅니다: app → pages → widgets → features → entities → shared 순서로 아래 계층만 가져오고, 슬라이스는 공개 API(index.ts)로만 가져옵니다.
+        - 가벼움이 최우선입니다. 새 의존성을 추가하면 직접 구현으로 대신할 수 있는지 지적해 주세요. (라우터·달력·날짜 계산은 직접 구현, Supabase는 auth/postgrest/storage-js만 사용)
+        - 접근성은 KWCAG 2.2와 WAI-ARIA 1.2 기준입니다: 네이티브 HTML 우선, 레이블·대체 텍스트, 키보드 조작, 초점 표시, 색만으로 구분하지 않기, 명도 대비를 확인해 주세요.
+        - 화면 문구와 주석은 한국어입니다. 화면에 영어 라벨을 쓰지 않습니다.
+        - 저장 요청은 중복 제출을 막아야 합니다(isPending만으로는 빠른 연속 클릭을 못 막음).
+    - path: 'supabase/migrations/**'
+      instructions: |
+        - 새 테이블은 RLS를 켜고 public.is_member() 정책과 authenticated 권한을 함께 둬야 합니다.
+        - 이미 적용된 마이그레이션 파일은 고치지 않고 새 파일로 바꿉니다.
+    - path: 'e2e/**'
+      instructions: |
+        - 테스트는 핵심 흐름만 가볍게 유지합니다. 화면의 역할·이름(getByRole, getByLabel)으로 찾습니다.
+
+chat:
+  auto_reply: true
