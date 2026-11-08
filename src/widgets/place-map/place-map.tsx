@@ -56,18 +56,29 @@ const pinOffsets = (places: Place[]) => {
 };
 
 // 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
-const createPin = (place: Place, rating: number | undefined, offset: number, onSelect: (id: string) => void) => {
+const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
-  pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
-  // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
-  pin.innerHTML = `${iconSvg(KIND_ICON[place.kind], 18)}${rating === undefined ? '' : `<span aria-hidden="true" class="pin-score">${rating.toFixed(1)}</span>`}`;
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}`}`);
+  pin.innerHTML = iconSvg(KIND_ICON[place.kind], 18);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
   if (offset) pin.style.transform = `translateX(${offset}px)`;
   pin.addEventListener('click', () => onSelect(place.id));
   return pin;
+};
+
+/** 평균 별점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
+const applyRating = (pin: HTMLButtonElement, place: Place, rating: number | undefined) => {
+  pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}`}`);
+  pin.querySelector('.pin-score')?.remove();
+  if (rating === undefined) return;
+  // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
+  const score = document.createElement('span');
+  score.className = 'pin-score';
+  score.setAttribute('aria-hidden', 'true');
+  score.textContent = rating.toFixed(1);
+  pin.append(score);
 };
 
 export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
@@ -131,7 +142,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   useEffect(() => {
     if (!map) return;
     const { kakao, instance } = map;
-    pins.current = new Map(places.map((place) => [place.id, createPin(place, ratings?.get(place.id), offsets.get(place.id) ?? 0, selectFromPin)]));
+    pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
     // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
     const clusterers = KINDS.map(
       (kind) =>
@@ -155,12 +166,19 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         }),
     );
     return () => clusterers.forEach((clusterer) => clusterer.clear());
-  }, [map, places, offsets, ratings, selectFromPin]);
+  }, [map, places, offsets, selectFromPin]);
+
+  useEffect(() => {
+    places.forEach((place) => {
+      const pin = pins.current.get(place.id);
+      if (pin) applyRating(pin, place, ratings?.get(place.id));
+    });
+  }, [map, places, offsets, ratings]);
 
   // 고른 핀만 표시를 바꿉니다. 핀 전체를 다시 그리지 않아 깜빡이지 않습니다.
   useEffect(() => {
     pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
-  }, [map, places, ratings, selectedId]);
+  }, [map, places, selectedId]);
 
   useEffect(() => {
     if (!map) return;
