@@ -46,7 +46,8 @@ export const DayChecklist = ({ date }: { date: string }) => {
         </div>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}
       </div>
-      <ErrorText error={error ?? registeredGear.error ?? lastAction.error} />
+      <ErrorText error={error ?? lastAction.error} />
+      <ErrorText error={registeredGear.error} />
       {!isPending && !error && items.length === 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>
