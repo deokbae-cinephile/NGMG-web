@@ -56,6 +56,10 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
 
+## PR 리뷰
+
+`main`에는 브랜치와 PR로 올리고, 검사가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다.
+
 ## 테스트
 
 | 종류 | 위치 | 비고 |
