@@ -23,8 +23,8 @@ export const useChecklistActions = (date: string) => {
   return {
     addDefaults: useMutation({
       ...options,
-      mutationFn: async () => {
-        const { error } = await supabase.from('checklist_items').insert(defaultChecklistItems(date));
+      mutationFn: async (gear: string[]) => {
+        const { error } = await supabase.from('checklist_items').insert(defaultChecklistItems(date, gear));
         failed(error, '기본 목록을 불러오지 못했습니다.');
       },
     }),

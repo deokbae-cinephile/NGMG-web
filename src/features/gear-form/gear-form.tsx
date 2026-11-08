@@ -1,13 +1,15 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { useSaveGear } from '@/entities/gear';
+import { GEAR_CATEGORIES, useSaveGear } from '@/entities/gear';
 import { ANGLERS, type Gear } from '@/shared/api';
 import { ErrorText, Field, FilePreview, TextareaField } from '@/shared/ui';
 
-type Props = { angler: string; gear?: Gear; onDone: () => void };
+type Props = { angler: string; gear?: Gear; nextPosition: number; onDone: () => void };
 
-export const GearForm = ({ angler: initialAngler, gear, onDone }: Props) => {
+export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: Props) => {
   const [id] = useState(() => gear?.id ?? crypto.randomUUID());
   const [angler, setAngler] = useState(gear?.angler ?? initialAngler);
+  const [category, setCategory] = useState<string>(gear?.category ?? GEAR_CATEGORIES[0]);
+  const [brand, setBrand] = useState(gear?.brand ?? '');
   const [name, setName] = useState(gear?.name ?? '');
   const [memo, setMemo] = useState(gear?.memo ?? '');
   const [file, setFile] = useState<File | null>(null);
@@ -23,7 +25,19 @@ export const GearForm = ({ angler: initialAngler, gear, onDone }: Props) => {
     if (!trimmed || locked.current) return;
     locked.current = true;
     save.mutate(
-      { id, angler, name: trimmed, memo: memo.trim(), photo_path: gear?.photo_path ?? null, created_at: gear?.created_at ?? new Date().toISOString(), file, removePhoto },
+      {
+        id,
+        angler,
+        category,
+        brand: brand.trim().replace(/^\[|\]$/g, ''), // 대괄호는 화면에서 붙입니다.
+        name: trimmed,
+        memo: memo.trim(),
+        photo_path: gear?.photo_path ?? null,
+        position: gear?.position ?? nextPosition,
+        created_at: gear?.created_at ?? new Date().toISOString(),
+        file,
+        removePhoto,
+      },
       {
         onSuccess: onDone,
         onError: () => {
@@ -44,7 +58,16 @@ export const GearForm = ({ angler: initialAngler, gear, onDone }: Props) => {
           </label>
         ))}
       </fieldset>
-      <Field label="장비 이름" placeholder="예: 1호 5.3m 갯바위대" maxLength={60} error={nameError} value={name} onChange={(event) => setName(event.target.value)} />
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="gear-category" className="mono-label">분류</label>
+        <select id="gear-category" className="min-h-11 border border-field bg-surface px-3 text-ink" value={category} onChange={(event) => setCategory(event.target.value)}>
+          {GEAR_CATEGORIES.map((item) => (
+            <option key={item} value={item}>{item}</option>
+          ))}
+        </select>
+      </div>
+      <Field label="브랜드" placeholder="예: 다이와" hint="목록에는 [다이와] 처럼 대괄호로 표시됩니다." maxLength={40} value={brand} onChange={(event) => setBrand(event.target.value)} />
+      <Field label="장비 이름" placeholder="예: 25 레가리스 LT 3000-CXH" maxLength={60} error={nameError} value={name} onChange={(event) => setName(event.target.value)} />
       <TextareaField label="메모" maxLength={500} value={memo} onChange={(event) => setMemo(event.target.value)} />
       {gear?.photo_url && !file && (
         <div className="flex items-center gap-3">

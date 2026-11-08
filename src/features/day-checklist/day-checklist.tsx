@@ -1,11 +1,13 @@
 import { useForm } from 'react-hook-form';
 import { CHECKLIST_CATEGORIES, groupByCategory, useChecklist, useChecklistActions } from '@/entities/checklist';
+import { defaultGearLabels, useGear } from '@/entities/gear';
 import { ErrorText, Field } from '@/shared/ui';
 
 type Values = { title: string; category: string };
 
 export const DayChecklist = ({ date }: { date: string }) => {
   const { data: items = [], isPending, error } = useChecklist(date);
+  const registeredGear = useGear();
   const { addDefaults, copyLatest, checkAll, uncheckAll, removeAll, add, toggle, remove } = useChecklistActions(date);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Values>({
     defaultValues: { title: '', category: CHECKLIST_CATEGORIES[0] },
@@ -36,7 +38,7 @@ export const DayChecklist = ({ date }: { date: string }) => {
       {!isPending && !error && items.length === 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>
-          <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => addDefaults.mutate()}>
+          <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => addDefaults.mutate(defaultGearLabels(registeredGear.data ?? []))}>
             기본 목록 불러오기
           </button>
           <button type="button" className="button" disabled={copyLatest.isPending} onClick={() => copyLatest.mutate()}>

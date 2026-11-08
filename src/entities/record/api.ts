@@ -102,7 +102,7 @@ export const useRecordedEventIds = (eventIds: string[]) =>
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'catches' | 'rating'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
@@ -116,7 +116,7 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
+          .select('id, visited_on, bait, gear, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
           .order('visited_on')
           .order('id')
           .range(from, from + 999);

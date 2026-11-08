@@ -6,7 +6,7 @@ export const useGear = () =>
   useQuery({
     queryKey: ['gear'],
     queryFn: async (): Promise<Gear[]> => {
-      const { data, error } = await supabase.from('angler_gear').select('*').order('created_at');
+      const { data, error } = await supabase.from('angler_gear').select('*').order('position').order('created_at');
       if (error) throw new Error('장비 목록을 불러오지 못했습니다.');
       const rows = data as Gear[];
       const paths = rows.flatMap((item) => item.photo_path ?? []);
@@ -36,6 +36,30 @@ const saveGear = async ({ file, removePhoto, ...values }: GearInput) => {
 export const useSaveGear = () => {
   const client = useQueryClient();
   return useMutation({ mutationFn: saveGear, onSuccess: () => client.invalidateQueries({ queryKey: ['gear'] }) });
+};
+
+/** 끌어서 옮긴 장비의 분류와 순서를 저장합니다. */
+const reorderGear = async (rows: Gear[]) => {
+  const { error } = await supabase.from('angler_gear').upsert(
+    rows.map(({ id, angler, category, brand, name, memo, photo_path, position, created_at }) => ({ id, angler, category, brand, name, memo, photo_path, position, created_at })),
+  );
+  if (error) throw new Error('장비 순서를 저장하지 못했습니다.');
+};
+
+export const useReorderGear = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: reorderGear,
+    // 놓는 즉시 화면에 반영하고, 실패하면 되돌립니다.
+    onMutate: async (rows) => {
+      await client.cancelQueries({ queryKey: ['gear'] });
+      const previous = client.getQueryData<Gear[]>(['gear']);
+      client.setQueryData<Gear[]>(['gear'], (items) => items?.map((item) => rows.find((row) => row.id === item.id) ?? item));
+      return { previous };
+    },
+    onError: (_error, _rows, context) => client.setQueryData(['gear'], context?.previous),
+    onSettled: () => client.invalidateQueries({ queryKey: ['gear'] }),
+  });
 };
 
 const deleteGear = async (item: Pick<Gear, 'id' | 'photo_path'>) => {

@@ -46,6 +46,7 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
   const captionButton = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const [pickYear, setPickYear] = useState<number>(); // 값이 있으면 연도·월 고르기를 보여 줍니다.
+  const [decade, setDecade] = useState<number>(); // 값이 있으면 그 10년의 연도 목록을 보여 줍니다.
   const grid = useRef<HTMLTableElement>(null);
   const [focused, setFocused] = useState<Date>();
   const moved = useRef(false);
@@ -60,30 +61,33 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
     grid.current?.querySelector<HTMLButtonElement>(`[data-day="${toDateKey(active)}"]`)?.focus();
   });
 
-  // 고르기를 열면 지금 달에 초점을 둡니다.
+  // 고르기를 열거나 연도 목록을 여닫으면 지금 값에 초점을 둡니다.
   const picking = pickYear !== undefined;
+  const pickingYear = decade !== undefined;
   useEffect(() => {
     if (!picking) return;
     const current = panel.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');
-    (current ?? panel.current?.querySelector<HTMLButtonElement>('button'))?.focus();
-  }, [picking]);
+    (current ?? panel.current?.querySelector<HTMLButtonElement>('[aria-expanded]'))?.focus();
+  }, [picking, pickingYear]);
 
   const closePicker = () => {
     setPickYear(undefined);
+    setDecade(undefined);
     captionButton.current?.focus();
   };
 
-  // Esc로 고르기를 닫습니다.
+  // Esc: 연도 목록이면 월 고르기로, 아니면 고르기를 닫습니다.
   useEffect(() => {
     if (!picking) return;
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      if (pickingYear) return setDecade(undefined);
       setPickYear(undefined);
       captionButton.current?.focus();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [picking]);
+  }, [picking, pickingYear]);
 
   const move = (day: Date) => {
     moved.current = true;
@@ -143,31 +147,74 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
           aria-label="연도와 월 고르기"
           className="flex flex-col gap-2"
         >
-          <div className="flex items-center justify-between">
-            <button type="button" className="icon-button" aria-label="이전 해" onClick={() => setPickYear(pickYear - 1)}>
-              <Icon name="chevronLeft" size={22} />
-            </button>
-            <p aria-live="polite">{`${pickYear}년`}</p>
-            <button type="button" className="icon-button" aria-label="다음 해" onClick={() => setPickYear(pickYear + 1)}>
-              <Icon name="chevronRight" size={22} />
-            </button>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {Array.from({ length: 12 }, (_, index) => (
-              <button
-                key={index}
-                type="button"
-                className="button px-0"
-                aria-pressed={pickYear === month.getFullYear() && index === month.getMonth()}
-                onClick={() => {
-                  onMonthChange(new Date(pickYear, index, 1));
-                  closePicker();
-                }}
-              >
-                {`${index + 1}월`}
-              </button>
-            ))}
-          </div>
+          {decade !== undefined ? (
+            <>
+              <div className="flex items-center justify-between">
+                <button type="button" className="icon-button" aria-label="이전 10년" onClick={() => setDecade(decade - 10)}>
+                  <Icon name="chevronLeft" size={22} />
+                </button>
+                <button type="button" className="cal-caption" aria-expanded="true" aria-label={`${decade} – ${decade + 9}년, 월 고르기로 돌아가기`} onClick={() => setDecade(undefined)}>
+                  {`${decade} – ${decade + 9}년`}
+                </button>
+                <button type="button" className="icon-button" aria-label="다음 10년" onClick={() => setDecade(decade + 10)}>
+                  <Icon name="chevronRight" size={22} />
+                </button>
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 10 }, (_, index) => decade + index).map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    className="button px-0"
+                    aria-pressed={year === pickYear}
+                    onClick={() => {
+                      setPickYear(year);
+                      setDecade(undefined);
+                    }}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <button type="button" className="icon-button" aria-label="이전 해" onClick={() => setPickYear(pickYear! - 1)}>
+                  <Icon name="chevronLeft" size={22} />
+                </button>
+                <button
+                  type="button"
+                  className="cal-caption"
+                  aria-expanded="false"
+                  aria-label={`${pickYear}년, 10년 단위로 연도 고르기`}
+                  onClick={() => setDecade(Math.floor(pickYear! / 10) * 10)}
+                >
+                  {`${pickYear}년`}
+                  <Icon name="chevronDown" size={18} />
+                </button>
+                <button type="button" className="icon-button" aria-label="다음 해" onClick={() => setPickYear(pickYear! + 1)}>
+                  <Icon name="chevronRight" size={22} />
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 12 }, (_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="button px-0"
+                    aria-pressed={pickYear === month.getFullYear() && index === month.getMonth()}
+                    onClick={() => {
+                      onMonthChange(new Date(pickYear!, index, 1));
+                      closePicker();
+                    }}
+                  >
+                    {`${index + 1}월`}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
       {!picking && (

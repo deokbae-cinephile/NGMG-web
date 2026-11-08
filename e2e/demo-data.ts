@@ -60,11 +60,10 @@ export const demoSeed = (start: Date): Seed => {
           position: n,
         })),
       ),
-    angler_gear: [
-      { id: 'g1', angler: '김 조사', name: '1호 5.3m 갯바위대', memo: '주력 낚싯대' },
-      { id: 'g2', angler: '김 조사', name: '2500번 릴', memo: '' },
-      { id: 'g3', angler: '류 조사', name: '1.5호 4.5m 원투대', memo: '방파제용' },
-    ],
+    angler_gear: ['김 조사', '류 조사'].flatMap((angler, index) => [
+      { id: `g${index}r`, angler, category: '로드', brand: 'JS컴퍼니', name: '닉스 인쇼어 버전2 S862ML', position: 0 },
+      { id: `g${index}l`, angler, category: '릴', brand: '다이와', name: '25 레가리스 LT 3000-CXH', position: 0 },
+    ]),
     record_photos: [
       { id: 'ph1', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
       { id: 'ph2', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },

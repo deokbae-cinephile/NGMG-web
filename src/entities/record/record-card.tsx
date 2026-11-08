@@ -39,7 +39,6 @@ const Photos = ({ record }: { record: PlaceRecord }) => {
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const details = [
-    ...(record.people ? [{ label: '인원', value: `${record.people}명` }] : []),
     ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: record[field.name] }] : [])),
     ...(record.price !== null ? [{ label: '가격', value: `${record.price.toLocaleString('ko-KR')}원` }] : []),
   ];

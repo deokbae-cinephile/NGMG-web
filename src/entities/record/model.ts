@@ -47,9 +47,8 @@ export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; 
   etc: [],
 };
 
-/** 기록 카드에 보여 주는 항목. 지금은 입력받지 않는 항목도 예전에 남긴 값이 있으면 그대로 보여 줍니다. */
+/** 기록 카드에 보여 주는 항목. 물때·바람·수온처럼 지금은 입력받지 않아도 예전에 남긴 값은 보여 줍니다. 인원과 동행은 저장만 되어 있고 보여 주지 않습니다. */
 export const RECORD_LABELS: { name: TextField; label: string }[] = [
-  { name: 'companions', label: '동행' },
   { name: 'gear', label: '장비' },
   { name: 'rig', label: '채비' },
   { name: 'bait', label: '미끼' },

@@ -76,7 +76,7 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
   records: RECORD_DEFAULTS,
   events: { memo: '', end_time: null, place_id: null },
   checklist_items: { checked: false },
-  angler_gear: { memo: '', photo_path: null, created_at: '2026-01-01T00:00:00Z' },
+  angler_gear: { category: '기타', brand: '', memo: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
   fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
 };
 
