@@ -674,10 +674,13 @@ select {
   }
 
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
-  /* 무악재역: 속이 빈 주황 핀. 채워진 5점 핀과 한눈에 구분됩니다. */
-  .pin-base .pin-shape {
+  /* 무악재역: 검정 윤곽선 안에 주황 고리를 두른 흰 핀. 채워진 5점 핀과 한눈에 구분되고, 밝은 지도에서도 윤곽이 보입니다. */
+  .pin-ring {
+    fill: none;
     stroke: var(--color-accent);
-    stroke-width: 1.8;
+    stroke-width: 1.9;
+    transform: scale(0.82);
+    transform-origin: 50% 41%;
   }
   .pin-base {
     --pin-fill: var(--color-paper);

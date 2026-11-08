@@ -26,7 +26,7 @@ const createBasePin = () => {
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
   pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
-  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
+  pin.innerHTML = `${PIN_SHAPE}${PIN_SHAPE.replace('pin-shape', 'pin-shape pin-ring')}${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
   return pin;
 };
 
@@ -38,11 +38,12 @@ const CLUSTER_COLOR: Record<PlaceKind, { background: string; color: string }> = 
 };
 const clusterStyle = (kind: PlaceKind) => ({
   ...CLUSTER_COLOR[kind],
-  width: '44px',
-  height: '44px',
+  width: '64px',
+  height: '36px',
   border: '2px solid #0a0a0a',
-  borderRadius: '50%',
-  lineHeight: '40px',
+  borderRadius: '18px',
+  fontSize: '13px',
+  lineHeight: '32px',
   textAlign: 'center',
 });
 
@@ -157,6 +158,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           minLevel: 10,
           calculator: [10, 30, 50],
           styles: Array.from({ length: 4 }, () => clusterStyle(kind)),
+          texts: (count: number) => `${KIND_LABEL[kind]} ${count}`, // 색만으로 구분되지 않게 분류 이름을 함께 씁니다.
           markers: places
             .filter((place) => place.kind === kind)
             .map(
