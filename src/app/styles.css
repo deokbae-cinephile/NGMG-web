@@ -554,62 +554,81 @@ select {
     filter: grayscale(0.85) contrast(1.05);
   }
 
-  /* 지도 핀: 모서리를 살짝 굴린 사각형 아래에 꼬리를 단 표식. 꼬리 끝이 장소 위치입니다. 분류는 채움으로 구분합니다. */
+  /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 채움 색과 안쪽 아이콘으로 구분합니다. */
   .pin {
+    --pin-fill: var(--color-ink);
     position: relative;
     display: flex;
-    width: 3.25rem;
-    height: 2.25rem;
-    align-items: center;
+    width: 2.625rem;
+    height: 3.25rem;
     justify-content: center;
-    border: 1.5px solid var(--color-ink);
-    border-radius: 0;
-    background: var(--color-ink);
+    padding-top: 0.5625rem;
     color: var(--color-paper);
     cursor: pointer;
+    transform-origin: bottom center;
   }
-  .pin::after {
-    content: '';
+  .pin > svg:not(.pin-shape) {
+    position: relative;
+  }
+  .pin-shape {
     position: absolute;
-    bottom: -0.3125rem;
-    left: 50%;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-right: 1.5px solid var(--color-ink);
-    border-bottom: 1.5px solid var(--color-ink);
-    background: inherit;
-    transform: translateX(-50%) rotate(45deg);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--pin-fill);
+    stroke: var(--color-ink);
+    stroke-width: 1.1;
   }
   .pin-restaurant {
-    background: var(--color-paper);
+    --pin-fill: var(--color-paper);
     color: var(--color-ink);
   }
   .pin-etc {
-    background: var(--color-accent);
+    --pin-fill: var(--color-accent);
     color: var(--color-ink);
   }
   /* 평균 별점 색(월드 오브 워크래프트 아이템 등급 색). 핀과 별점 표시에 함께 씁니다. 별점이 없으면 분류별 기본 색입니다. */
-  .pin.rate-1,
+  .pin.rate-1 {
+    --pin-fill: #9d9d9d;
+    background: none;
+    color: #0a0a0a;
+  }
   .rate-1 {
     background: #9d9d9d;
     color: #0a0a0a;
   }
-  .pin.rate-2,
+  .pin.rate-2 {
+    --pin-fill: #1eff00;
+    background: none;
+    color: #0a0a0a;
+  }
   .rate-2 {
     background: #1eff00;
     color: #0a0a0a;
   }
-  .pin.rate-3,
+  .pin.rate-3 {
+    --pin-fill: #0070dd;
+    background: none;
+    color: #fafafa;
+  }
   .rate-3 {
     background: #0070dd;
     color: #fafafa;
   }
-  .pin.rate-4,
+  .pin.rate-4 {
+    --pin-fill: #a335ee;
+    background: none;
+    color: #fafafa;
+  }
   .rate-4 {
     background: #a335ee;
     color: #fafafa;
   }
-  .pin.rate-5,
+  .pin.rate-5 {
+    --pin-fill: #ff8000;
+    background: none;
+    color: #0a0a0a;
+  }
   .rate-5 {
     background: #ff8000;
     color: #0a0a0a;
@@ -655,12 +674,8 @@ select {
   }
 
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
-  .pin-base[data-selected='true'] {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
-  }
   .pin-base {
-    background: var(--color-accent);
+    --pin-fill: var(--color-accent);
     color: var(--color-ink);
     cursor: default;
     pointer-events: none;
@@ -738,10 +753,14 @@ select {
     background: inherit;
     transform: translateX(-50%) rotate(45deg);
   }
-  .pin[aria-pressed='true'] {
-    z-index: 1;
-    outline: 2px solid var(--color-ink);
-    outline-offset: 3px;
+  /* 고른 핀은 조금 키우고 윤곽을 굵게 합니다. */
+  .pin[aria-pressed='true'],
+  .pin-base[data-selected='true'] {
+    scale: 1.15;
+  }
+  .pin[aria-pressed='true'] .pin-shape,
+  .pin-base[data-selected='true'] .pin-shape {
+    stroke-width: 2;
   }
 
   /* 첫 로딩: 검은 벽이 낚시꾼에게 밀려 오른쪽으로 빠지면 뒤의 로고가 드러나고, 전체가 위로 걷힙니다. */
