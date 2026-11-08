@@ -282,15 +282,19 @@ select {
     height: 8rem;
   }
 
-  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 머리글 맨 오른쪽 칸으로 나타납니다.
-     휴대폰은 메뉴가 하단 탭이라 로고 맞은편 끝, 넓은 화면은 메뉴(GNB)와 간격을 두고 따로 묶습니다. */
+  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 오른쪽 아래에 떠 있습니다. 휴대폰은 하단 탭 위에 놓습니다. */
   .install-button {
+    position: fixed;
+    right: 0.75rem;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    z-index: 30;
     display: flex;
+    min-height: 2.75rem;
     align-items: center;
     gap: 0.4rem;
-    margin-left: auto;
-    border-left: 1px solid var(--color-line);
-    padding: 0 1.25rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0 0.875rem;
     color: var(--color-ink);
     cursor: pointer;
   }
@@ -298,20 +302,9 @@ select {
     background: var(--color-accent);
   }
   @media (width >= 64rem) {
-    /* 메뉴와 설치 버튼을 합친 너비를 오른쪽 칸(26rem)에 맞춥니다. 간격을 두어 다른 묶음임을 보여 줍니다. */
     .install-button {
-      width: 7.5rem;
-      flex-shrink: 0;
-      justify-content: center;
-      margin-left: 1.5rem;
-      padding: 0;
-      font-size: 1.0625rem;
-    }
-    .main-nav:has(+ .install-button) {
-      width: 17rem;
-    }
-    .main-nav:has(+ .install-button) {
-      border-right: 1px solid var(--color-line); /* 메뉴 묶음의 오른쪽 끝을 닫습니다. */
+      right: 1.25rem;
+      bottom: 1.25rem;
     }
   }
 
@@ -332,17 +325,6 @@ select {
     }
     .topbar-logo {
       display: none !important;
-    }
-    /* 머리글이 없으므로 설치 버튼은 하단 탭 위에 띄웁니다. */
-    .install-button {
-      position: fixed;
-      right: 0.75rem;
-      bottom: calc(4.25rem + env(safe-area-inset-bottom));
-      z-index: 30;
-      min-height: 2.75rem;
-      border: 1px solid var(--color-ink);
-      background: var(--color-paper);
-      padding: 0 0.875rem;
     }
   }
   .topbar-logo {

@@ -52,14 +52,14 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             </NavLink>
           ))}
         </nav>
-        {/* 설치는 메뉴(GNB)가 아니라 따로 두는 동작이라 메뉴 밖, 머리글 맨 오른쪽에 둡니다. */}
-        <InstallButton />
       </header>
       <main id="main" ref={main} tabIndex={-1} className="min-h-0 flex-1 pb-16 outline-none lg:overflow-y-auto lg:pb-0">
         <Suspense fallback={<PageSkeleton />}>
           {children}
         </Suspense>
       </main>
+      {/* 설치는 메뉴(GNB)와 다른 동작이라 메뉴 밖에 따로 띄웁니다. */}
+      <InstallButton />
     </div>
   );
 };

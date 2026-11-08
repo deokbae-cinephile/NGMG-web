@@ -267,7 +267,7 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page.locator('#main')).toBeFocused();
 });
 
-test('앱 설치 버튼은 메뉴(GNB) 밖에 따로 놓인다', async ({ page }, testInfo) => {
+test('앱 설치 버튼은 메뉴 밖 오른쪽 아래에 떠 있다', async ({ page }, testInfo) => {
   await fakeBackend(page, seed());
   await page.goto('/schedule');
   await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toBeVisible();
@@ -284,11 +284,12 @@ test('앱 설치 버튼은 메뉴(GNB) 밖에 따로 놓인다', async ({ page }
   await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '앱 설치' })).toHaveCount(0);
 
   const install = (await button.boundingBox())!;
-  if (testInfo.project.name === 'desktop') {
-    const header = (await page.locator('header.topbar').boundingBox())!;
-    expect(Math.round(install.x + install.width)).toBe(Math.round(header.x + header.width));
+  const { width, height } = await page.evaluate(() => ({ width: document.documentElement.clientWidth, height: window.innerHeight }));
+  expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
+  expect(install.y + install.height).toBeGreaterThan(height - 120);
+  if (testInfo.project.name === 'mobile') {
     const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;
-    expect(install.x - (nav.x + nav.width)).toBeGreaterThanOrEqual(16); // 메뉴와 간격을 두고 따로 묶인다
+    expect(install.y + install.height).toBeLessThanOrEqual(nav.y); // 하단 탭을 가리지 않습니다.
   }
   await expectFits(page);
 });
@@ -405,7 +406,11 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
     window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
   });
   await expect(page.getByRole('button', { name: '앱 설치' })).toBeVisible();
-  await check('./records', '최근 조과');
+  // 설치 버튼이 보여도 메뉴는 오른쪽 칸 너비를 그대로 씁니다.
+  const withInstall = await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox();
+  expect(Math.round(withInstall!.x + withInstall!.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
+  const links = await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link').evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().width)));
+  expect(new Set(links).size).toBe(1); // 5칸이 같은 너비입니다.
 });
 
 test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({ page }) => {
