@@ -276,14 +276,15 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       </div>
       <button
         type="button"
-        className="button absolute top-3 right-3 z-10 bg-paper"
+        className="map-layer-toggle"
+        aria-label={satellite ? '일반 지도' : '위성 지도'} // 누르면 바뀔 지도 이름입니다.
+        title={satellite ? '일반 지도' : '위성 지도'}
         onClick={() => {
           setSatellite(!satellite);
           setPreference('map-satellite', !satellite);
         }}
       >
-        {/* 누르면 바뀔 지도 이름을 보여 줍니다. */}
-        {satellite ? '일반 지도' : '위성 지도'}
+        <Icon name={satellite ? 'map' : 'satellite'} size={18} />
       </button>
       {selected &&
         createPortal(

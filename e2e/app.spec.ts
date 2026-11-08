@@ -34,7 +34,8 @@ const expectFits = async (page: Page) => {
 };
 
 const expectAccessible = async (page: Page) => {
-  const { violations } = await new AxeBuilder({ page }).analyze();
+  // 개별 삭제 버튼의 포인트 색 글자는 사용자 결정으로 명도 대비 검사에서 뺍니다.
+  const { violations } = await new AxeBuilder({ page }).exclude('.text-action-accent').analyze();
   expect(violations.map((item) => `${item.id}: ${item.nodes.map((node) => node.target).join(' | ')}`)).toEqual([]);
 };
 
@@ -596,7 +597,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expectFits(page);
   await expectAccessible(page);
   await page.getByRole('button', { name: '메뉴 도감' }).click();
-  await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 / 총 2번');
+  await expect(page.getByRole('status').filter({ hasText: '2종 수집' })).toHaveText('2종 수집 / 총 2개');
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
 });

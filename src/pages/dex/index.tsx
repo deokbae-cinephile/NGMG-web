@@ -97,7 +97,7 @@ const MenuDex = () => {
 
   return (
     <>
-      <Summary title="메뉴 도감" status={`${entries.length}종 발견 / 총 ${total}번`} error={error} />
+      <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
         {entries.map(({ number, name, count, price, rating, latest, photo }) => (
