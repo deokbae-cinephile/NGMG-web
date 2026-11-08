@@ -18,7 +18,7 @@ export const demoSeed = (start: Date): Seed => {
       place('p4', '바늘 낚시점', 'etc', 34.4, 127.1, '전남 가상군 항구로 4', ['낚시점']),
     ],
     events: [
-      { id: 'e1', date: day(0), start_time: '05:30:00', end_time: '11:00:00', title: '새벽 출조', place_id: 'p1', memo: '썰물 시작 전 도착' },
+      { id: 'e1', date: day(0), end_date: day(1), start_time: '05:30:00', end_time: null, title: '새벽 출조', place_id: 'p1', memo: '썰물 시작 전 도착' },
       { id: 'e2', date: day(0), start_time: '12:30:00', end_time: '13:30:00', title: '점심', place_id: 'p3', memo: '' },
       { id: 'e3', date: day(7), start_time: '06:00:00', end_time: null, title: '갯바위 답사', place_id: 'p2', memo: '' },
       { id: 'e4', date: day(-2), start_time: '04:30:00', end_time: '10:00:00', title: '달빛 갯바위 야간 출조', place_id: 'p2', memo: '' },
@@ -60,6 +60,11 @@ export const demoSeed = (start: Date): Seed => {
           position: n,
         })),
       ),
+    angler_gear: [
+      { id: 'g1', angler: '김 조사', name: '1호 5.3m 갯바위대', memo: '주력 낚싯대' },
+      { id: 'g2', angler: '김 조사', name: '2500번 릴', memo: '' },
+      { id: 'g3', angler: '류 조사', name: '1.5호 4.5m 원투대', memo: '방파제용' },
+    ],
     record_photos: [
       { id: 'ph1', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
       { id: 'ph2', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },

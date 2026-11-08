@@ -11,8 +11,8 @@ export const useMonthEvents = (month: Date) => {
       const { data, error } = await supabase
         .from('events')
         .select('*, place:places(*)')
-        .gte('date', from)
-        .lte('date', to)
+        .lte('date', to) // 달을 걸치는 연박 일정도 함께 받습니다.
+        .gte('end_date', from)
         .order('date')
         .order('start_time');
       if (error) throw new Error('일정을 불러오지 못했습니다.');
@@ -28,7 +28,7 @@ export const useUpcomingEvents = () =>
       const { data, error } = await supabase
         .from('events')
         .select('*, place:places(*)')
-        .gte('date', toDateKey(new Date()))
+        .gte('end_date', toDateKey(new Date()))
         .order('date')
         .order('start_time')
         .limit(5);
@@ -55,8 +55,10 @@ export const usePastEvents = () =>
   });
 
 export type EventInput = {
-  id?: string;
+  id: string; // 폼을 열 때 정합니다. 실패 뒤 다시 저장해도 일정이 중복되지 않습니다.
+  isNew: boolean;
   date: string;
+  end_date: string;
   start_time: string;
   end_time: string | null;
   title: string;
@@ -64,8 +66,8 @@ export type EventInput = {
   memo: string;
 };
 
-export const saveEvent = async ({ id, ...values }: EventInput) => {
-  const query = id ? supabase.from('events').update(values).eq('id', id) : supabase.from('events').insert(values);
+export const saveEvent = async ({ id, isNew, ...values }: EventInput) => {
+  const query = isNew ? supabase.from('events').upsert({ id, ...values }) : supabase.from('events').update(values).eq('id', id);
   const { error } = await query;
   if (error) throw new Error('일정을 저장하지 못했습니다.');
 };

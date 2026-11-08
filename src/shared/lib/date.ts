@@ -38,6 +38,23 @@ export const formatDayLabel = (date: Date) => {
   const { y, m, d, w } = parts(date);
   return `${d} 일 (${w}), ${y}년 ${m}월`;
 };
+/** 시작일부터 끝 날까지의 날짜 키 */
+export const eachDay = (start: string, end: string) => {
+  const days: string[] = [];
+  for (let date = parseDateKey(start); toDateKey(date) <= end && isValid(date); date = addDays(date, 1)) days.push(toDateKey(date));
+  return days;
+};
+/** 연박이면 '1박 2일', 당일이면 빈 문자열 */
+export const formatStay = (start: string, end: string) => {
+  const nights = eachDay(start, end).length - 1;
+  return nights > 0 ? `${nights}박 ${nights + 1}일` : '';
+};
+/** 2026년 11월 14일 (토) – 11월 15일 (일). 당일이면 하루만 씁니다. */
+export const formatDateRange = (start: string, end: string) => {
+  if (start >= end) return formatDate(start);
+  const { y, m, d, w } = parts(parseDateKey(end));
+  return `${formatDate(start)} – ${start.slice(0, 4) === end.slice(0, 4) ? '' : `${y}년 `}${m}월 ${d}일 (${w})`;
+};
 export const formatTime = (time: string) => time.slice(0, 5);
 export const formatTimeRange = (start: string, end: string | null) =>
   end ? `${formatTime(start)} – ${formatTime(end)}` : formatTime(start);

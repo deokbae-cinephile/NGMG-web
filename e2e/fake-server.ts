@@ -1,6 +1,6 @@
 // Supabase와 Kakao SDK 응답을 흉내 내는 가짜 서버입니다. Playwright(fake-backend.ts)와 배포용 데모(demo-entry.ts)가 함께 씁니다.
 export type Row = Record<string, unknown> & { id: string };
-export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'events' | 'checklist_items', Row[]>>;
+export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'angler_gear' | 'events' | 'checklist_items', Row[]>>;
 
 export type FakeRequest = { method: string; url: string; accept: string; body: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 export type FakeResponse = { status: number; contentType: string; body: string };
@@ -24,16 +24,18 @@ export const KAKAO_SDK = `
       }
       getCenter() { return new LatLng(36, 127); } getLevel() { return 13; }
       relayout() {} panTo() {} setMapTypeId() {}
+      getProjection() { return { containerPointFromCoords: () => ({ x: 0, y: 0 }), coordsFromContainerPoint: () => new LatLng(36, 127) }; }
     }
     class CustomOverlay {
       constructor(o) {
         this.o = o;
         if (!o.map) return;
         o.content.style.position = 'absolute';
-        o.content.style.left = '50%';
-        o.content.style.top = '50%';
+        o.content.style.left = ((o.position.getLng() - 125.5) / 4.5) * 100 + '%';
+        o.content.style.top = ((38.6 - o.position.getLat()) / 5.6) * 100 + '%';
         o.map.el.appendChild(o.content);
       }
+      setMap(map) { if (!map) this.o.content.remove(); }
     }
     class MarkerClusterer {
       constructor({ map, markers }) {
@@ -74,6 +76,7 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
   records: RECORD_DEFAULTS,
   events: { memo: '', end_time: null, place_id: null },
   checklist_items: { checked: false },
+  angler_gear: { memo: '', photo_path: null, created_at: '2026-01-01T00:00:00Z' },
   fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
 };
 
@@ -89,9 +92,12 @@ export const session = () => ({
 });
 
 export const createFakeServer = (seed: Seed = {}) => {
-  const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => ({ ...DEFAULTS[table], ...row }) as Row);
+  // DB 트리거처럼 끝 날짜가 없으면 시작 날짜로 채웁니다.
+  const withEndDate = (table: string, row: Row): Row =>
+    table === 'events' ? { ...row, end_date: row.end_date ?? row.date } : table === 'records' ? { ...row, end_date: row.end_date ?? row.visited_on } : row;
+  const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => withEndDate(table, { ...DEFAULTS[table], ...row } as Row));
   const db: Record<string, Row[]> = Object.fromEntries(
-    ['places', 'records', 'record_photos', 'fish_catches', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
+    ['places', 'records', 'record_photos', 'fish_catches', 'angler_gear', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
   );
   const removedFiles: string[] = [];
   let nextId = 1;
@@ -214,7 +220,7 @@ export const createFakeServer = (seed: Seed = {}) => {
       const body = request.body;
       const created = [body].flat().map((value: Row) => {
         const defaults = DEFAULTS[table] ?? {};
-        const row = { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` };
+        const row = withEndDate(table, { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` } as Row);
         const index = rows.findIndex((item) => item.id === row.id || (item.storage_path && item.storage_path === value.storage_path));
         if (index >= 0) rows[index] = row;
         else rows.push(row);

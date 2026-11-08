@@ -1,34 +1,34 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { fetchForecast } from '@/entities/forecast';
 import { fetchLatestGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
-import { getTide, toDateKey } from '@/shared/lib';
+import { toDateKey } from '@/shared/lib';
 import { ErrorText, FilePreview, TextareaField, Field } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
-type Values = TextValues & { visited_on: string; catches: string; memo: string; rating: string; people: string; price: string };
+type Values = TextValues & { visited_on: string; end_date: string; catches: string; memo: string; rating: string; price: string };
 type Props = {
   place: Pick<Place, 'id' | 'kind' | 'latitude' | 'longitude'>;
   record?: PlaceRecord;
   date?: string;
+  endDate?: string;
   eventId?: string;
   onDone: () => void;
 };
 
 const TEXT_FIELDS: (keyof TextValues)[] = ['companions', 'gear', 'rig', 'bait', 'weather', 'tide', 'wind', 'water_temp', 'menu'];
 
-export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
+export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Props) => {
   const kind = place.kind;
   const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<Values>({
     defaultValues: {
       visited_on: record?.visited_on ?? date ?? toDateKey(new Date()),
+      end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
       catches: record?.catches ?? '',
       memo: record?.memo ?? '',
       rating: record?.rating?.toString() ?? '',
-      people: record?.people?.toString() ?? '',
       price: record?.price?.toString() ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
     },
@@ -52,16 +52,6 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
   const save = useSaveRecord();
   const remove = useDeleteRecord();
 
-  // 물때는 음력으로 계산하고, 날씨·바람은 그날 예보(지난 날은 최근 3달까지)를 불러옵니다.
-  const conditions = useMutation({
-    mutationFn: async () => {
-      const day = getValues('visited_on');
-      setValue('tide', getTide(day, place.latitude, place.longitude).name ?? '');
-      const forecast = await fetchForecast(day, place.latitude, place.longitude);
-      setValue('weather', `${forecast.weather}, ${forecast.tempMin}°/${forecast.tempMax}°`);
-      setValue('wind', `최대 ${forecast.wind}m/s${forecast.wave !== null ? `, 파고 ${forecast.wave}m` : ''}`);
-    },
-  });
   const gear = useMutation({
     mutationFn: fetchLatestGear,
     onSuccess: (latest) => (['gear', 'rig', 'bait'] as const).forEach((name) => latest[name] && setValue(name, latest[name])),
@@ -84,12 +74,13 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
         place_id: place.id,
         event_id: record?.event_id ?? eventId ?? null,
         visited_on: values.visited_on,
+        end_date: values.end_date,
         catches: kind === 'fishing' ? values.catches : '',
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
-        people: kind === 'fishing' && values.people ? Number(values.people) : null,
+        people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' && values.price ? Number(values.price) : null,
-        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? values[name].trim() : ''])) as TextValues),
+        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? values[name].trim() : (record?.[name] ?? '')])) as TextValues),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
@@ -115,31 +106,40 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      <Field label="날짜" type="date" error={errors.visited_on?.message} {...register('visited_on', { required: '날짜를 입력해 주세요.' })} />
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          label="시작 날짜"
+          type="date"
+          error={errors.visited_on?.message}
+          {...register('visited_on', {
+            required: '시작 날짜를 입력해 주세요.',
+            onChange: (change) => {
+              if (getValues('end_date') < change.target.value) setValue('end_date', change.target.value); // 끝 날짜가 앞서지 않게 함께 옮깁니다.
+            },
+          })}
+        />
+        <Field
+          label="종료 날짜"
+          type="date"
+          error={errors.end_date?.message}
+          {...register('end_date', {
+            required: '종료 날짜를 입력해 주세요.',
+            validate: (end) => end >= getValues('visited_on') || '시작 날짜 이후로 입력해 주세요.',
+          })}
+        />
+      </div>
       {kind === 'fishing' && (
         <>
           <Field label="조과" placeholder="예: 감성돔 2마리" {...register('catches')} />
-          <Field
-            label="인원"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={99}
-            error={errors.people?.message}
-            {...register('people', { validate: (value) => !value || (Number(value) >= 1 && Number(value) <= 99) || '1에서 99 사이로 입력해 주세요.' })}
-          />
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="button" disabled={conditions.isPending} onClick={() => conditions.mutate()}>
-              {conditions.isPending ? '불러오는 중' : '물때·날씨 불러오기'}
-            </button>
             <button type="button" className="button" disabled={gear.isPending} onClick={() => gear.mutate()}>
               지난 장비·채비 불러오기
             </button>
           </div>
           <p role="status" className="text-sm text-muted empty:hidden">
-            {conditions.isSuccess ? '물때와 날씨를 채웠습니다.' : gear.isSuccess ? '지난 기록의 장비와 채비를 채웠습니다.' : ''}
+            {gear.isSuccess ? '지난 기록의 장비와 채비를 채웠습니다.' : ''}
           </p>
-          <ErrorText error={conditions.error ?? gear.error} />
+          <ErrorText error={gear.error} />
         </>
       )}
       <div className="grid gap-4 sm:grid-cols-2">

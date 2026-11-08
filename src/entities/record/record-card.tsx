@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
-import { formatDate } from '@/shared/lib';
+import { formatDate, formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
-import { RECORD_FIELDS } from './model';
+import { RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
@@ -40,7 +40,7 @@ const Photos = ({ record }: { record: PlaceRecord }) => {
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const details = [
     ...(record.people ? [{ label: '인원', value: `${record.people}명` }] : []),
-    ...RECORD_FIELDS[record.place.kind].flatMap((field) => (record[field.name] ? [{ label: field.label, value: record[field.name] }] : [])),
+    ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: record[field.name] }] : [])),
     ...(record.price !== null ? [{ label: '가격', value: `${record.price.toLocaleString('ko-KR')}원` }] : []),
   ];
 
@@ -48,7 +48,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
     <article className="panel flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="mono-label">{formatDate(record.visited_on)}</p>
+          <p className="mono-label">{`${formatDateRange(record.visited_on, record.end_date)} ${formatStay(record.visited_on, record.end_date)}`.trim()}</p>
           {heading}
         </div>
         {actions}

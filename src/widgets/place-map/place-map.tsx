@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { KIND_ICON, KIND_LABEL } from '@/entities/place';
-import type { Place } from '@/shared/api';
-import { getPreference, loadKakao, setPreference, type Kakao } from '@/shared/lib';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
+import type { Place, PlaceKind } from '@/shared/api';
+import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   selectedId?: string;
   picking: boolean;
   onSelect: (id: string) => void;
+  onClose: () => void;
   onPick: (latitude: number, longitude: number) => void;
 };
 
@@ -26,6 +28,22 @@ const createBasePin = () => {
   return pin;
 };
 
+// 핀 묶음 색은 분류별 핀의 채움과 같습니다. (낚시 검정, 맛집 흰색, 기타 주황)
+const CLUSTER_COLOR: Record<PlaceKind, { background: string; color: string }> = {
+  fishing: { background: '#0a0a0a', color: '#fafafa' },
+  restaurant: { background: '#fafafa', color: '#0a0a0a' },
+  etc: { background: '#f0932b', color: '#0a0a0a' },
+};
+const clusterStyle = (kind: PlaceKind) => ({
+  ...CLUSTER_COLOR[kind],
+  width: '44px',
+  height: '44px',
+  border: '2px solid #0a0a0a',
+  borderRadius: '50%',
+  lineHeight: '40px',
+  textAlign: 'center',
+});
+
 // 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
 const createPin = (place: Place, selected: boolean, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
@@ -39,11 +57,23 @@ const createPin = (place: Place, selected: boolean, onSelect: (id: string) => vo
   return pin;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
+
+  const [popupHost] = useState(() => document.createElement('div'));
+  const popup = useRef<HTMLDivElement>(null);
+  const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
+  const selected = places.find((place) => place.id === selectedId);
+  const selectFromPin = useCallback(
+    (id: string) => {
+      focusPopup.current = true;
+      onSelect(id);
+    },
+    [onSelect],
+  );
 
   // SDK 이벤트는 한 번만 등록하므로 최신 값은 ref로 읽습니다.
   const latest = useRef({ picking, onPick });
@@ -90,18 +120,30 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
   useEffect(() => {
     if (!map) return;
     const { kakao, instance } = map;
-    const overlays = places.map(
-      (place) =>
-        new kakao.maps.CustomOverlay({
-          position: new kakao.maps.LatLng(place.latitude, place.longitude),
-          content: createPin(place, place.id === selectedId, onSelect),
-          yAnchor: 1.2, // 핀 아래 꼬리 끝이 장소 위치에 오게 합니다.
-          clickable: true,
+    // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
+    const clusterers = KINDS.map(
+      (kind) =>
+        new kakao.maps.MarkerClusterer({
+          map: instance,
+          averageCenter: true,
+          minLevel: 10,
+          calculator: [10, 30, 50],
+          styles: Array.from({ length: 4 }, () => clusterStyle(kind)),
+          markers: places
+            .filter((place) => place.kind === kind)
+            .map(
+              (place) =>
+                new kakao.maps.CustomOverlay({
+                  position: new kakao.maps.LatLng(place.latitude, place.longitude),
+                  content: createPin(place, place.id === selectedId, selectFromPin),
+                  yAnchor: 1.2, // 핀 아래 꼬리 끝이 장소 위치에 오게 합니다.
+                  clickable: true,
+                }),
+            ),
         }),
     );
-    const clusterer = new kakao.maps.MarkerClusterer({ map: instance, averageCenter: true, minLevel: 10, markers: overlays });
-    return () => clusterer.clear();
-  }, [map, places, selectedId, onSelect]);
+    return () => clusterers.forEach((clusterer) => clusterer.clear());
+  }, [map, places, selectedId, selectFromPin]);
 
   useEffect(() => {
     if (!map) return;
@@ -111,8 +153,48 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
 
   useEffect(() => {
     const place = places.find((item) => item.id === selectedId);
-    if (map && place) map.instance.panTo(new map.kakao.maps.LatLng(place.latitude, place.longitude));
+    if (!map || !place) return;
+    // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
+    const projection = map.instance.getProjection();
+    const point = projection.containerPointFromCoords(new map.kakao.maps.LatLng(place.latitude, place.longitude));
+    point.y -= 90;
+    map.instance.panTo(projection.coordsFromContainerPoint(point));
   }, [map, places, selectedId]);
+
+  // 고른 장소 위에 정보 팝업을 띄웁니다.
+  useEffect(() => {
+    if (!map || !selected) return;
+    const overlay = new map.kakao.maps.CustomOverlay({
+      map: map.instance,
+      position: new map.kakao.maps.LatLng(selected.latitude, selected.longitude),
+      content: popupHost,
+      yAnchor: 1,
+      zIndex: 5,
+      clickable: true,
+    });
+    if (focusPopup.current) {
+      focusPopup.current = false;
+      popup.current?.querySelector('a')?.focus({ preventScroll: true });
+    }
+    return () => overlay.setMap(null);
+  }, [map, selected, popupHost]);
+
+  // Esc로 팝업을 닫습니다.
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return; // 열린 대화상자의 Esc와 겹치지 않게 합니다.
+      onClose();
+      container.current?.focus({ preventScroll: true });
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectedId, onClose]);
+
+  const closePopup = () => {
+    onClose();
+    container.current?.focus({ preventScroll: true });
+  };
 
   if (error) {
     return (
@@ -124,19 +206,42 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onPick }: Prop
 
   return (
     <div className="relative h-full w-full">
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" className={`h-full w-full ${satellite ? '' : 'map'}`} />
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
       <button
         type="button"
         className="button absolute top-3 right-3 z-10 bg-paper"
-        aria-pressed={satellite}
         onClick={() => {
           setSatellite(!satellite);
           setPreference('map-satellite', !satellite);
         }}
       >
         <Icon name="layers" size={16} />
-        위성 지도
+        {/* 누르면 바뀔 지도 이름을 보여 줍니다. */}
+        {satellite ? '일반 지도' : '위성 지도'}
       </button>
+      {selected &&
+        createPortal(
+          <div
+            ref={popup}
+            role="group"
+            aria-label={`${selected.name} 정보`}
+            className="map-popup"
+          >
+            <div className="flex items-start justify-between gap-1">
+              <p className="min-w-0 break-words">{selected.name}</p>
+              <button type="button" className="icon-button -mt-2 -mr-2 shrink-0" aria-label="정보 닫기" onClick={closePopup}>
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <KindBadge kind={selected.kind} />
+            {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
+            {selected.tags.length > 0 && <p className="break-words text-sm text-muted">{selected.tags.map((tag) => `#${tag}`).join(' ')}</p>}
+            <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
+              상세 보기
+            </Link>
+          </div>,
+          popupHost,
+        )}
     </div>
   );
 };

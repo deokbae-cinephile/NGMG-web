@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
@@ -24,6 +24,7 @@ export const MapPage = () => {
   const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
   const [selectedId, setSelectedId] = useState<string>();
+  const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
@@ -69,8 +70,8 @@ export const MapPage = () => {
       <title>지도 | 낚고먹고</title>
       <h1 className="sr-only">내 장소 지도</h1>
       {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
-      <div className="pane sticky top-topbar z-20 h-[42dvh] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0">
-        <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onPick={onPick} />
+      <div className="pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0">
+        <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} />
       </div>
 
       <section aria-labelledby="places-title" className="pane">

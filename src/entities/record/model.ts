@@ -1,7 +1,7 @@
-import type { FishCatch, PlaceKind, PlaceRecord, RecordDetails } from '@/shared/api';
+import { ANGLERS, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails } from '@/shared/api';
 
-/** 함께 낚시하는 두 사람. 잡은 물고기마다 누가 잡았는지 고릅니다. */
-export const ANGLERS = ['김 조사', '류 조사'] as const;
+export { ANGLERS };
+
 
 /** 조사별 마릿수와 가장 긴 물고기 */
 export const summarizeAnglers = (fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[]) =>
@@ -32,24 +32,29 @@ export const summarizeRecords = (records: Pick<PlaceRecord, 'visited_on' | 'rati
 
 type TextField = Exclude<keyof RecordDetails, 'people' | 'price'>;
 
-/** 분류별로 쓰는 기록 항목. 원본 앱(NGMG)의 낚시·맛집 기록 항목을 따릅니다. */
+/** 기록 폼에서 입력받는 항목 */
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
   fishing: [
-    { name: 'companions', label: '동행', placeholder: '예: 민수, 지영' },
     { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대, 2500번 릴' },
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
-    { name: 'weather', label: '날씨' },
-    { name: 'tide', label: '물때' },
-    { name: 'wind', label: '바람' },
-    { name: 'water_temp', label: '수온', placeholder: '예: 16℃' },
   ],
-  restaurant: [
-    { name: 'companions', label: '동행' },
-    { name: 'menu', label: '메뉴', placeholder: '예: 모둠회 중, 매운탕' },
-  ],
-  etc: [{ name: 'companions', label: '동행' }],
+  restaurant: [{ name: 'menu', label: '메뉴', placeholder: '예: 모둠회 중, 매운탕' }],
+  etc: [],
 };
+
+/** 기록 카드에 보여 주는 항목. 지금은 입력받지 않는 항목도 예전에 남긴 값이 있으면 그대로 보여 줍니다. */
+export const RECORD_LABELS: { name: TextField; label: string }[] = [
+  { name: 'companions', label: '동행' },
+  { name: 'gear', label: '장비' },
+  { name: 'rig', label: '채비' },
+  { name: 'bait', label: '미끼' },
+  { name: 'weather', label: '날씨' },
+  { name: 'tide', label: '물때' },
+  { name: 'wind', label: '바람' },
+  { name: 'water_temp', label: '수온' },
+  { name: 'menu', label: '메뉴' },
+];
 
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);

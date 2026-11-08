@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { PlaceSearch, SUGGESTED_TAGS, useSavePlace } from '@/entities/place';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
@@ -34,6 +34,8 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [photo, setPhoto] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [id] = useState(() => initial?.id ?? crypto.randomUUID());
+  const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
   const save = useSavePlace();
   const kind = useWatch({ control, name: 'kind' });
 
@@ -45,12 +47,14 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
     setValue('longitude', String(place.longitude));
   };
 
-  const submit = handleSubmit((values) => {
-    if (save.isPending) return;
+  const onValid = (values: Values) => {
+    if (locked.current) return;
+    locked.current = true;
     save.mutate(
       {
         ...values,
-        id: initial?.id,
+        id,
+        isNew: !initial?.id,
         tags,
         photo_path: initial?.photo_path ?? null,
         latitude: Number(values.latitude),
@@ -58,12 +62,17 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
         photo,
         removePhoto,
       },
-      { onSuccess: onDone },
+      {
+        onSuccess: onDone,
+        onError: () => {
+          locked.current = false;
+        },
+      },
     );
-  });
+  };
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={(event) => void handleSubmit(onValid)(event)} noValidate className="flex flex-col gap-5">
       <PlaceSearch onPick={fill} />
       <Field label="이름" error={errors.name?.message} {...register('name', { required: '이름을 입력해 주세요.', maxLength: { value: 100, message: '100자까지 입력할 수 있습니다.' } })} />
       <KindFieldset register={register('kind')} />

@@ -31,6 +31,17 @@ export type FishCatch = {
   photo_url?: string;
 };
 
+/** 조사별 장비 한 개 */
+export type Gear = {
+  id: string;
+  angler: string;
+  name: string;
+  memo: string;
+  photo_path: string | null;
+  created_at: string;
+  photo_url?: string;
+};
+
 /** 기록의 자세한 항목. 낚시는 인원부터 수온까지, 맛집은 메뉴와 가격을 씁니다. */
 export type RecordDetails = {
   people: number | null;
@@ -50,6 +61,8 @@ export type PlaceRecord = RecordDetails & {
   id: string;
   place_id: string;
   visited_on: string;
+  /** 연박이면 마지막 날, 당일이면 visited_on과 같습니다. */
+  end_date: string;
   catches: string;
   memo: string;
   rating: number | null;
@@ -62,6 +75,8 @@ export type PlaceRecord = RecordDetails & {
 export type CalendarEvent = {
   id: string;
   date: string;
+  /** 연박이면 마지막 날, 당일이면 date와 같습니다. */
+  end_date: string;
   start_time: string;
   end_time: string | null;
   title: string;

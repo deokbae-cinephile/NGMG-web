@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePastEvents } from '@/entities/event';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
 import { FishRow, RecordCard, useRecentFish, useRecordedEventIds, useRecordPages } from '@/entities/record';
-import { ExportButton } from '@/features/export-data';
+import { DownloadRecordButton, ExportButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceKind } from '@/shared/api';
 import { formatDate, getPreference, setPreference, Link } from '@/shared/lib';
@@ -142,6 +142,7 @@ export const RecordsPage = () => {
             <RecordCard
               key={record.id}
               record={record}
+              actions={<DownloadRecordButton record={record} />}
               heading={
                 <h3 className="flex flex-wrap items-center gap-2">
                   <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
@@ -201,7 +202,7 @@ export const RecordsPage = () => {
 
       {recordEvent && recordPlace && (
         <Modal title={`${recordPlace.name} 기록`} onClose={() => setRecordEvent(undefined)}>
-          <RecordForm place={recordPlace} date={recordEvent.date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />
+          <RecordForm place={recordPlace} date={recordEvent.date} endDate={recordEvent.end_date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />
         </Modal>
       )}
     </div>
