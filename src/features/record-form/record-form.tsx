@@ -2,14 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
+import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, FilePreview, Icon, TextareaField } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
-type Values = TextValues & { visited_on: string; end_date: string; catches: string; memo: string; rating: string; price: string };
+type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string; price: string };
 type Props = {
   place: Pick<Place, 'id' | 'kind'>;
   record?: PlaceRecord;
@@ -27,7 +27,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     defaultValues: {
       visited_on: record?.visited_on ?? date ?? toDateKey(new Date()),
       end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
-      catches: record?.catches ?? '',
       memo: record?.memo ?? '',
       rating: record?.rating?.toString() ?? '',
       price: record?.price?.toString() ?? '',
@@ -68,7 +67,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
   const left = MAX_PHOTOS - kept.length;
   const tooMany = files.length > left;
   const fields = RECORD_FIELDS[kind];
-  const used = new Set(fields.map((field) => field.name));
+  const used = new Set<keyof TextValues>([...fields.map((field) => field.name), ...(kind === 'fishing' ? (['weather'] as const) : [])]);
+  // 예전에 자유롭게 적은 날씨도 고를 수 있게 목록에 남겨 둡니다.
+  const weatherOptions = record?.weather && !WEATHER_STATES.includes(record.weather) ? [record.weather, ...WEATHER_STATES] : WEATHER_STATES;
 
   const submit = handleSubmit((values) => {
     const keptFish = kind === 'fishing' ? fish : [];
@@ -82,7 +83,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         event_id: record?.event_id ?? eventId ?? null,
         visited_on: values.visited_on,
         end_date: values.end_date,
-        catches: kind === 'fishing' ? values.catches : '',
+        catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
@@ -137,7 +138,15 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       </div>
       {kind === 'fishing' && (
         <>
-          <Field label="조과" placeholder="예: 감성돔 2마리" {...register('catches')} />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="record-weather" className="mono-label">날씨</label>
+            <select id="record-weather" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('weather')}>
+              <option value="">선택 안 함</option>
+              {weatherOptions.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="button" disabled={gear.isPending} onClick={() => gear.mutate()}>
               지난 장비·채비 불러오기
@@ -163,15 +172,15 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
             {...register('price', { validate: (value) => !value || Number(value) >= 0 || '0 이상으로 입력해 주세요.' })}
           />
         )}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="record-rating" className="mono-label">별점</label>
-        <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
-          <option value="">선택 안 함</option>
-          {[5, 4, 3, 2, 1].map((score) => (
-            <option key={score} value={score}>{`${score}점`}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="record-rating" className="mono-label">별점</label>
+          <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
+            <option value="">선택 안 함</option>
+            {[5, 4, 3, 2, 1].map((score) => (
+              <option key={score} value={score}>{`${score}점`}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <TextareaField label="메모" {...register('memo')} />
 

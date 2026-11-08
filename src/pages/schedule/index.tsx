@@ -1,15 +1,16 @@
 import { useState, type ReactNode } from 'react';
-import { useDeleteEvent, useMonthEvents, useUpcomingEvents } from '@/entities/event';
+import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { DayConditions } from '@/entities/forecast';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
-import { DayChecklist } from '@/features/day-checklist';
 import { EventForm } from '@/features/event-form';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
-import { formatDate, formatDayLabel, formatDday, formatTime, formatTimeRange, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
+import { formatDate, formatDayLabel, formatTimeRange, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
 import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
+import { AllRecords } from './all-records';
 import { MonthCalendar } from './month-calendar';
+import { ScheduleSide } from './schedule-side';
 
 const PaneHead = ({ id, title, children }: { id: string; title: string; children?: ReactNode }) => (
   <div className="cell-head">
@@ -30,7 +31,6 @@ export const SchedulePage = () => {
 
   const monthEvents = useMonthEvents(month);
   const dayEvents = useMonthEvents(selected); // 달을 넘겨도 고른 날의 일정은 그대로 보입니다.
-  const upcoming = useUpcomingEvents();
   const dayRecords = useDayRecords(date);
   const remove = useDeleteEvent();
 
@@ -66,11 +66,11 @@ export const SchedulePage = () => {
   const recordPlace = recordForm?.record?.place ?? recordForm?.event?.place;
 
   return (
-    <div className="panes panes-wide xl:grid-cols-[24rem_minmax(0,1fr)_26rem]">
-      <title>일정 | 낚고먹고</title>
-      <h1 className="sr-only">일정</h1>
+    <div className="panes panes-wide panes-schedule">
+      <title>일정 및 기록 | 낚고먹고</title>
+      <h1 className="sr-only">일정 및 기록</h1>
 
-      <section aria-labelledby="calendar-title" className="pane">
+      <section aria-labelledby="calendar-title" className="pane pane-calendar">
         <PaneHead id="calendar-title" title="달력">
           <button type="button" className="button" onClick={() => goTo(toDateKey(new Date()))}>
             오늘
@@ -102,33 +102,10 @@ export const SchedulePage = () => {
             }}
           />
         </div>
-        <ErrorText error={monthEvents.error ?? upcoming.error} />
-        {upcoming.isPending && (
-          <div className="px-5">
-            <SkeletonRows count={3} />
-          </div>
-        )}
-        {upcoming.data && upcoming.data.length > 0 && (
-          <section aria-labelledby="upcoming-title">
-            <h3 id="upcoming-title" className="title text-lg px-5 pt-5 pb-3">다가오는 일정</h3>
-            <ul className="flex flex-col divide-y divide-soft border-t border-line">
-              {upcoming.data.map((event) => (
-                <li key={event.id}>
-                  <button type="button" className="result" onClick={() => goTo(event.date)}>
-                    <span className="flex items-center gap-2">
-                      <span className="badge badge-solid">{event.date < toDateKey(new Date()) ? '진행 중' : formatDday(event.date)}</span>
-                      <span>{event.title}</span>
-                    </span>
-                    <span className="text-sm text-muted">{`${formatDateRange(event.date, event.end_date)} ${formatTime(event.start_time)} ${formatStay(event.date, event.end_date)}`.trim()}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <ErrorText error={monthEvents.error} />
       </section>
 
-      <section aria-labelledby="day-title" className="pane">
+      <section aria-labelledby="day-title" className="pane pane-day">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 pt-6 pb-3">
           <div className="flex items-end gap-4">
             {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
@@ -154,7 +131,7 @@ export const SchedulePage = () => {
             {!dayEvents.isPending && events.length === 0 && <p className="text-muted">일정이 없습니다.</p>}
             <ol className="flex flex-col">
               {events.map((event) => (
-                <li key={event.id} className="panel flex flex-col gap-2 sm:flex-row sm:items-start">
+                <li key={event.id} className="panel panel-roomy flex flex-col gap-2 sm:flex-row sm:items-start">
                   <p className="mono-label shrink-0 sm:w-28 sm:pt-1">{formatTimeRange(event.start_time, event.end_time)}</p>
                   <div className="min-w-0 flex-1">
                     <h4 className="break-words">{event.title}</h4>
@@ -187,13 +164,6 @@ export const SchedulePage = () => {
             </ol>
           </section>
 
-          <DayChecklist key={date} date={date} />
-        </div>
-      </section>
-
-      <section aria-labelledby="day-log-title" className="pane">
-        <PaneHead id="day-log-title" title="조건 및 기록" />
-        <div className="cell-body flex flex-col gap-8">
           {conditionPlace ? (
             <DayConditions date={date} place={conditionPlace} />
           ) : (
@@ -248,6 +218,9 @@ export const SchedulePage = () => {
           </section>
         </div>
       </section>
+
+      <ScheduleSide selected={date} onPick={goTo} />
+      <AllRecords />
 
       {form && (
         <Modal title={form.event ? '일정 수정' : '새 일정'} onClose={() => setForm(undefined)}>

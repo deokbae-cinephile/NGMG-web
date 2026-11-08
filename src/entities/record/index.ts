@@ -13,6 +13,6 @@ export {
   type FishInput,
   type StatRecord,
 } from './api';
-export { ANGLERS, fishLabel, formatGear, gearList, RECORD_FIELDS, splitList, summarizeAnglers, summarizeRecords } from './model';
+export { ANGLERS, fishLabel, formatGear, gearList, RECORD_FIELDS, splitList, summarizeAnglers, summarizeRecords, WEATHER_STATES } from './model';
 export { FishRow } from './fish-row';
 export { RecordCard } from './record-card';

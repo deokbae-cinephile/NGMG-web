@@ -44,10 +44,12 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
   ];
 
   return (
-    <article className="panel flex flex-col gap-3">
+    <article className="panel panel-roomy flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="mono-label">{`${formatDateRange(record.visited_on, record.end_date)} ${formatStay(record.visited_on, record.end_date)}`.trim()}</p>
+          <p className="mono-label">
+            {[formatDateRange(record.visited_on, record.end_date), formatStay(record.visited_on, record.end_date), record.weather && `(${record.weather})`].filter(Boolean).join(' ')}
+          </p>
           {heading}
         </div>
         {actions}
@@ -58,14 +60,14 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           <span aria-hidden="true">{'★'.repeat(record.rating) + '☆'.repeat(5 - record.rating)}</span>
         </p>
       )}
-      {record.catches && (
+      {record.catches && record.fish.length === 0 && (
         <p>
           <span className="mono-label mr-2">조과</span>
           {record.catches}
         </p>
       )}
       {details.length > 0 && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
           {details.map((item) => (
             <div key={item.label} className="min-w-0">
               <dt className="mono-label">{item.label}</dt>

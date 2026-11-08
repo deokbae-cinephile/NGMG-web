@@ -91,11 +91,3 @@ export type CalendarEvent = {
   place: Place | null;
 };
 
-export type ChecklistItem = {
-  id: string;
-  date: string;
-  title: string;
-  category: string;
-  checked: boolean;
-  position: number;
-};

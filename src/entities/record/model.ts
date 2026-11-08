@@ -35,24 +35,25 @@ export const summarizeRecords = (records: Pick<PlaceRecord, 'visited_on' | 'rati
 
 type TextField = Exclude<keyof RecordDetails, 'people' | 'price'>;
 
+/** 기록 폼의 날씨 상태 */
+export const WEATHER_STATES = ['맑음', '구름', '흐림', '비', '폭우', '눈', '안개'];
+
 /** 기록 폼에서 입력받는 항목 */
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
   fishing: [
     { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대, 2500번 릴' },
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
-    { name: 'weather', label: '날씨' },
   ],
   restaurant: [{ name: 'menu', label: '메뉴', placeholder: '예: 모둠회 중, 매운탕' }],
   etc: [],
 };
 
-/** 기록 카드에 보여 주는 항목. 물때·바람·수온처럼 지금은 입력받지 않아도 예전에 남긴 값은 보여 줍니다. 인원과 동행은 저장만 되어 있고 보여 주지 않습니다. */
+/** 기록 카드에 보여 주는 항목. 물때·바람·수온처럼 지금은 입력받지 않아도 예전에 남긴 값은 보여 줍니다. 인원과 동행은 저장만 되어 있고, 날씨는 날짜 옆에 보여 줍니다. */
 export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'gear', label: '장비' },
   { name: 'rig', label: '채비' },
   { name: 'bait', label: '미끼' },
-  { name: 'weather', label: '날씨' },
   { name: 'tide', label: '물때' },
   { name: 'wind', label: '바람' },
   { name: 'water_temp', label: '수온' },
