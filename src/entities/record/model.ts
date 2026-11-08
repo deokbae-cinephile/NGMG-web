@@ -38,6 +38,7 @@ export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; 
     { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대, 2500번 릴' },
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
     { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
+    { name: 'weather', label: '날씨' },
   ],
   restaurant: [{ name: 'menu', label: '메뉴', placeholder: '예: 모둠회 중, 매운탕' }],
   etc: [],

@@ -335,7 +335,8 @@ test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연�
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 수정' }).first().click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
-  for (const label of ['인원', '동행', '날씨', '물때', '바람', '수온']) await expect(dialog.getByLabel(label, { exact: true })).toHaveCount(0);
+  for (const label of ['인원', '동행', '물때', '바람', '수온']) await expect(dialog.getByLabel(label, { exact: true })).toHaveCount(0);
+  await expect(dialog.getByLabel('날씨', { exact: true })).toHaveValue('맑음');
   await expect(dialog.getByRole('button', { name: '물때·날씨 불러오기' })).toHaveCount(0);
   await dialog.getByLabel('종료 날짜').fill('2026-10-31');
   await dialog.getByRole('button', { name: '저장' }).click();
@@ -382,4 +383,25 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.getByRole('link', { name: '통계' }).click();
   await expect(page.getByRole('heading', { name: '조사별 조과' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop');
+  await fakeBackend(page, seed());
+  const check = async (path: string, title: string) => {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: title })).toBeAttached();
+    const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;
+    const pane = (await page.locator('.pane').last().boundingBox())!;
+    expect(Math.round(nav.x)).toBe(Math.round(pane.x));
+    return nav;
+  };
+  const nav = await check('./schedule', '조건 및 기록');
+  expect(Math.round(nav.x + nav.width)).toBe(1280);
+  await check('./records', '최근 조과');
+  await page.evaluate(() => {
+    window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
+  });
+  await expect(page.getByRole('button', { name: '앱 설치' })).toBeVisible();
+  await check('./records', '최근 조과');
 });
