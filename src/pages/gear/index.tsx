@@ -1,71 +1,217 @@
-import { useState } from 'react';
-import { useDeleteGear, useGear } from '@/entities/gear';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { GEAR_CATEGORIES, GEAR_ICON, gearLabel, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
+import { splitList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
 import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
+import { byPosition, moveGear } from './model';
 
-/** 조사별 장비 목록 */
+type Drop = { category: string; beforeId: string | null };
+type Dragging = { item: Gear; x: number; y: number };
+
+/** 조사별 장비 목록. 손잡이를 끌거나 위·아래 버튼으로 순서와 분류를 바꿉니다. */
 export const GearPage = () => {
   const { data = [], isPending, error } = useGear();
+  const records = useStatRecords();
   const remove = useDeleteGear();
+  const reorder = useReorderGear();
   const [form, setForm] = useState<{ angler: string; gear?: Gear }>();
+  const [dragging, setDragging] = useState<Dragging>();
+  const [drop, setDrop] = useState<Drop>();
+  const [message, setMessage] = useState('');
+  const stopDrag = useRef<() => void>(undefined);
+  const refocus = useRef<{ id: string; button: 'up' | 'down' }>(undefined);
+
+  useEffect(() => () => stopDrag.current?.(), []);
+
+  // 옮긴 뒤에도 같은 장비의 버튼에 초점을 둡니다. 끝에 닿아 버튼이 꺼지면 반대쪽 버튼으로 옮깁니다.
+  useEffect(() => {
+    if (!refocus.current) return;
+    const { id, button } = refocus.current;
+    refocus.current = undefined;
+    const row = document.querySelector(`[data-gear-item="${id}"]`);
+    (row?.querySelector<HTMLButtonElement>(`[data-move="${button}"]:not(:disabled)`) ?? row?.querySelector<HTMLButtonElement>('[data-move]:not(:disabled)'))?.focus();
+  }, [data]);
+
+  /** 기록의 장비 칸에 적힌 이름별 사용 횟수 */
+  const usage = useMemo(() => {
+    const counts = new Map<string, number>();
+    records.data?.forEach((record) => new Set(splitList(record.gear)).forEach((name) => counts.set(name, (counts.get(name) ?? 0) + 1)));
+    return counts;
+  }, [records.data]);
 
   const onDelete = (item: Gear) => {
-    if (window.confirm(`${item.name}을(를) 삭제할까요?`)) remove.mutate(item);
+    if (window.confirm(`${gearLabel(item)}을(를) 삭제할까요?`)) remove.mutate(item);
   };
+
+  const place = (item: Gear, category: string, beforeId: string | null) => {
+    const rows = moveGear(data.filter((other) => other.angler === item.angler), item.id, category, beforeId);
+    if (!rows.length) return;
+    reorder.mutate(rows);
+    setMessage(`${gearLabel(item)}을(를) ${category}(으)로 옮겼습니다.`);
+  };
+
+  const sectionOf = (item: Gear, category = item.category) =>
+    data.filter((other) => other.angler === item.angler && other.category === category).sort(byPosition);
+
+  /** 위·아래 버튼. 분류의 끝에서는 이웃 분류로 넘어갑니다. */
+  const step = (item: Gear, direction: -1 | 1) => {
+    if (reorder.isPending) return; // 저장 중에는 버튼을 끄지 않고 무시합니다. 끄면 키보드 초점을 잃습니다.
+    const section = sectionOf(item);
+    const index = section.findIndex((other) => other.id === item.id);
+    const neighbor = GEAR_CATEGORIES[GEAR_CATEGORIES.indexOf(item.category as (typeof GEAR_CATEGORIES)[number]) + direction];
+    refocus.current = { id: item.id, button: direction < 0 ? 'up' : 'down' };
+    if (direction < 0 && index > 0) return place(item, item.category, section[index - 1]!.id);
+    if (direction > 0 && index < section.length - 1) return place(item, item.category, section[index + 2]?.id ?? null);
+    if (neighbor) place(item, neighbor, direction < 0 ? null : (sectionOf(item, neighbor)[0]?.id ?? null));
+  };
+
+  const canStep = (item: Gear, direction: -1 | 1) => {
+    const section = sectionOf(item);
+    const edge = direction < 0 ? section[0]?.id === item.id : section.at(-1)?.id === item.id;
+    const neighbor = GEAR_CATEGORIES[GEAR_CATEGORIES.indexOf(item.category as (typeof GEAR_CATEGORIES)[number]) + direction];
+    return !edge || Boolean(neighbor);
+  };
+
+  /** 손잡이를 잡아 끕니다. 터치와 마우스를 함께 처리합니다. */
+  const startDrag = (event: ReactPointerEvent, item: Gear) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    let target: Drop | undefined;
+
+    const targetAt = (x: number, y: number): Drop | undefined => {
+      const element = document.elementFromPoint(x, y);
+      const section = element?.closest<HTMLElement>('[data-gear-section]');
+      if (!section || section.dataset.angler !== item.angler) return undefined;
+      const category = section.dataset.gearSection!;
+      const row = element?.closest<HTMLElement>('[data-gear-item]');
+      if (!row) return { category, beforeId: null };
+      if (row.dataset.gearItem === item.id) return undefined;
+      const box = row.getBoundingClientRect();
+      if (y < box.top + box.height / 2) return { category, beforeId: row.dataset.gearItem! };
+      let next = row.nextElementSibling as HTMLElement | null;
+      if (next?.dataset.gearItem === item.id) next = next.nextElementSibling as HTMLElement | null;
+      return { category, beforeId: next?.dataset.gearItem ?? null };
+    };
+
+    const onMove = (move: PointerEvent) => {
+      setDragging({ item, x: move.clientX, y: move.clientY });
+      target = targetAt(move.clientX, move.clientY);
+      setDrop(target);
+      // 화면 끝으로 끌면 목록을 굴립니다.
+      const edge = move.clientY < 80 ? -14 : move.clientY > window.innerHeight - 120 ? 14 : 0;
+      if (!edge) return;
+      const pane = document.querySelector<HTMLElement>(`[data-gear-pane="${item.angler}"]`);
+      if (pane && pane.scrollHeight > pane.clientHeight) pane.scrollBy(0, edge);
+      else window.scrollBy(0, edge);
+    };
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('keydown', onKey);
+      stopDrag.current = undefined;
+      setDragging(undefined);
+      setDrop(undefined);
+    };
+    const onUp = () => {
+      const done = target;
+      stop();
+      if (done) place(item, done.category, done.beforeId);
+    };
+    const onKey = (key: KeyboardEvent) => {
+      if (key.key === 'Escape') stop();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', stop);
+    window.addEventListener('keydown', onKey);
+    stopDrag.current = stop;
+    setDragging({ item, x: event.clientX, y: event.clientY });
+  };
+
+  const nextPosition = Math.max(-1, ...data.map((item) => item.position)) + 1;
 
   return (
     <div className="panes lg:grid-cols-2">
       <title>장비 | 낚고먹고</title>
       <h1 className="sr-only">조사별 장비</h1>
-      {ANGLERS.map((angler, index) => {
-        const items = data.filter((item) => item.angler === angler);
-        return (
-          <section key={angler} aria-labelledby={`gear-${index}`} className="pane">
-            <div className="cell-head">
-              <h2 id={`gear-${index}`} className="title text-xl">{`${angler} 장비`}</h2>
-              <button type="button" className="button button-primary" aria-label={`${angler} 장비 추가`} onClick={() => setForm({ angler })}>
-                장비 추가
-              </button>
-            </div>
-            <div className="cell-body">
-              <ErrorText error={error ?? remove.error} />
-              {isPending && <SkeletonRows count={3} />}
-              {!isPending && !error && items.length === 0 && <p className="text-muted">아직 등록한 장비가 없습니다.</p>}
-              <ul className="flex flex-col">
-                {items.map((item) => (
-                  <li key={item.id} className="panel flex items-start gap-3">
-                    {item.photo_url ? (
-                      <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                        <img src={item.photo_url} alt={`${item.name} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-20 border border-line object-cover" />
-                      </a>
-                    ) : (
-                      <span aria-hidden="true" className="flex size-20 shrink-0 items-center justify-center bg-surface text-muted">
-                        <Icon name="backpack" size={28} />
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="break-words">{item.name}</h3>
-                      {item.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{item.memo}</p>}
-                    </div>
-                    <div className="flex shrink-0 flex-wrap items-center justify-end">
-                      <button type="button" className="text-action" aria-label={`${item.name} 수정`} onClick={() => setForm({ angler, gear: item })}>
-                        수정
-                      </button>
-                      <button type="button" className="text-action text-action-danger" aria-label={`${item.name} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
-                        삭제
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        );
-      })}
+      <p role="status" className="sr-only">{message}</p>
+      {ANGLERS.map((angler, index) => (
+        <section key={angler} aria-labelledby={`gear-${index}`} className="pane" data-gear-pane={angler}>
+          <div className="cell-head">
+            <h2 id={`gear-${index}`} className="title text-xl">{`${angler} 장비`}</h2>
+            <button type="button" className="button button-primary" aria-label={`${angler} 장비 추가`} onClick={() => setForm({ angler })}>
+              장비 추가
+            </button>
+          </div>
+          <div className="cell-body flex flex-col gap-6">
+            <ErrorText error={error ?? remove.error ?? reorder.error} />
+            {isPending && <SkeletonRows count={3} />}
+            {!isPending &&
+              GEAR_CATEGORIES.map((category) => {
+                const items = data.filter((item) => item.angler === angler && item.category === category).sort(byPosition);
+                const atEnd = drop?.category === category && drop.beforeId === null && dragging?.item.angler === angler;
+                return (
+                  <section key={category} aria-label={`${angler} ${category}`} data-gear-section={category} data-angler={angler}>
+                    <h3 className="title border-b border-line pb-2 text-lg">{category}</h3>
+                    {items.length === 0 && !atEnd && <p className="py-3 text-sm text-muted">등록한 장비가 없습니다.</p>}
+                    <ul className={`flex flex-col ${atEnd ? 'gear-drop-end' : ''}`}>
+                      {items.map((item) => (
+                        <li
+                          key={item.id}
+                          data-gear-item={item.id}
+                          className={`panel flex items-start gap-2 ${dragging?.item.id === item.id ? 'opacity-40' : ''} ${drop?.beforeId === item.id ? 'gear-drop-before' : ''}`}
+                        >
+                          {/* 끌기 전용 손잡이입니다. 키보드와 끌 수 없는 환경에서는 아래 위·아래 버튼을 씁니다. */}
+                          <span aria-hidden="true" className="gear-handle" title="끌어서 옮기기" onPointerDown={(event) => startDrag(event, item)}>
+                            <Icon name="grip" size={18} />
+                          </span>
+                          {item.photo_url ? (
+                            <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
+                              <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+                            </a>
+                          ) : (
+                            <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
+                              <Icon name={GEAR_ICON[item.category] ?? 'backpack'} size={30} />
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="break-words">{gearLabel(item)}</h4>
+                            {item.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{item.memo}</p>}
+                            <p className="mono-label mt-1">{`사용 ${usage.get(gearLabel(item)) ?? 0}회`}</p>
+                            <div className="mt-1 flex flex-wrap items-center">
+                              <button type="button" data-move="up" className="icon-button-sm" aria-label={`${gearLabel(item)} 위로`} disabled={!canStep(item, -1)} onClick={() => step(item, -1)}>
+                                <Icon name="chevronUp" size={18} />
+                              </button>
+                              <button type="button" data-move="down" className="icon-button-sm" aria-label={`${gearLabel(item)} 아래로`} disabled={!canStep(item, 1)} onClick={() => step(item, 1)}>
+                                <Icon name="chevronDown" size={18} />
+                              </button>
+                              <button type="button" className="text-action" aria-label={`${gearLabel(item)} 수정`} onClick={() => setForm({ angler, gear: item })}>
+                                수정
+                              </button>
+                              <button type="button" className="text-action text-action-danger" aria-label={`${gearLabel(item)} 삭제`} disabled={remove.isPending} onClick={() => onDelete(item)}>
+                                삭제
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
+          </div>
+        </section>
+      ))}
+      {dragging && (
+        <div aria-hidden="true" className="gear-ghost" style={{ left: dragging.x + 12, top: dragging.y + 12 }}>
+          {gearLabel(dragging.item)}
+        </div>
+      )}
       {form && (
         <Modal title={form.gear ? '장비 수정' : '새 장비'} onClose={() => setForm(undefined)}>
-          <GearForm angler={form.angler} gear={form.gear} onDone={() => setForm(undefined)} />
+          <GearForm angler={form.angler} gear={form.gear} nextPosition={nextPosition} onDone={() => setForm(undefined)} />
         </Modal>
       )}
     </div>

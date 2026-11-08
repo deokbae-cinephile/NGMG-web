@@ -35,9 +35,13 @@ export type FishCatch = {
 export type Gear = {
   id: string;
   angler: string;
+  /** 로드, 릴, 라인, 채비, 기타 */
+  category: string;
+  brand: string;
   name: string;
   memo: string;
   photo_path: string | null;
+  position: number;
   created_at: string;
   photo_url?: string;
 };

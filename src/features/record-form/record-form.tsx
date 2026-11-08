@@ -1,10 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { defaultGearLabels, useGear } from '@/entities/gear';
 import { fetchLatestGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
-import { ErrorText, FilePreview, TextareaField, Field } from '@/shared/ui';
+import { ErrorText, Field, FilePreview, Icon, TextareaField } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
@@ -49,6 +50,12 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     })),
   );
   const [checkedFish, setCheckedFish] = useState(false);
+  const registeredGear = useGear();
+  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(', ');
+  // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
+  useEffect(() => {
+    if (!record && kind === 'fishing' && defaultGear && !getValues('gear')) setValue('gear', defaultGear);
+  }, [record, kind, defaultGear, getValues, setValue]);
   const save = useSaveRecord();
   const remove = useDeleteRecord();
 
@@ -211,14 +218,10 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         <section aria-label="올릴 사진 미리보기">
           <ul className="grid grid-cols-3 gap-2">
             {files.map((file, index) => (
-              <li key={`${file.name}-${file.lastModified}-${index}`} className="flex flex-col gap-1">
+              <li key={`${file.name}-${file.lastModified}-${index}`} className="relative">
                 <FilePreview file={file} alt={`올릴 사진 ${index + 1} 미리보기`} className="aspect-square w-full" />
-                <button
-                  type="button"
-                  className="text-action text-action-danger self-start"
-                  onClick={() => setFiles((list) => list.filter((_, at) => at !== index))}
-                >
-                  {`사진 ${index + 1} 빼기`}
+                <button type="button" className="photo-remove" aria-label={`사진 ${index + 1} 빼기`} onClick={() => setFiles((list) => list.filter((_, at) => at !== index))}>
+                  <Icon name="close" size={16} />
                 </button>
               </li>
             ))}

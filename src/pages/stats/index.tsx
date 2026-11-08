@@ -63,10 +63,10 @@ export const StatsPage = () => {
       {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. */}
       <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-5">
         {[
-          ['출조 횟수', `${stats.trips}`, '회'],
           ['전체 기록', `${stats.total}`, '건'],
-          ['맛집 방문', `${stats.restaurants}`, '번'],
+          ['출조 횟수', `${stats.trips}`, '회'],
           ['낚시 평균 별점', stats.fishingRating === null ? '-' : stats.fishingRating.toFixed(1), stats.fishingRating === null ? '' : '점'],
+          ['맛집 방문', `${stats.restaurants}`, '번'],
           ['맛집 평균 별점', stats.restaurantRating === null ? '-' : stats.restaurantRating.toFixed(1), stats.restaurantRating === null ? '' : '점'],
         ].map(([label, value, unit], index) => (
           <div key={label} className={`flex flex-col gap-2 bg-paper p-5 ${index === 0 ? 'col-span-2 lg:col-span-1' : ''}`}>
@@ -113,13 +113,13 @@ export const StatsPage = () => {
           </div>
           <dl className="cell-body flex flex-col">
             {stats.anglers.map(({ angler, count, biggest }) => (
-              <div key={angler} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1">
+              <div key={angler} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
                 <dt>{angler}</dt>
-                <dd className="flex items-baseline gap-1">
+                <dd className="col-start-1 text-sm text-muted">{biggest ? `최대어 ${fishLabel(biggest)}` : '아직 잡은 물고기가 없습니다.'}</dd>
+                <dd className="col-start-2 row-span-2 row-start-1 flex items-center gap-1">
                   <span className="display-number text-5xl!">{count}</span>
                   <span>마리</span>
                 </dd>
-                <dd className="col-span-2 text-sm text-muted">{biggest ? `최대어 ${fishLabel(biggest)}` : '아직 잡은 물고기가 없습니다.'}</dd>
               </div>
             ))}
           </dl>

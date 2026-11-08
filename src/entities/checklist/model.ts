@@ -10,10 +10,12 @@ export const DEFAULT_CHECKLIST: { category: string; titles: string[] }[] = [
 
 export const CHECKLIST_CATEGORIES = [...DEFAULT_CHECKLIST.map((group) => group.category), '기타'];
 
-export const defaultChecklistItems = (date: string) =>
-  DEFAULT_CHECKLIST.flatMap((group) => group.titles.map((title) => ({ category: group.category, title }))).map(
-    (item, position) => ({ ...item, date, position }),
-  );
+/** gear는 장비 화면에 등록한 로드와 릴입니다. 있으면 '낚싯대'와 '릴' 대신 넣습니다. */
+export const defaultChecklistItems = (date: string, gear: string[] = []) =>
+  DEFAULT_CHECKLIST.flatMap((group) => {
+    const titles = group.category === '장비' && gear.length ? [...gear, ...group.titles.filter((title) => title !== '낚싯대' && title !== '릴')] : group.titles;
+    return titles.map((title) => ({ category: group.category, title }));
+  }).map((item, position) => ({ ...item, date, position }));
 
 /** 분류 순서대로 묶고, 없는 분류는 뺍니다. */
 export const groupByCategory = (items: ChecklistItem[]) =>

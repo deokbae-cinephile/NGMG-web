@@ -354,6 +354,8 @@ test('장비: 조사별로 추가, 수정, 삭제하고 사진을 미리 본다'
   await expect(dialog.getByRole('radio', { name: '류 조사' })).toBeChecked();
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByText('장비 이름을 입력해 주세요.')).toBeVisible();
+  await dialog.getByLabel('분류').selectOption('릴');
+  await dialog.getByLabel('브랜드').fill('다이와');
   await dialog.getByLabel('장비 이름').fill('뜰채');
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
   await dialog.getByLabel('사진', { exact: true }).setInputFiles({ name: '뜰채.png', mimeType: 'image/png', buffer: png });
@@ -361,16 +363,16 @@ test('장비: 조사별로 추가, 수정, 삭제하고 사진을 미리 본다'
   await expectAccessible(page);
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('heading', { name: '뜰채' })).toBeVisible();
-  expect(db.angler_gear![0]).toMatchObject({ angler: '류 조사', name: '뜰채' });
+  await expect(page.getByRole('heading', { name: '[다이와] 뜰채' })).toBeVisible();
+  expect(db.angler_gear![0]).toMatchObject({ angler: '류 조사', category: '릴', brand: '다이와', name: '뜰채' });
   await expectFits(page);
 
-  await page.getByRole('button', { name: '뜰채 수정' }).click();
+  await page.getByRole('button', { name: '[다이와] 뜰채 수정' }).click();
   await page.getByRole('dialog', { name: '장비 수정' }).getByLabel('장비 이름').fill('큰 뜰채');
   await page.getByRole('dialog', { name: '장비 수정' }).getByRole('button', { name: '저장' }).click();
-  await expect(page.getByRole('heading', { name: '큰 뜰채' })).toBeVisible();
-  await page.getByRole('button', { name: '큰 뜰채 삭제' }).click();
-  await expect(page.getByRole('heading', { name: '큰 뜰채' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: '[다이와] 큰 뜰채' })).toBeVisible();
+  await page.getByRole('button', { name: '[다이와] 큰 뜰채 삭제' }).click();
+  await expect(page.getByRole('heading', { name: '[다이와] 큰 뜰채' })).toBeHidden();
   expect(db.angler_gear).toHaveLength(0);
 });
 
@@ -434,4 +436,87 @@ test('기록 검색은 어종으로도 찾는다', async ({ page }) => {
   await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(page.getByText('감성돔 2마리')).toBeVisible();
   await expect(page.getByText('감성돔 1마리')).toBeHidden();
+});
+
+const gearSeed = () => ({
+  ...seed(),
+  records: [{ id: 'r1', place_id: 'p1', visited_on: '2026-10-01', gear: '[A] 로드하나, [다이와] 릴하나', catches: '' }],
+  angler_gear: [
+    { id: 'a', angler: '김 조사', category: '로드', brand: 'A', name: '로드하나', position: 0 },
+    { id: 'b', angler: '김 조사', category: '로드', brand: '', name: '로드둘', position: 1 },
+    { id: 'c', angler: '김 조사', category: '릴', brand: '다이와', name: '릴하나', position: 0 },
+  ],
+});
+
+test('장비: 끌어서 옮기고, 위·아래 버튼으로도 옮기며, 사용 횟수를 보여 준다', async ({ page }) => {
+  const db = await fakeBackend(page, gearSeed());
+  await page.goto('./gear');
+  const row = page.locator('[data-gear-item="a"]');
+  await expect(row.getByText('사용 1회')).toBeVisible();
+  await expectAccessible(page);
+
+  // 로드하나를 로드둘 아래로 끕니다.
+  const from = (await row.locator('.gear-handle').boundingBox())!;
+  const to = (await page.locator('[data-gear-item="b"]').boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 4 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height - 4, { steps: 2 });
+  await page.mouse.up();
+  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'a')!.position).toBe(1);
+  expect(db.angler_gear!.find((item) => item.id === 'b')!.position).toBe(0);
+
+  // 버튼으로 분류 끝을 넘어가면 다음 분류로 갑니다.
+  await page.getByRole('button', { name: '[A] 로드하나 아래로' }).click();
+  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'a')!.category).toBe('릴');
+  await expect(page.getByRole('button', { name: '[A] 로드하나 아래로' })).toBeFocused();
+  await expectFits(page);
+});
+
+test('기본값: 새 기록의 장비 칸과 일정의 기본 목록에 등록한 로드·릴이 들어간다', async ({ page }) => {
+  const db = await fakeBackend(page, gearSeed());
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나, 로드둘, [다이와] 릴하나');
+  await page.keyboard.press('Escape');
+  await page.goto('./schedule?date=2026-11-07');
+  await page.getByRole('button', { name: '기본 목록 불러오기' }).dblclick();
+  await expect(page.getByRole('checkbox', { name: '[다이와] 릴하나' })).toBeVisible();
+  expect(new Set(db.checklist_items!.map((item) => item.title)).size).toBe(db.checklist_items!.length); // 더블 클릭해도 중복되지 않습니다.
+  await expect(page.getByRole('checkbox', { name: '낚싯대', exact: true })).toHaveCount(0);
+  expect(db.checklist_items!.some((item) => item.title === '로드둘')).toBe(true);
+});
+
+test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  await page.getByRole('button', { name: /연도와 월 고르기/ }).click();
+  const picker = page.getByRole('group', { name: '연도와 월 고르기' });
+  await picker.getByRole('button', { name: /10년 단위로 연도 고르기/ }).click();
+  await expect(picker.getByRole('button', { name: '2026', exact: true })).toBeFocused();
+  await expect(picker.getByRole('button', { name: /^20\d\d$/ })).toHaveCount(10);
+  await expectAccessible(page);
+  await picker.getByRole('button', { name: '다음 10년' }).click();
+  await picker.getByRole('button', { name: '2031', exact: true }).click();
+  await picker.getByRole('button', { name: '5월' }).click();
+  await expect(page.getByRole('heading', { name: /2031년 5월/ })).toBeVisible();
+});
+
+test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인원·동행을 보이지 않는다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선' };
+  await fakeBackend(page, base);
+  await page.goto('./places/p1');
+  await expect(page.getByText('감성돔 1마리')).toBeVisible();
+  await expect(page.getByText('국환, 창선')).toHaveCount(0);
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  await dialog.getByLabel('사진 추가').setInputFiles({ name: 'a.png', mimeType: 'image/png', buffer: png });
+  await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toBeVisible();
+  await dialog.getByRole('button', { name: '사진 1 빼기' }).click();
+  await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toHaveCount(0);
+  await page.goto('./stats');
+  await expect(page.locator('dl dt').first()).toBeVisible();
+  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['전체 기록', '출조 횟수', '낚시 평균 별점', '맛집 방문', '맛집 평균 별점']);
 });
