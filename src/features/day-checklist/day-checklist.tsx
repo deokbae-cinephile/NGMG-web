@@ -46,11 +46,11 @@ export const DayChecklist = ({ date }: { date: string }) => {
         </div>
         {items.length > 0 && <p className="mono-label" role="status">{`${items.length}개 중 ${done}개 챙김`}</p>}
       </div>
-      <ErrorText error={error ?? lastAction.error} />
+      <ErrorText error={error ?? registeredGear.error ?? lastAction.error} />
       {!isPending && !error && items.length === 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-muted">이 날짜의 준비물이 없습니다.</p>
-          <button type="button" className="button" disabled={addDefaults.isPending} onClick={() => once(addDefaults.mutate, defaultGearLabels(registeredGear.data ?? []))}>
+          <button type="button" className="button" disabled={addDefaults.isPending || !registeredGear.isSuccess} onClick={() => once(addDefaults.mutate, defaultGearLabels(registeredGear.data ?? []))}>
             기본 목록 불러오기
           </button>
           <button type="button" className="button" disabled={copyLatest.isPending} onClick={() => once(copyLatest.mutate, undefined)}>
