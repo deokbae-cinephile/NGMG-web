@@ -19,8 +19,13 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   // 화면이 바뀌면 맨 위부터 보여 줍니다. 그리기 전에 옮기고, 새 화면이 그려진 다음에도 한 번 더 옮깁니다.
   useLayoutEffect(() => {
     if (first.current) return;
-    window.scrollTo(0, 0);
-    const frame = requestAnimationFrame(() => window.scrollTo(0, 0));
+    // 휴대폰은 문서가, 넓은 화면은 본문 영역이 스크롤됩니다.
+    const toTop = () => {
+      window.scrollTo(0, 0);
+      main.current?.scrollTo(0, 0);
+    };
+    toTop();
+    const frame = requestAnimationFrame(toTop);
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
 
@@ -31,7 +36,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   }, [pathname]);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col lg:h-dvh">
       <a href="#main" className="skip-link">
         본문 바로가기
       </a>
@@ -50,7 +55,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         {/* 설치는 메뉴(GNB)가 아니라 따로 두는 동작이라 메뉴 밖, 머리글 맨 오른쪽에 둡니다. */}
         <InstallButton />
       </header>
-      <main id="main" ref={main} tabIndex={-1} className="flex-1 pb-16 outline-none lg:pb-0">
+      <main id="main" ref={main} tabIndex={-1} className="min-h-0 flex-1 pb-16 outline-none lg:overflow-y-auto lg:pb-0">
         <Suspense fallback={<PageSkeleton />}>
           {children}
         </Suspense>
