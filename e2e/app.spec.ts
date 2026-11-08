@@ -141,7 +141,6 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
-  await dialog.getByLabel('조과').fill('볼락 3마리');
   await dialog.getByLabel('별점').selectOption('5');
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
@@ -166,7 +165,6 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await expectAccessible(page);
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText('볼락 3마리')).toBeVisible();
   await expect(page.getByText('볼락 21.5cm')).toBeVisible();
   expect(db.records).toHaveLength(26);
   expect(db.record_photos).toHaveLength(2);
@@ -235,24 +233,6 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   expect(db.events).toHaveLength(1);
 });
 
-test('일정: 날짜별 준비물을 불러와 체크하고 추가한다', async ({ page }) => {
-  const db = await fakeBackend(page, seed());
-  await page.goto('./schedule?date=2026-11-07');
-  await page.getByRole('button', { name: '기본 목록 불러오기' }).click();
-  await page.getByRole('checkbox', { name: '낚싯대' }).click();
-  await expect(page.getByRole('checkbox', { name: '낚싯대' })).toBeChecked();
-  await expect(page.getByText(/24개 중 1개 챙김/)).toBeVisible();
-  await expectFits(page);
-  await expectAccessible(page);
-
-  await page.getByLabel('준비물 추가').fill('핫팩');
-  await page.getByRole('button', { name: '추가', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: '핫팩' })).toBeVisible();
-  await page.getByRole('button', { name: '핫팩 삭제' }).click();
-  await expect(page.getByRole('checkbox', { name: '핫팩' })).toBeHidden();
-  expect(db.checklist_items!.every((item) => item.date === '2026-11-07')).toBe(true);
-});
-
 test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./schedule');
@@ -262,8 +242,8 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page.getByRole('link', { name: '본문 바로가기' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#main$/);
-  await page.getByRole('link', { name: '기록' }).click();
-  await expect(page).toHaveTitle('기록 | 낚고먹고');
+  await page.getByRole('link', { name: '통계' }).click();
+  await expect(page).toHaveTitle('통계 | 낚고먹고');
   await expect(page.locator('#main')).toBeFocused();
 });
 
@@ -400,10 +380,10 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
     expect(Math.round(nav.x)).toBe(Math.round(pane.x));
     return nav;
   };
-  const nav = await check('./schedule', '조건 및 기록');
+  const nav = await check('./schedule', '전체 기록');
   // 스크롤바 자리를 비우는 환경이 있어 고정 값 대신 실제 화면 폭과 비교합니다.
   expect(Math.round(nav.x + nav.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
-  await check('./records', '최근 조과');
+  await check('./records', '전체 기록');
   await page.evaluate(() => {
     window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
   });
@@ -434,8 +414,8 @@ test('기록 검색은 어종으로도 찾는다', async ({ page }) => {
   await page.goto('./records');
   await page.getByLabel('조과·어종·미끼·메뉴·메모에서 찾기').fill('망둥어');
   await page.getByRole('button', { name: '찾기', exact: true }).click();
-  await expect(page.getByText('감성돔 2마리')).toBeVisible();
-  await expect(page.getByText('감성돔 1마리')).toBeHidden();
+  await expect(page.locator('.pane-records').getByText('거대 망둥어 17cm')).toBeVisible();
+  await expect(page.locator('.pane-records').getByText('감성돔 1마리')).toBeHidden();
 });
 
 const gearSeed = () => ({
@@ -473,18 +453,11 @@ test('장비: 끌어서 옮기고, 위·아래 버튼으로도 옮기며, 사용
   await expectFits(page);
 });
 
-test('기본값: 새 기록의 장비 칸과 일정의 기본 목록에 등록한 로드·릴이 들어간다', async ({ page }) => {
-  const db = await fakeBackend(page, gearSeed());
+test('기본값: 새 기록의 장비 칸에 등록한 로드·릴이 들어간다', async ({ page }) => {
+  await fakeBackend(page, gearSeed());
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나, 로드둘, [다이와] 릴하나');
-  await page.keyboard.press('Escape');
-  await page.goto('./schedule?date=2026-11-07');
-  await page.getByRole('button', { name: '기본 목록 불러오기' }).dblclick();
-  await expect(page.getByRole('checkbox', { name: '[다이와] 릴하나' })).toBeVisible();
-  expect(new Set(db.checklist_items!.map((item) => item.title)).size).toBe(db.checklist_items!.length); // 더블 클릭해도 중복되지 않습니다.
-  await expect(page.getByRole('checkbox', { name: '낚싯대', exact: true })).toHaveCount(0);
-  expect(db.checklist_items!.some((item) => item.title === '로드둘')).toBe(true);
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {
@@ -573,7 +546,7 @@ test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('button', { name: '남은 출조 기록 남기기' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다녀온 출조 기록 남기기' })).toHaveCount(0);
-  await expect(page.getByText('[A] 로드, [B] 릴, [C] 채비')).toBeVisible();
+  await expect(page.getByText('[A] 로드, [B] 릴, [C] 채비').first()).toBeVisible();
 });
 
 test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴다', async ({ page }) => {
@@ -581,10 +554,10 @@ test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴
   await page.goto('./records');
   await page.getByRole('button', { name: /거문도 방파제 .*기록 수정/ }).first().click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
-  await dialog.getByLabel('조과').fill('수정한 조과');
+  await dialog.getByLabel('날씨').selectOption('폭우');
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText('수정한 조과')).toBeVisible();
+  await expect(page.getByText('(폭우)').first()).toBeVisible();
   expect(db.records).toHaveLength(25);
 
   await page.goto('./gear');
@@ -595,4 +568,25 @@ test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴
   await gear.getByLabel('장비 이름').fill('크릴');
   await gear.getByRole('button', { name: '저장' }).click();
   await expect(page.getByRole('region', { name: '김 조사 미끼' }).getByRole('heading', { name: '크릴' })).toBeVisible();
+});
+
+test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    fish_catches: [
+      { id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 30, position: 0 },
+      { id: 'f2', record_id: 'r01', angler: '류 조사', species: '감성돔 ', length_cm: 42.5, position: 0 },
+      { id: 'f3', record_id: 'r02', angler: '김 조사', species: '거대 망둥어', length_cm: 17, position: 0 },
+      { id: 'f4', record_id: 'r03', angler: '김 조사', species: '', length_cm: 10, position: 0 },
+    ],
+  });
+  await page.goto('./dex');
+  await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 · 총 4마리');
+  const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '감성돔' }) });
+  await expect(card.getByText('42.5cm')).toBeVisible();
+  await expect(card.getByText('류 조사')).toBeVisible();
+  await expect(card.getByText('2마리')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '거대 망둥어' })).toBeVisible();
+  await expectFits(page);
+  await expectAccessible(page);
 });

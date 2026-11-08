@@ -8,6 +8,7 @@ const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/schedule', label: '일정 및 기록', icon: 'calendar' },
   { to: '/stats', label: '통계', icon: 'stats' },
   { to: '/gear', label: '장비', icon: 'rod' },
+  { to: '/dex', label: '어종 도감', icon: 'dex' },
 ];
 
 export const AppShell = ({ children }: { children: ReactNode }) => {

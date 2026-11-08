@@ -10,6 +10,8 @@ export {
   useRecordPages,
   useSaveRecord,
   useStatRecords,
+  useFishDex,
+  type DexFish,
   type FishInput,
   type StatRecord,
 } from './api';

@@ -13,12 +13,14 @@ const pages = {
   stats: () => import('@/pages/stats').then((page) => ({ default: page.StatsPage })),
   place: () => import('@/pages/place').then((page) => ({ default: page.PlacePage })),
   gear: () => import('@/pages/gear').then((page) => ({ default: page.GearPage })),
+  dex: () => import('@/pages/dex').then((page) => ({ default: page.DexPage })),
 };
 const MapPage = lazy(pages.map);
 const SchedulePage = lazy(pages.schedule);
 const StatsPage = lazy(pages.stats);
 const PlacePage = lazy(pages.place);
 const GearPage = lazy(pages.gear);
+const DexPage = lazy(pages.dex);
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
 
@@ -38,6 +40,7 @@ const Page = () => {
   if (pathname === '/records') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/stats') return <StatsPage />;
   if (pathname === '/gear') return <GearPage />;
+  if (pathname === '/dex') return <DexPage />;
   const place = /^\/places\/([^/]+)$/.exec(pathname);
   if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;
   return <NotFound />;
