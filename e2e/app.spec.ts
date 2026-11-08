@@ -617,17 +617,26 @@ test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 �
 
 test('저장하는 동안 저장 중 화면을 띄우고 닫기를 막는다', async ({ page }) => {
   await fakeBackend(page, seed());
-  // 저장 요청을 잠시 늦춥니다.
+  // 확인이 끝날 때까지 저장 응답을 붙잡아 둡니다.
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route('**/fake-supabase/rest/**', async (route) => {
-    if (route.request().method() === 'POST') await new Promise((resolve) => setTimeout(resolve, 700));
+    if (route.request().method() === 'POST') await held;
     await route.fallback();
   });
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog.getByText('저장하는 중입니다.')).toBeVisible();
+  const notice = dialog.getByText('저장하는 중입니다.');
+  await expect(notice).toBeVisible();
+  await expect(notice).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByLabel('메모')).not.toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
+  release();
   await expect(dialog).toBeHidden();
 });
