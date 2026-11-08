@@ -20,6 +20,17 @@ export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'tags' | 'photo_path' | 'ph
 
 export type RecordPhoto = { id: string; storage_path: string; position: number; url: string };
 
+/** 낚시 기록에 딸린 잡은 물고기 한 마리. 조사는 '김 조사', '류 조사' 둘 중 하나입니다. */
+export type FishCatch = {
+  id: string;
+  angler: string;
+  species: string;
+  length_cm: number;
+  photo_path: string | null;
+  position: number;
+  photo_url?: string;
+};
+
 /** 기록의 자세한 항목. 낚시는 인원부터 수온까지, 맛집은 메뉴와 가격을 씁니다. */
 export type RecordDetails = {
   people: number | null;
@@ -45,6 +56,7 @@ export type PlaceRecord = RecordDetails & {
   event_id: string | null;
   place: Pick<Place, 'id' | 'name' | 'kind' | 'tags'>;
   photos: RecordPhoto[];
+  fish: FishCatch[];
 };
 
 export type CalendarEvent = {

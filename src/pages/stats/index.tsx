@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStatRecords } from '@/entities/record';
+import { fishLabel, useStatRecords } from '@/entities/record';
 import { ErrorText, Loader } from '@/shared/ui';
 import { summarize, yearsOf } from './model';
 
@@ -107,7 +107,23 @@ export const StatsPage = () => {
       <div className="panes lg:grid-cols-3 lg:h-auto!">
         <Ranking id="top-places" title="자주 간 장소" rows={stats.places} unit="번" />
         <Ranking id="top-baits" title="자주 쓴 미끼" rows={stats.baits} unit="번" />
-        <Ranking id="top-companions" title="자주 함께한 동행" rows={stats.companions} unit="번" />
+        <section aria-labelledby="anglers-title" className="pane">
+          <div className="cell-head">
+            <h2 id="anglers-title" className="title text-xl">조사별 조과</h2>
+          </div>
+          <dl className="cell-body flex flex-col">
+            {stats.anglers.map(({ angler, count, biggest }) => (
+              <div key={angler} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1">
+                <dt>{angler}</dt>
+                <dd className="flex items-baseline gap-1">
+                  <span className="display-number text-5xl!">{count}</span>
+                  <span>마리</span>
+                </dd>
+                <dd className="col-span-2 text-sm text-muted">{biggest ? `최대어 ${fishLabel(biggest)}` : '아직 잡은 물고기가 없습니다.'}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       </div>
     </div>
   );

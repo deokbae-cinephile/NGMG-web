@@ -46,6 +46,20 @@ export const demoSeed = (start: Date): Seed => {
         price: restaurant ? 60000 : null,
       };
     }),
+    // 낚시 기록마다 한두 마리. 조사는 번갈아, 길이는 조금씩 다르게. 첫 기록의 첫 물고기에는 사진을 붙입니다.
+    fish_catches: Array.from({ length: 24 }, (_, index) => index)
+      .filter((index) => index % 3 !== 2)
+      .flatMap((index) =>
+        Array.from({ length: (index % 2) + 1 }, (_, n) => ({
+          id: `f${index}-${n}`,
+          record_id: `r${String(index).padStart(2, '0')}`,
+          angler: (index + n) % 2 ? '류 조사' : '김 조사',
+          species: ['감성돔', '벵에돔', '볼락'][(index + n) % 3],
+          length_cm: 22 + ((index * 7 + n * 5) % 25) + 0.5,
+          photo_path: index === 0 && n === 0 ? 'r00/fish-1.jpg' : null,
+          position: n,
+        })),
+      ),
     record_photos: [
       { id: 'ph1', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
       { id: 'ph2', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },

@@ -61,7 +61,7 @@ export const SchedulePage = () => {
   const fullPlace = allPlaces.data?.find((place) => place.id === recordPlace?.id) ?? recordForm?.event?.place;
 
   return (
-    <div className="panes panes-wide xl:grid-cols-[23rem_minmax(0,1fr)_26rem]">
+    <div className="panes panes-wide xl:grid-cols-[24rem_minmax(0,1fr)_26rem]">
       <title>일정 | 낚고먹고</title>
       <h1 className="sr-only">일정</h1>
 
@@ -99,7 +99,7 @@ export const SchedulePage = () => {
         <ErrorText error={monthEvents.error ?? upcoming.error} />
         {upcoming.data && upcoming.data.length > 0 && (
           <section aria-labelledby="upcoming-title">
-            <h3 id="upcoming-title" className="mono-label px-5 pt-4 pb-2">다가오는 일정</h3>
+            <h3 id="upcoming-title" className="title text-lg px-5 pt-5 pb-3">다가오는 일정</h3>
             <ul className="flex flex-col divide-y divide-soft border-t border-line">
               {upcoming.data.map((event) => (
                 <li key={event.id}>
@@ -145,7 +145,7 @@ export const SchedulePage = () => {
                 <li key={event.id} className="panel flex flex-col gap-2 sm:flex-row sm:items-start">
                   <p className="mono-label shrink-0 sm:w-28 sm:pt-1">{formatTimeRange(event.start_time, event.end_time)}</p>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-lg break-words">{event.title}</h4>
+                    <h4 className="break-words">{event.title}</h4>
                     {event.place && (
                       <Link to={`/places/${event.place.id}`} className="text-sm underline underline-offset-4">
                         {event.place.name}
@@ -177,7 +177,7 @@ export const SchedulePage = () => {
       </section>
 
       <section aria-labelledby="day-log-title" className="pane">
-        <PaneHead id="day-log-title" title="그날의 조건과 기록" />
+        <PaneHead id="day-log-title" title="조건 및 기록" />
         <div className="cell-body flex flex-col gap-8">
           {conditionPlace ? (
             <DayConditions date={date} place={conditionPlace} />
@@ -187,7 +187,7 @@ export const SchedulePage = () => {
 
           {waiting.length > 0 && (
             <section aria-labelledby="waiting-title" className="flex flex-col gap-2">
-              <h3 id="waiting-title" className="mono-label">기록을 기다리는 일정</h3>
+              <h3 id="waiting-title" className="title text-lg">기록을 기다리는 일정</h3>
               <ul className="flex flex-col">
                 {waiting.map((event) => (
                   <li key={event.id} className="panel flex flex-wrap items-center justify-between gap-2">
@@ -205,7 +205,7 @@ export const SchedulePage = () => {
           )}
 
           <section aria-labelledby="records-of-day" className="flex flex-col gap-2">
-            <h3 id="records-of-day" className="mono-label">이날의 기록</h3>
+            <h3 id="records-of-day" className="title text-lg">이날의 기록</h3>
             <ErrorText error={dayRecords.error ?? recorded.error} />
             {dayRecords.data?.length === 0 && <p className="text-muted">이날 남긴 기록이 없습니다.</p>}
             <div className="flex flex-col">
@@ -214,7 +214,7 @@ export const SchedulePage = () => {
                   key={record.id}
                   record={record}
                   heading={
-                    <p className="flex flex-wrap items-center gap-2 text-lg">
+                    <p className="flex flex-wrap items-center gap-2">
                       <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
                         {record.place.name}
                       </Link>

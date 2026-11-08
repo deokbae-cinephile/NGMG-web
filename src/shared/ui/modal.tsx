@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { Icon } from './icon';
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
 
@@ -39,11 +40,11 @@ export const Modal = ({ title, onClose, children }: Props) => {
       }}
     >
       <div className="flex items-start justify-between gap-4 pb-5">
-        <h2 id={titleId} className="title text-xl">
+        <h2 id={titleId} className="title text-xl pt-1">
           {title}
         </h2>
-        <button type="button" onClick={requestClose} className="button shrink-0">
-          닫기
+        <button type="button" onClick={requestClose} className="icon-button -mt-2 -mr-2 shrink-0" aria-label="닫기" title="닫기">
+          <Icon name="close" size={24} />
         </button>
       </div>
       {children}

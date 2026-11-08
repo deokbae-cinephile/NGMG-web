@@ -1,47 +1,39 @@
 import type { ReactNode } from 'react';
-import { A11y, Keyboard, Navigation, Pagination } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/a11y';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate } from '@/shared/lib';
-import { RECORD_FIELDS } from './model';
+import { Icon } from '@/shared/ui';
+import { fishLabel, RECORD_FIELDS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
-const PhotoSwiper = ({ record }: { record: PlaceRecord }) => {
+/** 사진이 한 장이면 그대로, 여러 장이면 옆으로 넘겨 봅니다. 사진을 누르면 새 창에서 크게 봅니다. */
+const Photos = ({ record }: { record: PlaceRecord }) => {
   const date = formatDate(record.visited_on);
+  const count = record.photos.length;
+  const image = (url: string, index: number) => (
+    <a href={url} target="_blank" rel="noreferrer" className="block">
+      <img
+        src={url}
+        alt={`${date} 기록 사진 ${index + 1} (새 창에서 크게 보기)`}
+        loading="lazy"
+        className="aspect-[4/3] w-full border border-line bg-surface object-cover"
+      />
+    </a>
+  );
+  if (count === 1) return <div className="max-w-xl">{image(record.photos[0]!.url, 0)}</div>;
   return (
-    <Swiper
-      className="photo-swiper w-full"
-      modules={[A11y, Keyboard, Navigation, Pagination]}
-      navigation
-      pagination={{ type: 'fraction' }}
-      keyboard={{ enabled: true, onlyInViewport: true }}
-      a11y={{
-        prevSlideMessage: '이전 사진',
-        nextSlideMessage: '다음 사진',
-        firstSlideMessage: '첫 사진입니다',
-        lastSlideMessage: '마지막 사진입니다',
-        containerMessage: `${date} 기록 사진 ${record.photos.length}장`,
-        slideLabelMessage: '{{index}} / {{slidesLength}}',
-      }}
-    >
-      {record.photos.map((photo, index) => (
-        <SwiperSlide key={photo.id}>
-          <a href={photo.url} target="_blank" rel="noreferrer" className="block">
-            <img
-              src={photo.url}
-              alt={`${date} 기록 사진 ${index + 1} (새 창에서 크게 보기)`}
-              loading="lazy"
-              className="aspect-[4/3] w-full bg-surface object-cover"
-            />
-          </a>
-        </SwiperSlide>
-      ))}
-    </Swiper>
+    <div className="flex flex-col gap-1.5">
+      <p className="mono-label" aria-hidden="true">{`사진 ${count}장 · 옆으로 넘겨 보기`}</p>
+      {/* 키보드 사용자도 화살표로 넘길 수 있게 스크롤 영역에 이름과 초점을 줍니다. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로 스크롤 영역은 키보드 초점이 있어야 넘길 수 있습니다. */}
+      <div role="region" tabIndex={0} aria-label={`${date} 기록 사진 ${count}장`} className="photo-strip">
+        <ul>
+          {record.photos.map((photo, index) => (
+            <li key={photo.id}>{image(photo.url, index)}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 };
 
@@ -68,7 +60,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         </p>
       )}
       {record.catches && (
-        <p className="text-lg">
+        <p>
           <span className="mono-label mr-2">조과</span>
           {record.catches}
         </p>
@@ -83,8 +75,32 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           ))}
         </dl>
       )}
+      {record.fish.length > 0 && (
+        <section aria-label="잡은 물고기" className="flex flex-col gap-1.5">
+          <p className="mono-label" aria-hidden="true">{`잡은 물고기 ${record.fish.length}마리`}</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {record.fish.map((fish) => (
+              <li key={fish.id} className="flex items-center gap-3 border border-soft p-2">
+                {fish.photo_url ? (
+                  <a href={fish.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
+                    <img src={fish.photo_url} alt={`${fishLabel(fish)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+                  </a>
+                ) : (
+                  <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
+                    <Icon name="fish" size={28} />
+                  </span>
+                )}
+                <span className="flex min-w-0 flex-col">
+                  <span className="break-words">{fishLabel(fish)}</span>
+                  <span className="text-sm text-muted">{fish.angler}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {record.memo && <p className="whitespace-pre-wrap break-words">{record.memo}</p>}
-      {record.photos.length > 0 && <PhotoSwiper record={record} />}
+      {record.photos.length > 0 && <Photos record={record} />}
     </article>
   );
 };

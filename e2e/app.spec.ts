@@ -138,13 +138,29 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   });
   const png = Buffer.from(dataUrl.split(',')[1]!, 'base64');
   await dialog.getByLabel('사진 추가').setInputFiles({ name: '볼락.png', mimeType: 'image/png', buffer: png });
+  await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toBeVisible();
+
+  // 잡은 물고기: 길이를 비우면 안내하고, 조사·어종·길이·사진을 함께 저장합니다.
+  await dialog.getByRole('button', { name: '물고기 추가' }).click();
+  const fish = dialog.getByRole('group', { name: '물고기 1' });
+  await fish.getByRole('radio', { name: '류 조사' }).check();
+  await fish.getByLabel('어종').fill('볼락');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(fish.getByText('길이를 입력해 주세요.')).toBeVisible();
+  await fish.getByLabel('길이 (cm)').fill('21.5');
+  await fish.getByLabel('사진', { exact: true }).setInputFiles({ name: '볼락-1.png', mimeType: 'image/png', buffer: png });
+  await expect(fish.getByRole('img', { name: '물고기 1 새 사진 미리보기' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText('볼락 3마리')).toBeVisible();
+  await expect(page.getByText('볼락 21.5cm')).toBeVisible();
   expect(db.records).toHaveLength(26);
   expect(db.record_photos).toHaveLength(2);
+  expect(db.fish_catches).toHaveLength(1);
+  expect(db.fish_catches![0]).toMatchObject({ angler: '류 조사', species: '볼락', length_cm: 21.5, position: 0 });
+  expect(db.fish_catches![0]!.photo_path).toMatch(/fish-/);
 });
 
 test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {

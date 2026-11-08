@@ -5,7 +5,8 @@ import { fetchForecast } from '@/entities/forecast';
 import { fetchLatestGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { getTide, toDateKey } from '@/shared/lib';
-import { ErrorText, Field, TextareaField } from '@/shared/ui';
+import { ErrorText, FilePreview, TextareaField, Field } from '@/shared/ui';
+import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
 type Values = TextValues & { visited_on: string; catches: string; memo: string; rating: string; people: string; price: string };
@@ -35,6 +36,19 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
   const [id] = useState(() => record?.id ?? crypto.randomUUID());
   const [files, setFiles] = useState<File[]>([]);
   const [removed, setRemoved] = useState<RecordPhoto[]>([]);
+  const [fish, setFish] = useState<FishDraft[]>(() =>
+    (record?.fish ?? []).map((item) => ({
+      id: item.id,
+      angler: item.angler,
+      species: item.species,
+      length: String(item.length_cm),
+      photo_path: item.photo_path,
+      photo_url: item.photo_url,
+      file: null,
+      removePhoto: false,
+    })),
+  );
+  const [checkedFish, setCheckedFish] = useState(false);
   const save = useSaveRecord();
   const remove = useDeleteRecord();
 
@@ -60,6 +74,9 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
   const used = new Set(fields.map((field) => field.name));
 
   const submit = handleSubmit((values) => {
+    const keptFish = kind === 'fishing' ? fish : [];
+    setCheckedFish(true);
+    if (keptFish.some((item) => fishError(item))) return;
     if (tooMany || save.isPending) return;
     save.mutate(
       {
@@ -76,6 +93,17 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
+        fish: keptFish.map((item, position) => ({
+          id: item.id,
+          angler: item.angler,
+          species: item.species.trim(),
+          length_cm: Number(item.length),
+          photo_path: item.photo_path,
+          position,
+          file: item.file,
+          removePhoto: item.removePhoto,
+        })),
+        removedFish: (record?.fish ?? []).filter((item) => !keptFish.some((next) => next.id === item.id)),
       },
       { onSuccess: onDone },
     );
@@ -170,10 +198,35 @@ export const RecordForm = ({ place, record, date, eventId, onDone }: Props) => {
         type="file"
         accept="image/*"
         multiple
-        hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${left}장 더 올릴 수 있습니다.`}
+        hint={`기록당 ${MAX_PHOTOS}장까지 올릴 수 있습니다. 지금 ${Math.max(0, left - files.length)}장 더 고를 수 있습니다.`}
         error={tooMany ? `사진을 ${files.length - left}장 줄여 주세요.` : undefined}
-        onChange={(event) => setFiles([...(event.target.files ?? [])])}
+        onChange={(event) => {
+          // 여러 번 나눠 골라도 쌓이게 하고, 입력 칸은 비워 같은 파일도 다시 고를 수 있게 합니다.
+          const picked = [...(event.target.files ?? [])];
+          setFiles((list) => [...list, ...picked]);
+          event.target.value = '';
+        }}
       />
+      {files.length > 0 && (
+        <section aria-label="올릴 사진 미리보기">
+          <ul className="grid grid-cols-3 gap-2">
+            {files.map((file, index) => (
+              <li key={`${file.name}-${file.lastModified}-${index}`} className="flex flex-col gap-1">
+                <FilePreview file={file} alt={`올릴 사진 ${index + 1} 미리보기`} className="aspect-square w-full" />
+                <button
+                  type="button"
+                  className="text-action text-action-danger self-start"
+                  onClick={() => setFiles((list) => list.filter((_, at) => at !== index))}
+                >
+                  {`사진 ${index + 1} 빼기`}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {kind === 'fishing' && <FishFieldset value={fish} showErrors={checkedFish} onChange={setFish} />}
 
       <ErrorText error={save.error ?? remove.error} />
       <div className="flex flex-wrap justify-end gap-2">

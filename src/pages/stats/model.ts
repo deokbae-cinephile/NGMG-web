@@ -1,4 +1,4 @@
-import { splitList, type StatRecord } from '@/entities/record';
+import { splitList, summarizeAnglers, type StatRecord } from '@/entities/record';
 
 const top = (values: string[], limit = 5) => {
   const counts = new Map<string, number>();
@@ -24,7 +24,7 @@ export const summarize = (records: StatRecord[], year: number) => {
     months,
     places: top(inYear.map((record) => record.place.name)),
     baits: top(fishing.flatMap((record) => splitList(record.bait))),
-    companions: top(inYear.flatMap((record) => splitList(record.companions))),
+    anglers: summarizeAnglers(fishing.flatMap((record) => record.fish)),
   };
 };
 

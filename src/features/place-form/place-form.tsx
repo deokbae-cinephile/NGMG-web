@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { PlaceSearch, SUGGESTED_TAGS, useSavePlace } from '@/entities/place';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
-import { ErrorText, Field, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, FilePreview, TextareaField } from '@/shared/ui';
 import { KindFieldset } from './kind-fieldset';
 import { TagField } from './tag-field';
 
@@ -90,6 +90,7 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
         hint="대표 사진 한 장을 올립니다. 올리기 전에 자동으로 줄입니다."
         onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
       />
+      {photo && <FilePreview file={photo} alt="올릴 장소 사진 미리보기" className="size-24" />}
       <ErrorText error={save.error} />
       <div className="flex flex-wrap justify-end gap-2">
         <button type="submit" className="button button-primary" disabled={save.isPending}>

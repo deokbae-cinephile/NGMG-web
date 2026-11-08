@@ -3,7 +3,7 @@ import { supabase } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText } from '@/shared/ui';
 
-const TABLES = ['places', 'records', 'record_photos', 'events', 'checklist_items'] as const;
+const TABLES = ['places', 'records', 'record_photos', 'fish_catches', 'events', 'checklist_items'] as const;
 const PAGE = 1000; // Supabase가 한 번에 돌려주는 기본 최대 행 수
 
 const fetchAll = async (table: (typeof TABLES)[number]) => {
@@ -62,7 +62,7 @@ export const ExportButton = () => {
           {csv.isPending ? '표 만드는 중' : '기록 표 (CSV)'}
         </button>
       </div>
-      <p className="text-sm text-muted">JSON은 장소, 기록, 일정, 준비물 전체를, CSV는 기록만 표로 저장합니다. 사진 파일은 포함되지 않습니다.</p>
+      <p className="text-sm text-muted">JSON은 장소, 기록, 잡은 물고기, 일정, 준비물 전체를, CSV는 기록만 표로 저장합니다. 사진 파일은 포함되지 않습니다.</p>
       <p role="status" className="text-sm text-muted empty:hidden">{json.isSuccess || csv.isSuccess ? '파일을 저장했습니다.' : ''}</p>
       <ErrorText error={json.error ?? csv.error} />
     </div>

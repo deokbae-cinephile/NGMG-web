@@ -1,4 +1,18 @@
-import type { PlaceKind, PlaceRecord, RecordDetails } from '@/shared/api';
+import type { FishCatch, PlaceKind, PlaceRecord, RecordDetails } from '@/shared/api';
+
+/** 함께 낚시하는 두 사람. 잡은 물고기마다 누가 잡았는지 고릅니다. */
+export const ANGLERS = ['김 조사', '류 조사'] as const;
+
+/** 조사별 마릿수와 가장 긴 물고기 */
+export const summarizeAnglers = (fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[]) =>
+  ANGLERS.map((angler) => {
+    const mine = fish.filter((item) => item.angler === angler);
+    const biggest = mine.reduce<(typeof mine)[number] | null>((best, item) => (!best || item.length_cm > best.length_cm ? item : best), null);
+    return { angler, count: mine.length, biggest };
+  });
+
+/** 물고기 한 마리를 '감성돔 38.5cm'처럼 읽습니다. */
+export const fishLabel = (fish: Pick<FishCatch, 'species' | 'length_cm'>) => `${fish.species || '물고기'} ${Number(fish.length_cm)}cm`;
 
 /** PostgREST 검색 조건을 만듭니다. 검색어의 특수 문자는 조건을 깨뜨릴 수 있어 빈칸으로 바꿉니다. */
 export const recordSearchFilter = (keyword: string) => {

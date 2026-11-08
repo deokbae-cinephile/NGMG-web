@@ -1,18 +1,22 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, supabase, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, supabase, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { recordSearchFilter } from './model';
 
 export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
 
-const SELECT = '*, place:places!inner(id, name, kind, tags), photos:record_photos(id, storage_path, position)';
+const SELECT =
+  '*, place:places!inner(id, name, kind, tags), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position)';
 
-type Row = Omit<PlaceRecord, 'photos'> & { photos: Omit<RecordPhoto, 'url'>[] };
+type Row = Omit<PlaceRecord, 'photos' | 'fish'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[] };
 
 // 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
 const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
-  const paths = rows.flatMap((row) => row.photos.map((photo) => photo.storage_path));
+  const paths = rows.flatMap((row) => [
+    ...row.photos.map((photo) => photo.storage_path),
+    ...(row.fish ?? []).flatMap((fish) => fish.photo_path ?? []),
+  ]);
   const urls = new Map<string, string>();
   if (paths.length) {
     const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
@@ -25,6 +29,9 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
     photos: [...row.photos]
       .sort((a, b) => a.position - b.position)
       .map((photo) => ({ ...photo, url: urls.get(photo.storage_path) ?? '' })),
+    fish: [...(row.fish ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined })),
   }));
 };
 
@@ -87,8 +94,9 @@ export const useRecordedEventIds = (eventIds: string[]) =>
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'companions' | 'catches' | 'rating'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'catches' | 'rating'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
+  fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
 
 /** 통계용으로 모든 기록의 일부 항목만 받습니다. */
@@ -100,12 +108,12 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, companions, catches, rating, place:places!inner(id, name, kind)')
+          .select('id, visited_on, bait, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
           .order('visited_on')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('통계를 불러오지 못했습니다.');
-        rows.push(...(data as unknown as StatRecord[]));
+        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })) })));
         if (data.length < 1000) return rows;
       }
     },
@@ -137,9 +145,41 @@ export type RecordInput = RecordDetails & {
   files: File[];
   removedPhotos: Pick<RecordPhoto, 'id' | 'storage_path'>[];
   nextPosition: number;
+  fish: FishInput[];
+  removedFish: Pick<FishCatch, 'id' | 'photo_path'>[];
 };
 
-const saveRecord = async ({ files, removedPhotos, nextPosition, ...values }: RecordInput) => {
+/** 저장할 물고기. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
+export type FishInput = Omit<FishCatch, 'photo_url'> & { file: File | null; removePhoto: boolean };
+
+const removeFiles = async (paths: (string | null)[]) => {
+  const list = paths.filter((path): path is string => Boolean(path));
+  if (list.length) await supabase.storage.from(PHOTO_BUCKET).remove(list);
+};
+
+const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInput['removedFish']) => {
+  if (removed.length) {
+    const removal = await supabase.from('fish_catches').delete().in('id', removed.map((item) => item.id));
+    if (removal.error) throw new Error('물고기 기록을 삭제하지 못했습니다.');
+    await removeFiles(removed.map((item) => item.photo_path));
+  }
+  for (const [position, { file, removePhoto, ...item }] of fish.entries()) {
+    let photo_path = removePhoto ? null : item.photo_path;
+    if (file) {
+      // 같은 파일은 같은 경로가 되어 다시 저장해도 중복되지 않습니다.
+      photo_path = `${recordId}/fish-${item.id}-${file.lastModified}-${file.size}.jpg`;
+      const upload = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(photo_path, await compressImage(file), { upsert: true, contentType: 'image/jpeg' });
+      if (upload.error) throw new Error(`물고기 사진을 올리지 못했습니다: ${file.name}`);
+    }
+    const row = await supabase.from('fish_catches').upsert({ ...item, record_id: recordId, photo_path, position });
+    if (row.error) throw new Error('물고기 기록을 저장하지 못했습니다.');
+    if (item.photo_path && item.photo_path !== photo_path) await removeFiles([item.photo_path]); // 바꾸거나 지운 옛 사진
+  }
+};
+
+const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, ...values }: RecordInput) => {
   const { error } = await supabase.from('records').upsert(values);
   if (error) throw new Error('기록을 저장하지 못했습니다.');
 
@@ -160,6 +200,8 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, ...values }: Rec
       .upsert({ record_id: values.id, storage_path: path, position: nextPosition + index }, { onConflict: 'storage_path' });
     if (row.error) throw new Error(`사진을 저장하지 못했습니다: ${file.name}`);
   }
+
+  await saveFish(values.id, fish, removedFish);
 };
 
 export const useSaveRecord = () => {
@@ -174,9 +216,7 @@ const deleteRecord = async (record: PlaceRecord) => {
   // 기록을 먼저 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
   const { error } = await supabase.from('records').delete().eq('id', record.id);
   if (error) throw new Error('기록을 삭제하지 못했습니다.');
-  if (record.photos.length) {
-    await supabase.storage.from(PHOTO_BUCKET).remove(record.photos.map((photo) => photo.storage_path));
-  }
+  await removeFiles([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path)]);
 };
 
 export const useDeleteRecord = () => {

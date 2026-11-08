@@ -118,7 +118,7 @@ export const RecordsPage = () => {
 
         {waiting.length > 0 && (
           <section aria-labelledby="waiting-events" className="border-t border-line">
-            <h2 id="waiting-events" className="mono-label px-5 pt-4 pb-2">기록을 기다리는 지난 일정</h2>
+            <h3 id="waiting-events" className="title text-lg px-5 pt-5 pb-3">기록을 기다리는 지난 일정</h3>
             <ul className="flex flex-col divide-y divide-soft border-t border-line">
               {waiting.map((event) => (
                 <li key={event.id} className="flex items-center justify-between gap-2 px-5 py-3">
@@ -161,7 +161,7 @@ export const RecordsPage = () => {
               key={record.id}
               record={record}
               heading={
-                <h3 className="flex flex-wrap items-center gap-2 text-lg">
+                <h3 className="flex flex-wrap items-center gap-2">
                   <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
                     {record.place.name}
                   </Link>

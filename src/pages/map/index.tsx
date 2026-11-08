@@ -76,18 +76,16 @@ export const MapPage = () => {
 
       <section aria-labelledby="places-title" className="pane">
         <div className="cell-head">
-          <div className="flex items-baseline gap-3">
-            <h2 id="places-title" className="title text-xl">내 장소</h2>
-          </div>
-          <button type="button" className="button button-primary" onClick={() => setDraft({})}>
+          <h2 id="places-title" className="sr-only">내 장소</h2>
+          <button type="button" className="button flex-1" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+            {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+          </button>
+          <button type="button" className="button button-primary shrink-0" onClick={() => setDraft({})}>
             장소 추가
           </button>
         </div>
 
         <div className="cell-body flex flex-col gap-5">
-          <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
-            {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
-          </button>
           <p role="status" className="text-sm text-muted empty:hidden">
             {picking ? '지도에서 저장할 위치를 눌러 주세요.' : ''}
           </p>
@@ -159,7 +157,7 @@ export const MapPage = () => {
                       <span aria-hidden="true" className="mono-label">
                         {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
                       </span>
-                      <span className="flex flex-wrap items-center gap-2 text-lg">
+                      <span className="flex flex-wrap items-center gap-2">
                         {place.name} <KindBadge kind={place.kind} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>

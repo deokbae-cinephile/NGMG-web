@@ -5,3 +5,4 @@ export * from './icon';
 export * from './loader';
 export * from './logo';
 export * from './modal';
+export * from './file-preview';
