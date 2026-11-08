@@ -595,6 +595,17 @@ select {
     background: #7b3fb5;
     color: #fafafa;
   }
+  .pin-score {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0 0.1875rem;
+    color: var(--color-ink);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+  }
   .rating-chip {
     display: inline-flex;
     align-items: center;

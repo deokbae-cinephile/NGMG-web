@@ -60,7 +60,8 @@ const createPin = (place: Place, rating: number | undefined, offset: number, onS
   const pin = document.createElement('button');
   pin.type = 'button';
   pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
-  pin.innerHTML = iconSvg(KIND_ICON[place.kind], 18);
+  // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
+  pin.innerHTML = `${iconSvg(KIND_ICON[place.kind], 18)}${rating === undefined ? '' : `<span aria-hidden="true" class="pin-score">${rating.toFixed(1)}</span>`}`;
   pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}점`}`);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
@@ -159,7 +160,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   // 고른 핀만 표시를 바꿉니다. 핀 전체를 다시 그리지 않아 깜빡이지 않습니다.
   useEffect(() => {
     pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
-  }, [map, places, selectedId]);
+  }, [map, places, ratings, selectedId]);
 
   useEffect(() => {
     if (!map) return;

@@ -23,7 +23,7 @@ const NO_PLACES: Place[] = [];
 
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
-  const { data: ratings } = usePlaceRatings();
+  const { data: ratings, error: ratingsError } = usePlaceRatings();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
   const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
@@ -148,7 +148,7 @@ export const MapPage = () => {
               </select>
             </div>
           </div>
-          <ErrorText error={locate.error ?? error} />
+          <ErrorText error={locate.error ?? error ?? ratingsError} />
           <p role="status" className="text-sm text-muted">
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
           </p>

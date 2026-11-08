@@ -606,6 +606,7 @@ test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 �
   await page.goto('./');
   const pin = page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 별점 4\.5점/ });
   await expect(pin).toHaveClass(/rate-5/);
+  await expect(pin.locator('.pin-score')).toHaveText('4.5');
   await expect(page.getByRole('button', { name: /바다횟집 \(맛집\) 선택, 평균 별점 2\.0점/ })).toHaveClass(/rate-2/);
   const none = page.getByRole('button', { name: new RegExp(`${LONG_NAME} \\(낚시\\) 선택$`) });
   await expect(none).not.toHaveClass(/rate-/);
