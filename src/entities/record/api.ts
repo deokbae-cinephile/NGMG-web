@@ -90,6 +90,24 @@ export const useDayRecords = (date: string) =>
     },
   });
 
+/** 장소별 평균 별점 (place_id → 1~5). 별점을 남긴 기록이 없는 장소는 없습니다. */
+export const usePlaceRatings = () =>
+  useQuery({
+    queryKey: ['records', 'place-ratings'],
+    queryFn: async () => {
+      const rows: { place_id: string; rating: number }[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('records').select('place_id, rating').not('rating', 'is', null).order('id').range(from, from + 999);
+        if (error) throw new Error('별점을 불러오지 못했습니다.');
+        rows.push(...(data as typeof rows));
+        if (data.length < 1000) break;
+      }
+      const grouped = new Map<string, number[]>();
+      rows.forEach((row) => grouped.set(row.place_id, [...(grouped.get(row.place_id) ?? []), row.rating]));
+      return new Map([...grouped].map(([id, ratings]) => [id, ratings.reduce((sum, value) => sum + value, 0) / ratings.length]));
+    },
+  });
+
 /** 이 일정들 중 이미 기록을 남긴 일정의 id. 일정에서 남긴 기록과, 같은 장소·같은 날짜에 따로 남긴 기록을 모두 봅니다. */
 export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 'end_date' | 'place_id'>[]) =>
   useQuery({

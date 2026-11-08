@@ -153,6 +153,7 @@ export const createFakeServer = (seed: Seed = {}) => {
         });
       }
       if (op === 'ilike') result = result.filter((row) => String(read(row, key)).toLowerCase().includes(operand.replaceAll('%', '').toLowerCase()));
+      if (op === 'not' && operand === 'is.null') result = result.filter((row) => row[key] != null);
       if (op === 'in') {
         const list = operand.slice(1, -1).split(',').map((item) => item.replaceAll('"', ''));
         result = result.filter((row) => list.includes(String(row[key])));

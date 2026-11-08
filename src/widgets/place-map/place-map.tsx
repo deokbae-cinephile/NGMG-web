@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS, OriginButton } from '@/entities/place';
+import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
+import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -58,14 +59,26 @@ const pinOffsets = (places: Place[]) => {
 const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
-  pin.className = `pin pin-${place.kind}`;
   pin.innerHTML = iconSvg(KIND_ICON[place.kind], 18);
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택`);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
   if (offset) pin.style.transform = `translateX(${offset}px)`;
   pin.addEventListener('click', () => onSelect(place.id));
   return pin;
+};
+
+/** 평균 별점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
+const applyRating = (pin: HTMLButtonElement, place: Place, rating: number | undefined) => {
+  pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}`}`);
+  pin.querySelector('.pin-score')?.remove();
+  if (rating === undefined) return;
+  // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
+  const score = document.createElement('span');
+  score.className = 'pin-score';
+  score.setAttribute('aria-hidden', 'true');
+  score.textContent = rating.toFixed(1);
+  pin.append(score);
 };
 
 export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
@@ -79,6 +92,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
   const selected = places.find((place) => place.id === selectedId);
   const offsets = useMemo(() => pinOffsets(places), [places]);
+  const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
   const selectFromPin = useCallback(
     (id: string) => {
@@ -153,6 +167,13 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     );
     return () => clusterers.forEach((clusterer) => clusterer.clear());
   }, [map, places, offsets, selectFromPin]);
+
+  useEffect(() => {
+    places.forEach((place) => {
+      const pin = pins.current.get(place.id);
+      if (pin) applyRating(pin, place, ratings?.get(place.id));
+    });
+  }, [map, places, offsets, ratings]);
 
   // 고른 핀만 표시를 바꿉니다. 핀 전체를 다시 그리지 않아 깜빡이지 않습니다.
   useEffect(() => {
@@ -232,6 +253,12 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     <div className="relative h-full w-full">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
+      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점부터 5점까지">
+        <span aria-hidden="true">★</span>
+        {[1, 2, 3, 4, 5].map((score) => (
+          <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
+        ))}
+      </div>
       <button
         type="button"
         className="button absolute top-3 right-3 z-10 bg-paper"
@@ -259,15 +286,15 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
                 <Icon name="close" size={16} />
               </button>
             </div>
-            <KindBadge kind={selected.kind} />
+            <div className="flex items-center gap-1.5">
+              <KindBadge kind={selected.kind} />
+              <RatingChip rating={ratings?.get(selected.id)} />
+            </div>
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {selected.tags.length > 0 && <p className="break-words text-sm text-muted">{selected.tags.map((tag) => `#${tag}`).join(' ')}</p>}
-            <div className="flex items-center gap-3">
-              <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
-                상세 보기
-              </Link>
-              <OriginButton className="map-popup-origin" />
-            </div>
+            <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
+              상세 보기
+            </Link>
           </div>,
           popupHost,
         )}

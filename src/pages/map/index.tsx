@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
-import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
+import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces, OriginButton } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
+import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
@@ -22,6 +23,7 @@ const NO_PLACES: Place[] = [];
 
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
+  const { data: ratings, error: ratingsError } = usePlaceRatings();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
   const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
@@ -84,12 +86,15 @@ export const MapPage = () => {
       <section aria-labelledby="places-title" className="pane">
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
-          <button type="button" className="button flex-1" aria-pressed={picking} onClick={() => setPicking(!picking)}>
-            {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
-          </button>
-          <button type="button" className="button button-primary shrink-0" onClick={() => setDraft({})}>
-            장소 추가
-          </button>
+          <div className="map-actions">
+            <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+              {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+            </button>
+            <button type="button" className="button button-primary" onClick={() => setDraft({})}>
+              장소 추가
+            </button>
+            <OriginButton />
+          </div>
         </div>
 
         <div className="cell-body flex flex-col gap-5">
@@ -143,7 +148,7 @@ export const MapPage = () => {
               </select>
             </div>
           </div>
-          <ErrorText error={locate.error ?? error} />
+          <ErrorText error={locate.error ?? error ?? ratingsError} />
           <p role="status" className="text-sm text-muted">
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
           </p>
@@ -166,7 +171,7 @@ export const MapPage = () => {
                         {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
                       </span>
                       <span className="flex flex-wrap items-center gap-2">
-                        {place.name} <KindBadge kind={place.kind} />
+                        {place.name} <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                       {place.tags.length > 0 && (

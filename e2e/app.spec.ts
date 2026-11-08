@@ -515,18 +515,25 @@ test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', asyn
   await expectAccessible(page);
 });
 
-test('출발지: 무악재역 토글을 끄면 길찾기에서 출발지를 지정하지 않고, 상태를 기억한다', async ({ page }) => {
+test('출발지: 지도 화면의 무악재역 토글로 길찾기 출발지를 정하고, 버튼 세 개가 한 줄에 놓인다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.goto('./places/p2');
+  await page.goto('./');
   const toggle = page.getByRole('button', { name: '출발지 무악재역' });
-  const route = page.getByRole('link', { name: '길찾기 (새 창)' });
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(route).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(route).toHaveAttribute('href', /link\/to\//);
-  await page.reload();
+  await expect(toggle).toHaveText('무악재역');
+  const boxes = await Promise.all([page.getByRole('button', { name: '지도를 눌러 위치 지정' }), page.getByRole('button', { name: '장소 추가' }), toggle].map((button) => button.boundingBox()));
+  expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
+  await expectFits(page);
+  await expectAccessible(page);
+
+  await page.goto('./places/p2');
+  await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
+
+  await page.goto('./');
+  await page.getByRole('button', { name: '출발지 무악재역' }).click();
   await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveAttribute('aria-pressed', 'false');
+  await page.goto('./places/p2');
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/to\//);
 });
 
@@ -584,5 +591,26 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(card.getByText('2마리')).toBeVisible();
   await expect(page.getByRole('heading', { name: '거대 망둥어' })).toBeVisible();
   await expectFits(page);
+  await expectAccessible(page);
+});
+
+test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    records: [
+      { id: 'a', place_id: 'p1', visited_on: '2026-10-01', rating: 5 },
+      { id: 'b', place_id: 'p1', visited_on: '2026-10-02', rating: 4 },
+      { id: 'c', place_id: 'p2', visited_on: '2026-10-03', rating: 2 },
+    ],
+  });
+  await page.goto('./');
+  const pin = page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 별점 4\.5$/ });
+  await expect(pin).toHaveClass(/rate-5/);
+  await expect(pin.locator('.pin-score')).toHaveText('4.5');
+  await expect(page.getByRole('button', { name: /바다횟집 \(맛집\) 선택, 평균 별점 2\.0$/ })).toHaveClass(/rate-2/);
+  const none = page.getByRole('button', { name: new RegExp(`${LONG_NAME} \\(낚시\\) 선택$`) });
+  await expect(none).not.toHaveClass(/rate-/);
+  await pin.click();
+  await expect(page.getByRole('group', { name: '거문도 방파제 정보' }).getByText('4.5')).toBeVisible();
   await expectAccessible(page);
 });

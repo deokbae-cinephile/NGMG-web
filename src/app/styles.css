@@ -569,6 +569,71 @@ select {
     background: var(--color-accent);
     color: var(--color-ink);
   }
+  /* 평균 별점 색. 핀과 별점 표시에 함께 씁니다. 별점이 없으면 분류별 기본 색입니다. */
+  .pin.rate-1,
+  .rate-1 {
+    background: #8c8c8c;
+    color: #0a0a0a;
+  }
+  .pin.rate-2,
+  .rate-2 {
+    background: #6fb1e0;
+    color: #0a0a0a;
+  }
+  .pin.rate-3,
+  .rate-3 {
+    background: #3fa66b;
+    color: #0a0a0a;
+  }
+  .pin.rate-4,
+  .rate-4 {
+    background: #2f6fc4;
+    color: #fafafa;
+  }
+  .pin.rate-5,
+  .rate-5 {
+    background: #7b3fb5;
+    color: #fafafa;
+  }
+  .pin-score {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0 0.1875rem;
+    color: var(--color-ink);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+  }
+  .rating-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.375rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+  .map-legend {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.25rem 0.375rem;
+    font-size: 0.8125rem;
+  }
+  .map-legend span {
+    display: inline-flex;
+    width: 1.25rem;
+    height: 1.25rem;
+    align-items: center;
+    justify-content: center;
+  }
+
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
   .pin-base {
     background: var(--color-sun);
@@ -586,6 +651,27 @@ select {
     font-size: 0.8125rem;
     white-space: nowrap;
   }
+  /* 지도 화면 맨 위 버튼 세 개. 좁은 화면에서도 한 줄에 들어가도록 안쪽 여백을 줄입니다. */
+  .map-actions {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap; /* 화면을 확대해 한 줄에 안 들어가면 줄을 바꿉니다. */
+    gap: 0.5rem;
+  }
+  .map-actions .button {
+    flex-shrink: 0;
+    padding-inline: 0.375rem;
+    white-space: nowrap;
+  }
+  .map-actions .button:first-child {
+    flex: 1 1 auto;
+  }
+  @media (width >= 64rem) {
+    .map-actions .button {
+      padding-inline: 0.625rem;
+    }
+  }
+
   /* 핀을 고르면 뜨는 말풍선. 핀 위에 놓이도록 아래를 비우고, 꼬리로 핀을 가리킵니다. */
   .map-popup {
     position: relative;
@@ -612,16 +698,6 @@ select {
     margin-right: -0.25rem;
     color: var(--color-ink);
     cursor: pointer;
-  }
-  .map-popup-origin {
-    min-height: 1.5rem;
-    border: 1px solid var(--color-ink);
-    padding: 0 0.375rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-  }
-  .map-popup-origin[aria-pressed='true'] {
-    background: var(--color-accent);
   }
   .map-popup-close:hover {
     background: var(--color-surface);
