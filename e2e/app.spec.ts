@@ -257,6 +257,7 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await fakeBackend(page, seed());
   await page.goto('./schedule');
   await expect(page.getByRole('heading', { name: '달력' })).toBeVisible();
+  await expect(page.locator('.intro')).toHaveCount(0); // 첫 로딩이 덮는 동안에는 뒤 화면에 초점이 가지 않습니다.
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: '본문 바로가기' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -304,7 +305,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await expect(dialog).toBeHidden();
   expect(db.places).toHaveLength(4);
 
-  await page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' }).dispatchEvent('click'); // 시험 데이터의 핀이 한 지점에 겹쳐 있습니다.
+  await page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' }).click(); // 같은 지점의 핀은 옆으로 벌려 놓아 모두 눌립니다.
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
   await expect(popup.getByText('전남 여수시 삼산면')).toBeVisible();
   await expect(popup.getByRole('link', { name: '상세 보기' })).toBeFocused();
@@ -405,4 +406,27 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
   });
   await expect(page.getByRole('button', { name: '앱 설치' })).toBeVisible();
   await check('./records', '최근 조과');
+});
+
+test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({ page }) => {
+  const db = await fakeBackend(page, {
+    ...seed(),
+    fish_catches: [{ id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 30, photo_path: 'r00/fish.jpg', position: 0 }],
+  });
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '장소 삭제' }).click();
+  await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
+  expect(db.removedFiles).toContain('r00/fish.jpg');
+});
+
+test('기록 검색은 어종으로도 찾는다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    fish_catches: [{ id: 'f1', record_id: 'r01', angler: '류 조사', species: '거대 망둥어', length_cm: 17, position: 0 }],
+  });
+  await page.goto('./records');
+  await page.getByLabel('조과·어종·미끼·메뉴·메모에서 찾기').fill('망둥어');
+  await page.getByRole('button', { name: '찾기', exact: true }).click();
+  await expect(page.getByText('감성돔 2마리')).toBeVisible();
+  await expect(page.getByText('감성돔 1마리')).toBeHidden();
 });

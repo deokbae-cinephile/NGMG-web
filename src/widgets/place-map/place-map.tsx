@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
 import type { Place, PlaceKind } from '@/shared/api';
@@ -14,10 +14,8 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
 };
 
-/** 지도를 처음 열 때의 중심과 기준 핀 */
+/** 저장된 위치가 없을 때의 중심과 기준 핀 */
 const BASE = { name: '무악재역', latitude: 37.5825632, longitude: 126.950231, level: 5 };
-// 메뉴를 오갔다 돌아오면 보던 곳을 이어서 보여 줍니다. 사이트에 새로 들어오면 다시 무악재역에서 시작합니다.
-let lastView = { latitude: BASE.latitude, longitude: BASE.longitude, level: BASE.level };
 
 const createBasePin = () => {
   const pin = document.createElement('div');
@@ -44,15 +42,28 @@ const clusterStyle = (kind: PlaceKind) => ({
   textAlign: 'center',
 });
 
+/** 거의 같은 지점(약 10m 안)의 핀은 겹쳐서 눌리지 않으므로 옆으로 나란히 벌려 놓습니다. 값은 가로 이동 픽셀입니다. */
+const pinOffsets = (places: Place[]) => {
+  const groups = new Map<string, string[]>();
+  places.forEach((place) => {
+    const key = `${place.latitude.toFixed(4)},${place.longitude.toFixed(4)}`;
+    groups.set(key, [...(groups.get(key) ?? []), place.id]);
+  });
+  const offsets = new Map<string, number>();
+  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 42)));
+  return offsets;
+};
+
 // 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
-const createPin = (place: Place, selected: boolean, onSelect: (id: string) => void) => {
+const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
   pin.className = `pin pin-${place.kind}`;
   pin.innerHTML = iconSvg(KIND_ICON[place.kind], 18);
   pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택`);
-  pin.setAttribute('aria-pressed', String(selected));
+  pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
+  if (offset) pin.style.transform = `translateX(${offset}px)`;
   pin.addEventListener('click', () => onSelect(place.id));
   return pin;
 };
@@ -67,6 +78,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const popup = useRef<HTMLDivElement>(null);
   const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
   const selected = places.find((place) => place.id === selectedId);
+  const offsets = useMemo(() => pinOffsets(places), [places]);
+  const pins = useRef(new Map<string, HTMLButtonElement>());
   const selectFromPin = useCallback(
     (id: string) => {
       focusPopup.current = true;
@@ -87,7 +100,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     loadKakao()
       .then((kakao) => {
         if (cancelled || !container.current) return;
-        const view = lastView;
+        // 마지막으로 보던 곳에서 시작합니다. 처음이면 무악재역입니다.
+        const view = getPreference('map-view', { latitude: BASE.latitude, longitude: BASE.longitude, level: BASE.level });
         const instance = new kakao.maps.Map(container.current, {
           center: new kakao.maps.LatLng(view.latitude, view.longitude),
           level: view.level,
@@ -104,7 +118,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         });
         kakao.maps.event.addListener(instance, 'idle', () => {
           const center = instance.getCenter();
-          lastView = { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() };
+          setPreference('map-view', { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() });
         });
         observer = new ResizeObserver(() => instance.relayout());
         observer.observe(container.current);
@@ -120,6 +134,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   useEffect(() => {
     if (!map) return;
     const { kakao, instance } = map;
+    pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
     // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
     const clusterers = KINDS.map(
       (kind) =>
@@ -135,7 +150,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               (place) =>
                 new kakao.maps.CustomOverlay({
                   position: new kakao.maps.LatLng(place.latitude, place.longitude),
-                  content: createPin(place, place.id === selectedId, selectFromPin),
+                  content: pins.current.get(place.id),
                   yAnchor: 1.2, // 핀 아래 꼬리 끝이 장소 위치에 오게 합니다.
                   clickable: true,
                 }),
@@ -143,7 +158,12 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         }),
     );
     return () => clusterers.forEach((clusterer) => clusterer.clear());
-  }, [map, places, selectedId, selectFromPin]);
+  }, [map, places, offsets, selectFromPin]);
+
+  // 고른 핀만 표시를 바꿉니다. 핀 전체를 다시 그리지 않아 깜빡이지 않습니다.
+  useEffect(() => {
+    pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
+  }, [map, places, selectedId]);
 
   useEffect(() => {
     if (!map) return;
@@ -225,6 +245,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             role="group"
             aria-label={`${selected.name} 정보`}
             className="map-popup"
+            style={{ transform: `translateX(${offsets.get(selected.id) ?? 0}px)` }} // 벌려 놓은 핀 위에 맞춥니다.
           >
             <div className="flex items-start justify-between gap-1">
               <p className="min-w-0 break-words">{selected.name}</p>
