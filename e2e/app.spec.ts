@@ -34,9 +34,13 @@ const expectFits = async (page: Page) => {
 };
 
 const expectAccessible = async (page: Page) => {
-  // 개별 삭제 버튼의 포인트 색 글자는 사용자 결정으로 명도 대비 검사에서 뺍니다.
-  const { violations } = await new AxeBuilder({ page }).exclude('.text-action-accent').analyze();
-  expect(violations.map((item) => `${item.id}: ${item.nodes.map((node) => node.target).join(' | ')}`)).toEqual([]);
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  // 개별 삭제 버튼의 포인트 색 글자는 사용자 결정이라 명도 대비 위반에서만 뺍니다.
+  const found = violations.flatMap((item) => {
+    const nodes = item.id === 'color-contrast' ? item.nodes.filter((node) => !node.html.includes('text-action-accent')) : item.nodes;
+    return nodes.length ? [`${item.id}: ${nodes.map((node) => node.target).join(' | ')}`] : [];
+  });
+  expect(found).toEqual([]);
 };
 
 test.beforeEach(({ page }) => {
