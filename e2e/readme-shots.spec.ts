@@ -41,8 +41,9 @@ test('넓은 화면', async ({ page }, info) => {
   await page.screenshot({ path: `${dir}/map.jpg`, type: 'jpeg', quality: 80 });
   await page.goto('./schedule?date=2026-11-14');
   await page.getByRole('heading', { name: '새벽 출조' }).waitFor();
-  await page.getByRole('region', { name: /물때와 날씨/ }).waitFor();
+  await page.getByRole('region', { name: '기록', exact: true }).waitFor();
   await page.getByRole('heading', { name: '전체 기록' }).waitFor();
+  await page.getByRole('region', { name: '전체 기록' }).getByRole('article').first().waitFor();
   await page.screenshot({ path: `${dir}/schedule.jpg`, type: 'jpeg', quality: 80 });
 });
 

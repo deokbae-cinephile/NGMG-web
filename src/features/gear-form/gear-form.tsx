@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { GEAR_CATEGORIES, gearSubcategory, LINE_SUBCATEGORIES, useSaveGear } from '@/entities/gear';
 import { ANGLERS, type Gear } from '@/shared/api';
-import { ErrorText, Field, FilePreview, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 
 type Props = { angler: string; gear?: Gear; nextPosition: number; onDone: () => void };
 
@@ -21,7 +21,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = name.trim().replace(/\s+\/\s+/g, '/'); // ' / '는 기록의 장비 구분자입니다.
     setNameError(trimmed ? undefined : '장비 이름을 입력해 주세요.');
     if (!trimmed || locked.current) return;
     locked.current = true;
@@ -31,7 +31,7 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
         angler,
         category,
         subcategory: category === '라인' ? subcategory : '',
-        brand: brand.trim().replace(/^\[|\]$/g, ''), // 대괄호는 화면에서 붙입니다.
+        brand: brand.trim().replace(/^\[|\]$/g, '').replace(/\s+\/\s+/g, '/'), // 대괄호는 화면에서 붙입니다.
         name: trimmed,
         memo: memo.trim(),
         photo_path: gear?.photo_path ?? null,
@@ -81,25 +81,16 @@ export const GearForm = ({ angler: initialAngler, gear, nextPosition, onDone }: 
       <Field label="브랜드" placeholder="예: 다이와" hint="목록에는 [다이와] 처럼 대괄호로 표시됩니다." maxLength={40} value={brand} onChange={(event) => setBrand(event.target.value)} />
       <Field label="장비 이름" placeholder="예: 25 레가리스 LT 3000-CXH" maxLength={60} error={nameError} value={name} onChange={(event) => setName(event.target.value)} />
       <TextareaField label="메모" maxLength={500} value={memo} onChange={(event) => setMemo(event.target.value)} />
-      {gear?.photo_url && !file && (
-        <div className="flex items-center gap-3">
-          <img src={gear.photo_url} alt={`${gear.name} 지금 사진`} className={`size-24 border border-line object-cover ${removePhoto ? 'opacity-30' : ''}`} />
-          <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" className="size-5 accent-ink" checked={removePhoto} onChange={(event) => setRemovePhoto(event.target.checked)} />
-            사진 삭제
-          </label>
-        </div>
+      {gear?.photo_url && !file && !removePhoto && (
+        <RemovablePhoto src={gear.photo_url} alt={`${gear.name} 지금 사진`} removeLabel="사진 삭제" onRemove={() => setRemovePhoto(true)} />
       )}
       <Field
-        label={gear?.photo_url ? '사진 바꾸기' : '사진'}
+        label={gear?.photo_url && !removePhoto ? '사진 바꾸기' : '사진'}
         type="file"
         accept="image/*"
-        onChange={(event) => {
-          setFile(event.target.files?.[0] ?? null);
-          setRemovePhoto(false);
-        }}
+        onChange={(event) => setFile(event.target.files?.[0] ?? null)}
       />
-      {file && <FilePreview file={file} alt="올릴 장비 사진 미리보기" className="size-24" />}
+      {file && <RemovablePhoto file={file} alt="올릴 장비 사진 미리보기" removeLabel="올릴 사진 빼기" inputBefore onRemove={() => setFile(null)} />}
       <ErrorText error={save.error} />
       <div className="flex justify-end">
         <button type="submit" className="button button-primary" disabled={save.isPending}>

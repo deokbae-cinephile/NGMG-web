@@ -2,14 +2,15 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuTotal, parseMenu, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
-import { ErrorText, Field, FilePreview, Icon, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
+import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
-type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string; price: string };
+type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string };
 type Props = {
   place: Pick<Place, 'id' | 'kind'>;
   record?: PlaceRecord;
@@ -29,7 +30,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
       memo: record?.memo ?? '',
       rating: record?.rating?.toString() ?? '',
-      price: record?.price?.toString() ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
     },
   });
@@ -49,8 +49,21 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     })),
   );
   const [checkedFish, setCheckedFish] = useState(false);
+  const [menu, setMenu] = useState<MenuRow[]>(() => {
+    const items = parseMenu(record?.menu ?? '');
+    // 예전 기록은 메뉴가 하나면 적어 둔 가격을 그 줄에 넣습니다.
+    if (items.length === 1 && !items[0]!.price && record?.price != null) items[0]!.price = String(record.price);
+    return items.length ? items.map(newMenuRow) : [newMenuRow()];
+  });
+  const [checkedMenu, setCheckedMenu] = useState(false);
+  const [savedMenu] = useState(() => formatMenu(menu)); // 메뉴를 고치지 않으면 저장된 합계를 그대로 둡니다.
+  // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
+  const [legacyTotal] = useState(() => {
+    const items = parseMenu(record?.menu ?? '');
+    return items.length !== 1 && !items.some((item) => item.price) ? (record?.price ?? null) : null;
+  });
   const registeredGear = useGear();
-  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(', ');
+  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
   // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
   useEffect(() => {
     if (!record && kind === 'fishing' && defaultGear && !getValues('gear')) setValue('gear', defaultGear);
@@ -75,6 +88,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     const keptFish = kind === 'fishing' ? fish : [];
     setCheckedFish(true);
     if (keptFish.some((item) => fishError(item))) return;
+    setCheckedMenu(true);
+    if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
     if (tooMany || save.isPending) return;
     save.mutate(
       {
@@ -87,8 +102,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
-        price: kind === 'restaurant' && values.price ? Number(values.price) : null,
+        price: kind === 'restaurant' ? (record && formatMenu(menu) === savedMenu ? record.price : (menuTotal(menu) ?? legacyTotal)) : null,
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
+        ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
@@ -158,22 +174,13 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           <ErrorText error={gear.error} />
         </>
       )}
+      {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
           <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
         ))}
-        {kind === 'restaurant' && (
-          <Field
-            label="가격 (원)"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            error={errors.price?.message}
-            {...register('price', { validate: (value) => !value || Number(value) >= 0 || '0 이상으로 입력해 주세요.' })}
-          />
-        )}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="record-rating" className="mono-label">별점</label>
+          <label htmlFor="record-rating" className="mono-label">평점</label>
           <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
             <option value="">선택 안 함</option>
             {[5, 4, 3, 2, 1].map((score) => (
@@ -184,25 +191,19 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       </div>
       <TextareaField label="메모" {...register('memo')} />
 
-      {record && record.photos.length > 0 && (
+      {kept.length > 0 && (
         <fieldset>
-          <legend className="mono-label pb-1.5">올린 사진 (체크하면 삭제)</legend>
+          <legend className="mono-label pb-1.5">올린 사진 (X를 누르고 저장하면 삭제)</legend>
           <ul className="grid grid-cols-3 gap-2">
-            {record.photos.map((photo, index) => (
+            {kept.map((photo, index) => (
               <li key={photo.id}>
-                <label className="flex flex-col gap-1">
-                  <img src={photo.url} alt="" className="aspect-square w-full border border-line object-cover" />
-                  <span className="flex min-h-11 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="size-5 accent-ink"
-                      onChange={(event) =>
-                        setRemoved((list) => (event.target.checked ? [...list, photo] : list.filter((item) => item !== photo)))
-                      }
-                    />
-                    {`사진 ${index + 1} 삭제`}
-                  </span>
-                </label>
+                <RemovablePhoto
+                  src={photo.url}
+                  alt={`올린 사진 ${index + 1}`}
+                  removeLabel={`올린 사진 ${index + 1} 삭제`}
+                  className="aspect-square w-full"
+                  onRemove={() => setRemoved((list) => [...list, photo])}
+                />
               </li>
             ))}
           </ul>
@@ -227,11 +228,15 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         <section aria-label="올릴 사진 미리보기">
           <ul className="grid grid-cols-3 gap-2">
             {files.map((file, index) => (
-              <li key={`${file.name}-${file.lastModified}-${index}`} className="relative">
-                <FilePreview file={file} alt={`올릴 사진 ${index + 1} 미리보기`} className="aspect-square w-full" />
-                <button type="button" className="photo-remove" aria-label={`사진 ${index + 1} 빼기`} onClick={() => setFiles((list) => list.filter((_, at) => at !== index))}>
-                  <Icon name="close" size={16} />
-                </button>
+              <li key={`${file.name}-${file.lastModified}-${index}`}>
+                <RemovablePhoto
+                  file={file}
+                  alt={`올릴 사진 ${index + 1} 미리보기`}
+                  removeLabel={`사진 ${index + 1} 빼기`}
+                  className="aspect-square w-full"
+                  inputBefore
+                  onRemove={() => setFiles((list) => list.filter((_, at) => at !== index))}
+                />
               </li>
             ))}
           </ul>
@@ -243,7 +248,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       <ErrorText error={save.error ?? remove.error} />
       <div className="flex flex-wrap justify-end gap-2">
         {record && (
-          <button type="button" className="button button-danger mr-auto" disabled={remove.isPending} onClick={onDelete}>
+          <button type="button" className="button button-accent mr-auto" disabled={remove.isPending} onClick={onDelete}>
             삭제
           </button>
         )}

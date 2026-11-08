@@ -19,14 +19,14 @@ type Props = {
 const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE.longitude, level: 5 };
 
 /** 물방울 모양 핀의 바탕. 지도 메뉴 아이콘과 같은 모양이고, 그림의 아래 끝이 장소 위치입니다. */
-const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 22" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
+const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 22" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="6"/></svg>';
 
 const createBasePin = () => {
   const pin = document.createElement('div');
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
   pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
-  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
+  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 16)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
   return pin;
 };
 
@@ -63,7 +63,7 @@ const pinOffsets = (places: Place[]) => {
 const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
-  pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 18);
+  pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 16);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
   if (offset) pin.style.transform = `translateX(${offset}px)`;
@@ -71,13 +71,13 @@ const createPin = (place: Place, offset: number, onSelect: (id: string) => void)
   return pin;
 };
 
-/** 평균 별점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
+/** 평균 평점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
 const applyRating = (pin: HTMLButtonElement, place: Place, rating: number | undefined) => {
   pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}`}`);
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 평점 ${rating.toFixed(1)}`}`);
   pin.querySelector('.pin-score')?.remove();
   if (rating === undefined) return;
-  // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
+  // 색만으로 구분되지 않도록 평균 평점 숫자를 함께 보여 줍니다.
   const score = document.createElement('span');
   score.className = 'pin-score';
   score.setAttribute('aria-hidden', 'true');
@@ -268,8 +268,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     <div className="relative h-full w-full">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 5점까지">
-        <strong className="font-normal">별점</strong>
+      <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
+        <strong className="font-normal">평점</strong>
         {[1, 2, 3, 4, 5].map((score) => (
           <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
         ))}
@@ -282,7 +282,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           setPreference('map-satellite', !satellite);
         }}
       >
-        <Icon name="layers" size={16} />
         {/* 누르면 바뀔 지도 이름을 보여 줍니다. */}
         {satellite ? '일반 지도' : '위성 지도'}
       </button>
@@ -301,9 +300,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
                 <Icon name="close" size={16} />
               </button>
             </div>
-            {isBase ? (
-              <p className="text-sm text-muted">길찾기 출발지</p>
-            ) : (
+            {!isBase && (
               <div className="flex items-center gap-1.5">
                 <KindBadge kind={selected.kind} />
                 <RatingChip rating={ratings?.get(selected.id)} />

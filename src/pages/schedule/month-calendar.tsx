@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type TouchEvent } from 'react';
 import { addDays, startOfMonth, toDateKey } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
 
@@ -50,6 +50,7 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
   const grid = useRef<HTMLTableElement>(null);
   const [focused, setFocused] = useState<Date>();
   const moved = useRef(false);
+  const swipe = useRef<{ x: number; y: number }>(undefined);
   const inMonth = (day: Date) => day.getFullYear() === month.getFullYear() && day.getMonth() === month.getMonth();
   const active = focused && inMonth(focused) ? focused : inMonth(selected) ? selected : startOfMonth(month);
   const today = new Date();
@@ -109,6 +110,17 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
     if (!next) return;
     event.preventDefault();
     move(next());
+  };
+
+  /** 휴대폰에서 달력을 옆으로 밀어 달을 넘깁니다. 이전·다음 버튼으로도 같은 일을 할 수 있습니다. */
+  const onSwipeEnd = (event: TouchEvent) => {
+    const start = swipe.current;
+    const end = event.changedTouches[0];
+    swipe.current = undefined;
+    if (!start || !end) return;
+    const dx = end.clientX - start.x;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(end.clientY - start.y) * 1.5) return;
+    onMonthChange(addMonths(startOfMonth(month), dx < 0 ? 1 : -1));
   };
 
   return (
@@ -218,7 +230,17 @@ export const MonthCalendar = ({ month, selected, onMonthChange, onSelect, label,
         </div>
       )}
       {!picking && (
-      <table ref={grid} role="grid" aria-labelledby={captionId} className="cal-grid">
+      <table
+        ref={grid}
+        role="grid"
+        aria-labelledby={captionId}
+        className="cal-grid"
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          swipe.current = touch && event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : undefined;
+        }}
+        onTouchEnd={onSwipeEnd}
+      >
         <thead aria-hidden="true">
           <tr>
             {WEEKDAYS.map((weekday) => (

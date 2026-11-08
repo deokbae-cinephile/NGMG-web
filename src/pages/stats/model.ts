@@ -1,4 +1,4 @@
-import { splitList, summarizeAnglers, type StatRecord } from '@/entities/record';
+import { summarizeAnglers, type StatRecord } from '@/entities/record';
 
 const top = (values: string[], limit = 5) => {
   const counts = new Map<string, number>();
@@ -15,19 +15,11 @@ export const summarize = (records: StatRecord[], year: number) => {
     const key = `${year}-${String(index + 1).padStart(2, '0')}`;
     return new Set(fishing.filter((record) => record.visited_on.startsWith(key)).map((record) => record.visited_on)).size;
   });
-  const average = (kind: StatRecord['place']['kind']) => {
-    const ratings = inYear.filter((record) => record.place.kind === kind).flatMap((record) => record.rating ?? []);
-    return ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null;
-  };
   return {
-    total: inYear.length,
     trips: tripDays.size,
     restaurants: inYear.filter((record) => record.place.kind === 'restaurant').length,
-    fishingRating: average('fishing'),
-    restaurantRating: average('restaurant'),
     months,
     places: top(inYear.map((record) => record.place.name)),
-    baits: top(fishing.flatMap((record) => splitList(record.bait))),
     anglers: summarizeAnglers(fishing.flatMap((record) => record.fish)),
   };
 };

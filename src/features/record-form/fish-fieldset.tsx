@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { ANGLERS, type FishInput } from '@/entities/record';
-import { FilePreview } from '@/shared/ui';
+import { RemovablePhoto } from '@/shared/ui';
 
 /** 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다. */
 export type FishDraft = Omit<FishInput, 'length_cm' | 'position'> & { length: string; photo_url?: string };
@@ -71,29 +71,24 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
 
         <div className="flex flex-wrap items-end gap-3">
           {fish.file ? (
-            <FilePreview file={fish.file} alt={`${label} 새 사진 미리보기`} className="size-24" />
+            <RemovablePhoto file={fish.file} alt={`${label} 새 사진 미리보기`} removeLabel={`${label} 새 사진 빼기`} onRemove={() => set({ file: null })} />
           ) : (
-            fish.photo_url && <img src={fish.photo_url} alt={`${label} 사진`} className={`size-24 border border-line object-cover ${fish.removePhoto ? 'opacity-30' : ''}`} />
+            fish.photo_path &&
+            !fish.removePhoto && <RemovablePhoto src={fish.photo_url} alt={`${label} 사진`} removeLabel={`${label} 사진 삭제`} onRemove={() => set({ removePhoto: true })} />
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <label htmlFor={`${id}-photo`} className="mono-label">{fish.photo_path || fish.file ? '사진 바꾸기' : '사진'}</label>
+            <label htmlFor={`${id}-photo`} className="mono-label">{(fish.photo_path && !fish.removePhoto) || fish.file ? '사진 바꾸기' : '사진'}</label>
             <input
               id={`${id}-photo`}
               type="file"
               accept="image/*"
               className="min-h-11 w-full border border-field bg-surface px-3 py-2"
-              onChange={(event) => set({ file: event.target.files?.[0] ?? null, removePhoto: false })}
+              onChange={(event) => set({ file: event.target.files?.[0] ?? null })}
             />
           </div>
         </div>
-        {fish.photo_path && !fish.file && (
-          <label className="flex min-h-11 items-center gap-2 text-sm">
-            <input type="checkbox" className="size-5 accent-ink" checked={fish.removePhoto} onChange={(event) => set({ removePhoto: event.target.checked })} />
-            {`${label} 사진 삭제`}
-          </label>
-        )}
         <div className="flex justify-end">
-          <button type="button" className="text-action text-action-danger" onClick={onRemove}>
+          <button type="button" className="text-action text-action-accent" onClick={onRemove}>
             {`${label} 빼기`}
           </button>
         </div>

@@ -29,7 +29,7 @@ export const RecordPhotos = ({ record }: { record: PlaceRecord }) => {
   const alt = (index: number) => `${date} 기록 사진 ${index + 1} (새 창에서 크게 보기)`;
   if (count === 1) {
     return (
-      <div className="max-w-xl">
+      <div className="w-full">
         <PhotoLink url={record.photos[0]!.url} alt={alt(0)} />
       </div>
     );

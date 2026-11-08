@@ -18,7 +18,7 @@
 | 방법 | 설명 |
 | --- | --- |
 | `pnpm run demo` | 개발 서버와 Playwright 브라우저 창을 띄웁니다. 날씨도 가짜 값입니다. |
-| `pnpm run build:demo` | 정적 파일로 빌드합니다. `e2e/demo-setup.ts`가 브라우저의 `fetch`를 가로채 응답하고, 날씨는 실제 Open-Meteo를 부릅니다. 고친 데이터는 탭을 닫기 전까지 sessionStorage에 남습니다. |
+| `pnpm run build:demo` | 정적 파일로 빌드합니다. `e2e/demo-setup.ts`가 브라우저의 `fetch`를 가로채 응답하고. 고친 데이터는 탭을 닫기 전까지 sessionStorage에 남습니다. |
 
 ## 서버 준비 (Supabase)
 
@@ -68,11 +68,6 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
-## 물때와 날씨
-
-- 날씨와 파고는 키가 필요 없는 Open-Meteo를 브라우저에서 직접 호출합니다. 이때 일정 장소의 좌표가 Open-Meteo로 전달됩니다.
-- 물때는 브라우저의 음력 달력(`Intl` 단기력)으로 계산한 어림값입니다. 실제 조석표를 대신하지 않습니다.
-
 ## 현재 위치
 
 지도의 "현재 위치에서 가까운 순"을 누를 때만 브라우저에 위치를 묻습니다. 위치는 화면의 정렬과 직선거리 표시에만 쓰고, 저장하거나 서버로 보내지 않습니다.
@@ -116,4 +111,3 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 - Supabase는 `supabase-js` 대신 쓰는 클라이언트(`auth-js`, `postgrest-js`, `storage-js`)만 묶어 실시간 기능을 뺐습니다(`src/shared/api/supabase.ts`).
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
 - 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘깁니다.
-
