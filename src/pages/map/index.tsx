@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
-import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
+import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces, OriginButton } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
@@ -84,12 +84,15 @@ export const MapPage = () => {
       <section aria-labelledby="places-title" className="pane">
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
-          <button type="button" className="button flex-1" aria-pressed={picking} onClick={() => setPicking(!picking)}>
-            {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
-          </button>
-          <button type="button" className="button button-primary shrink-0" onClick={() => setDraft({})}>
-            장소 추가
-          </button>
+          <div className="map-actions">
+            <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+              {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+            </button>
+            <button type="button" className="button button-primary" onClick={() => setDraft({})}>
+              장소 추가
+            </button>
+            <OriginButton />
+          </div>
         </div>
 
         <div className="cell-body flex flex-col gap-5">

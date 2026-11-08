@@ -5,16 +5,16 @@ import { Icon } from '@/shared/ui';
 import { BASE_ORIGIN, directionsUrl, setRouteFromBase, useRouteFromBase } from '../model/route-origin';
 
 /** 길찾기 출발지로 무악재역을 쓸지 켜고 끕니다. 기본은 켜짐입니다. */
-export const OriginButton = ({ className = 'button' }: { className?: string }) => {
+export const OriginButton = () => {
   const fromBase = useRouteFromBase();
   return (
-    <button type="button" className={className} aria-pressed={fromBase} onClick={() => setRouteFromBase(!fromBase)}>
-      {`출발지 ${BASE_ORIGIN.name}`}
+    <button type="button" className="button" aria-label={`출발지 ${BASE_ORIGIN.name}`} aria-pressed={fromBase} onClick={() => setRouteFromBase(!fromBase)}>
+      {BASE_ORIGIN.name}
     </button>
   );
 };
 
-/** 길찾기, 출발지, 주소 복사, 공유 버튼. 결과는 바로 아래에 읽어 줍니다. */
+/** 길찾기, 주소 복사, 공유 버튼. 결과는 바로 아래에 읽어 줍니다. */
 export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' | 'latitude' | 'longitude'> }) => {
   const [message, setMessage] = useState('');
   const fromBase = useRouteFromBase();
@@ -40,7 +40,6 @@ export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' 
           <Icon name="map" size={16} />
           길찾기 (새 창)
         </a>
-        <OriginButton />
         <button type="button" className="button" onClick={() => void copy()}>
           <Icon name="copy" size={16} />
           주소 복사

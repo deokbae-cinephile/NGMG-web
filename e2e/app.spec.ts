@@ -515,18 +515,25 @@ test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', asyn
   await expectAccessible(page);
 });
 
-test('출발지: 무악재역 토글을 끄면 길찾기에서 출발지를 지정하지 않고, 상태를 기억한다', async ({ page }) => {
+test('출발지: 지도 화면의 무악재역 토글로 길찾기 출발지를 정하고, 버튼 세 개가 한 줄에 놓인다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.goto('./places/p2');
+  await page.goto('./');
   const toggle = page.getByRole('button', { name: '출발지 무악재역' });
-  const route = page.getByRole('link', { name: '길찾기 (새 창)' });
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(route).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(route).toHaveAttribute('href', /link\/to\//);
-  await page.reload();
+  await expect(toggle).toHaveText('무악재역');
+  const boxes = await Promise.all([page.getByRole('button', { name: '지도를 눌러 위치 지정' }), page.getByRole('button', { name: '장소 추가' }), toggle].map((button) => button.boundingBox()));
+  expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
+  await expectFits(page);
+  await expectAccessible(page);
+
+  await page.goto('./places/p2');
+  await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
+
+  await page.goto('./');
+  await page.getByRole('button', { name: '출발지 무악재역' }).click();
   await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveAttribute('aria-pressed', 'false');
+  await page.goto('./places/p2');
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/to\//);
 });
 

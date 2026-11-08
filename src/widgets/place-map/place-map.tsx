@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS, OriginButton } from '@/entities/place';
+import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -262,12 +262,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             <KindBadge kind={selected.kind} />
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {selected.tags.length > 0 && <p className="break-words text-sm text-muted">{selected.tags.map((tag) => `#${tag}`).join(' ')}</p>}
-            <div className="flex items-center gap-3">
-              <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
-                상세 보기
-              </Link>
-              <OriginButton className="map-popup-origin" />
-            </div>
+            <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
+              상세 보기
+            </Link>
           </div>,
           popupHost,
         )}
