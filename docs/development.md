@@ -100,7 +100,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 | `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
 | `danger` | `#b3221e` | 삭제·오류 |
 
-제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 주황).
+제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 연회색).
 
 글꼴은 도현(Do Hyeon) 하나를 `@fontsource/do-hyeon`으로 포함합니다. 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
 
