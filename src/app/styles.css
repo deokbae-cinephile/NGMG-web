@@ -988,10 +988,11 @@ body::after {
 /* 기록 사진 넘기기 */
 .photo-slider {
   position: relative;
-  max-width: 36rem;
+  width: 100%;
 }
 .photo-slider-track {
   display: flex;
+  width: 100%;
 }
 .photo-slider-track > li {
   min-width: 0;
