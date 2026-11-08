@@ -31,7 +31,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         <p>
           {record.place.kind === 'restaurant' ? (
             <>
-              <span className="mono-label mr-2">평균 평점</span>
+              <span className="mono-label mr-2">{menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</span>
               {`${record.rating.toFixed(1)}점`}
             </>
           ) : (
