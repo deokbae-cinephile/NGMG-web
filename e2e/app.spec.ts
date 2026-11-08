@@ -593,3 +593,23 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expectFits(page);
   await expectAccessible(page);
 });
+
+test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    records: [
+      { id: 'a', place_id: 'p1', visited_on: '2026-10-01', rating: 5 },
+      { id: 'b', place_id: 'p1', visited_on: '2026-10-02', rating: 4 },
+      { id: 'c', place_id: 'p2', visited_on: '2026-10-03', rating: 2 },
+    ],
+  });
+  await page.goto('./');
+  const pin = page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 별점 4\.5점/ });
+  await expect(pin).toHaveClass(/rate-5/);
+  await expect(page.getByRole('button', { name: /바다횟집 \(맛집\) 선택, 평균 별점 2\.0점/ })).toHaveClass(/rate-2/);
+  const none = page.getByRole('button', { name: new RegExp(`${LONG_NAME} \\(낚시\\) 선택$`) });
+  await expect(none).not.toHaveClass(/rate-/);
+  await pin.click();
+  await expect(page.getByRole('group', { name: '거문도 방파제 정보' }).getByText('4.5')).toBeVisible();
+  await expectAccessible(page);
+});

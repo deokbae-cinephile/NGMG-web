@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces, OriginButton } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
+import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
@@ -22,6 +23,7 @@ const NO_PLACES: Place[] = [];
 
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
+  const { data: ratings } = usePlaceRatings();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
   const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
@@ -169,7 +171,7 @@ export const MapPage = () => {
                         {`${String(index + 1).padStart(2, '0')} / ${String(listed.length).padStart(2, '0')}`}
                       </span>
                       <span className="flex flex-wrap items-center gap-2">
-                        {place.name} <KindBadge kind={place.kind} />
+                        {place.name} <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                       {place.tags.length > 0 && (

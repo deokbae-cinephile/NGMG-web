@@ -6,6 +6,7 @@ export {
   useDeleteRecord,
   usePlaceRecords,
   useRecordedEventIds,
+  usePlaceRatings,
   useRecentFish,
   useRecordPages,
   useSaveRecord,
@@ -17,4 +18,5 @@ export {
 } from './api';
 export { ANGLERS, fishLabel, formatGear, gearList, RECORD_FIELDS, splitList, summarizeAnglers, summarizeRecords, WEATHER_STATES } from './model';
 export { FishRow } from './fish-row';
+export { RatingChip, ratingClass } from './rating-chip';
 export { RecordCard } from './record-card';
