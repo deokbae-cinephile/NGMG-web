@@ -113,13 +113,13 @@ export const StatsPage = () => {
           </div>
           <dl className="cell-body flex flex-col">
             {stats.anglers.map(({ angler, count, biggest }) => (
-              <div key={angler} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1">
+              <div key={angler} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
                 <dt>{angler}</dt>
-                <dd className="flex items-baseline gap-1">
+                <dd className="col-start-1 text-sm text-muted">{biggest ? `최대어 ${fishLabel(biggest)}` : '아직 잡은 물고기가 없습니다.'}</dd>
+                <dd className="col-start-2 row-span-2 row-start-1 flex items-center gap-1">
                   <span className="display-number text-5xl!">{count}</span>
                   <span>마리</span>
                 </dd>
-                <dd className="col-span-2 text-sm text-muted">{biggest ? `최대어 ${fishLabel(biggest)}` : '아직 잡은 물고기가 없습니다.'}</dd>
               </div>
             ))}
           </dl>
