@@ -155,10 +155,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const place = places.find((item) => item.id === selectedId);
     if (!map || !place) return;
     // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
-    const projection = map.instance.getProjection();
-    const point = projection.containerPointFromCoords(new map.kakao.maps.LatLng(place.latitude, place.longitude));
-    point.y -= 90;
-    map.instance.panTo(projection.coordsFromContainerPoint(point));
+    const bounds = map.instance.getBounds();
+    const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
+    map.instance.panTo(new map.kakao.maps.LatLng(place.latitude + latitudePerPixel * 90, place.longitude));
   }, [map, places, selectedId]);
 
   // 고른 장소 위에 정보 팝업을 띄웁니다.
