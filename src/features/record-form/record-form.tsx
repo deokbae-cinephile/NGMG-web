@@ -93,7 +93,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         place_id: place.id,
         event_id: record?.event_id ?? eventId ?? null,
         visited_on: values.visited_on,
-        end_date: values.end_date,
+        end_date: values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
@@ -154,8 +154,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           type="date"
           error={errors.end_date?.message}
           {...register('end_date', {
-            required: '종료 날짜를 입력해 주세요.',
-            validate: (end) => end >= getValues('visited_on') || '시작 날짜 이후로 입력해 주세요.',
+            validate: (end) => !end || end >= getValues('visited_on') || '시작 날짜 이후로 입력해 주세요.',
           })}
         />
       </div>

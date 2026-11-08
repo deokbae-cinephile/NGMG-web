@@ -313,7 +313,7 @@ body::after {
     align-items: center;
     gap: 0.25rem;
     border: 1px solid var(--color-ink);
-    padding: 0 0.4rem;
+    padding: 0.1875rem 0.4rem;
     color: var(--color-ink);
     font-size: 0.8125rem;
     white-space: nowrap;

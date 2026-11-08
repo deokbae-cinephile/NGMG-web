@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.20.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.20.1-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 장비와 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 

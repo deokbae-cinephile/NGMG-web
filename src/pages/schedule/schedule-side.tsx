@@ -45,7 +45,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
         </section>
       )}
       {waiting.length > 0 && (
-        <section aria-labelledby="waiting-events" className="border-t border-line">
+        <section aria-labelledby="waiting-events" className="border-t border-line first-of-type:border-t-0">
           <h3 id="waiting-events" className="title text-lg px-5 pt-5 pb-3">기록을 기다리는 지난 일정</h3>
           <ul className="flex flex-col divide-y divide-soft border-t border-line">
             {waiting.map((event) => (
@@ -63,7 +63,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
           </ul>
         </section>
       )}
-      <section aria-labelledby="recent-title" className="border-t border-line">
+      <section aria-labelledby="recent-title" className="border-t border-line first-of-type:border-t-0">
         <h3 id="recent-title" className="title text-lg px-5 pt-5 pb-3">최근 조과</h3>
         <div className="px-5 pb-5">
           <ErrorText error={recentFish.error} />
