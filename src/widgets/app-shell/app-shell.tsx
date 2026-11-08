@@ -32,7 +32,7 @@ export const AppShell = () => {
         </NavLink>
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link">
+            <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link" title={item.label}>
               <Icon name={item.icon} size={22} className="nav-icon" />
               <span className="nav-text">{item.label}</span>
             </NavLink>

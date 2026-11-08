@@ -311,7 +311,7 @@ select {
     align-items: center;
     padding: 0 1rem;
   }
-  /* 휴대폰은 하단 아이콘 탭, 넓은 화면은 머리글 오른쪽 메뉴 */
+  /* 메뉴는 아이콘으로 보여 주고 이름은 스크린리더용으로 둡니다. 휴대폰은 하단 탭, 넓은 화면은 머리글 오른쪽 칸입니다. */
   .main-nav {
     position: fixed;
     inset: auto 0 0;
@@ -359,19 +359,8 @@ select {
       padding: 0;
     }
     .nav-link {
-      width: 7.5rem;
+      width: 5rem;
       border-left: 1px solid var(--color-line);
-      font-size: 1.0625rem;
-    }
-    .nav-link .nav-icon {
-      display: none;
-    }
-    .nav-text {
-      position: static;
-      width: auto;
-      height: auto;
-      overflow: visible;
-      clip-path: none;
     }
   }
 
