@@ -220,7 +220,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         </fieldset>
       )}
 
-      {/* 맛집은 메뉴마다 사진을 올립니다. 예전에 올린 기록 사진은 위에서 보고 지울 수 있습니다. */}
+      {/* 맛집은 메뉴마다 사진을 올립니다. */}
       {kind !== 'restaurant' && (
         <>
           <Field
