@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, supabase, type Place, type PlaceDraft } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Place, type PlaceDraft } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 
 // 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
 const withPhotoUrls = async (places: Place[]) => {
   const paths = places.flatMap((place) => place.photo_path ?? []);
   if (!paths.length) return places;
-  const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+  const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
   const urls = new Map(data?.flatMap((item) => (item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : [])));
   return places.map((place) => (place.photo_path ? { ...place, photo_url: urls.get(place.photo_path) } : place));
 };
@@ -70,11 +70,19 @@ const deletePlace = async (place: Pick<Place, 'id' | 'photo_path'>) => {
     .from('record_photos')
     .select('storage_path, records!inner(place_id)')
     .eq('records.place_id', place.id);
-  if (photoError) throw new Error('장소를 삭제하지 못했습니다.');
+  const { data: fish, error: fishError } = await supabase
+    .from('fish_catches')
+    .select('photo_path, records!inner(place_id)')
+    .eq('records.place_id', place.id);
+  if (photoError || fishError) throw new Error('장소를 삭제하지 못했습니다.');
   const { error } = await supabase.from('places').delete().eq('id', place.id);
   if (error) throw new Error('장소를 삭제하지 못했습니다.');
   // 장소를 지운 뒤에 파일을 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
-  const paths = [...photos.map((photo) => photo.storage_path as string), ...(place.photo_path ? [place.photo_path] : [])];
+  const paths = [
+    ...photos.map((photo) => photo.storage_path as string),
+    ...fish.flatMap((item) => (item.photo_path as string | null) ?? []),
+    ...(place.photo_path ? [place.photo_path] : []),
+  ];
   if (paths.length) await supabase.storage.from(PHOTO_BUCKET).remove(paths);
 };
 

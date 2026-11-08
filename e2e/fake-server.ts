@@ -130,10 +130,12 @@ export const createFakeServer = (seed: Seed = {}) => {
       if (['select', 'order', 'offset', 'limit', 'columns', 'on_conflict'].includes(key)) return;
       if (key === 'or') {
         const terms = [...value.matchAll(/(\w+)\.ilike\."%(.*?)%"/g)];
+        const ids = value.match(/id\.in\.\(([^)]*)\)/)?.[1]?.split(',') ?? [];
         const notEmpty = [...value.matchAll(/(\w+)\.neq\.(?=,|$)/g)].map(([, column = '']) => column);
         result = result.filter(
           (row) =>
             terms.some(([, column = '', text = '']) => String(row[column]).toLowerCase().includes(text.toLowerCase())) ||
+            ids.includes(String(row.id)) ||
             notEmpty.some((column) => row[column] !== '' && row[column] != null),
         );
         return;
@@ -150,6 +152,7 @@ export const createFakeServer = (seed: Seed = {}) => {
           return Array.isArray(list) && wanted.every((item) => list.includes(item));
         });
       }
+      if (op === 'ilike') result = result.filter((row) => String(read(row, key)).toLowerCase().includes(operand.replaceAll('%', '').toLowerCase()));
       if (op === 'in') {
         const list = operand.slice(1, -1).split(',').map((item) => item.replaceAll('"', ''));
         result = result.filter((row) => list.includes(String(row[key])));

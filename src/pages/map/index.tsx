@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
@@ -18,8 +18,10 @@ const SORTS: { value: Sort; label: string }[] = [
 
 const firstTag = (place: Place) => [...place.tags].sort((a, b) => a.localeCompare(b, 'ko'))[0];
 
+const NO_PLACES: Place[] = [];
+
 export const MapPage = () => {
-  const { data: places = [], isPending, error } = usePlaces();
+  const { data: places = NO_PLACES, isPending, error } = usePlaces();
   const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
   const [tag, setTag] = useState<string>();
   const [sort, setSort] = useState<Sort>('name');
@@ -34,11 +36,16 @@ export const MapPage = () => {
 
   // 이름, 주소, 태그에서 찾습니다. '#방파제'처럼 써도 됩니다.
   const search = keyword.trim().replace(/^#/, '').toLowerCase();
-  const visible = places.filter(
-    (place) =>
-      (filter === 'all' || place.kind === filter) &&
-      (!tag || place.tags.includes(tag)) &&
-      `${place.name} ${place.address} ${place.tags.join(' ')}`.toLowerCase().includes(search),
+  // 지도가 핀을 불필요하게 다시 그리지 않도록 조건이 바뀔 때만 새로 만듭니다.
+  const visible = useMemo(
+    () =>
+      places.filter(
+        (place) =>
+          (filter === 'all' || place.kind === filter) &&
+          (!tag || place.tags.includes(tag)) &&
+          `${place.name} ${place.address} ${place.tags.join(' ')}`.toLowerCase().includes(search),
+      ),
+    [places, filter, tag, search],
   );
   const listed = [...visible].sort((a, b) => {
     if (sort === 'near' && origin) return distanceKm(origin, a) - distanceKm(origin, b);

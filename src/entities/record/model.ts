@@ -14,12 +14,15 @@ export const summarizeAnglers = (fish: Pick<FishCatch, 'angler' | 'species' | 'l
 /** 물고기 한 마리를 '감성돔 38.5cm'처럼 읽습니다. */
 export const fishLabel = (fish: Pick<FishCatch, 'species' | 'length_cm'>) => `${fish.species || '물고기'} ${Number(fish.length_cm)}cm`;
 
-/** PostgREST 검색 조건을 만듭니다. 검색어의 특수 문자는 조건을 깨뜨릴 수 있어 빈칸으로 바꿉니다. */
-export const recordSearchFilter = (keyword: string) => {
-  const text = keyword.replace(/[\\"%_]/g, ' ').trim();
-  if (!text) return null;
-  return ['catches', 'memo', 'bait', 'gear', 'rig', 'menu', 'companions'].map((column) => `${column}.ilike."%${text}%"`).join(',');
-};
+/** 검색어의 특수 문자는 PostgREST 조건을 깨뜨릴 수 있어 빈칸으로 바꿉니다. */
+export const cleanKeyword = (keyword: string) => keyword.replace(/[\\"%_]/g, ' ').trim();
+
+/** 기록 검색 조건. fishRecordIds는 어종이 맞는 물고기가 있는 기록입니다. */
+export const recordSearchFilter = (text: string, fishRecordIds: string[] = []) =>
+  [
+    ...['catches', 'memo', 'bait', 'gear', 'rig', 'menu', 'companions'].map((column) => `${column}.ilike."%${text}%"`),
+    ...(fishRecordIds.length ? [`id.in.(${fishRecordIds.join(',')})`] : []),
+  ].join(',');
 
 export const summarizeRecords = (records: Pick<PlaceRecord, 'visited_on' | 'rating'>[]) => {
   const ratings = records.flatMap((record) => record.rating ?? []);

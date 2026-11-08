@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, supabase, type Gear } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Gear } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 
 export const useGear = () =>
@@ -11,7 +11,7 @@ export const useGear = () =>
       const rows = data as Gear[];
       const paths = rows.flatMap((item) => item.photo_path ?? []);
       if (!paths.length) return rows;
-      const { data: signed } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+      const { data: signed } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
       const urls = new Map(signed?.map((item) => [item.path, item.signedUrl]));
       return rows.map((item) => ({ ...item, photo_url: (item.photo_path && urls.get(item.photo_path)) || undefined }));
     },

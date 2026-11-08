@@ -103,7 +103,7 @@ export const RecordsPage = () => {
           >
             <div className="min-w-0 flex-1">
               <Field
-                label="조과·미끼·메뉴·메모에서 찾기"
+                label="조과·어종·미끼·메뉴·메모에서 찾기"
                 type="search"
                 value={draft}
                 onChange={(event) => {

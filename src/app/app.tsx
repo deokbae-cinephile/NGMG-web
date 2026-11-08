@@ -79,6 +79,7 @@ export const App = () => {
     <ErrorBoundary>
       {!introDone && <Intro ready={session !== undefined && fontsReady} onDone={finishIntro} />}
       {session !== undefined && (
+        <div className="contents" inert={!introDone}>
         <QueryClientProvider client={client}>
           {session === null ? (
             <LoginPage />
@@ -88,6 +89,7 @@ export const App = () => {
             </AppShell>
           )}
         </QueryClientProvider>
+        </div>
       )}
     </ErrorBoundary>
   );

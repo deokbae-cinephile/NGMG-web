@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, supabase, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
-import { recordSearchFilter } from './model';
+import { cleanKeyword, recordSearchFilter } from './model';
 
 export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
@@ -11,11 +11,11 @@ const SELECT =
 
 type Row = Omit<PlaceRecord, 'photos' | 'fish'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[] };
 
-// 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
+// 사진 버킷은 비공개라 서명 주소를 받아 표시합니다.
 const signPhotos = async (paths: string[]) => {
   const urls = new Map<string, string>();
   if (paths.length) {
-    const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+    const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
     data?.forEach((item) => {
       if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
     });
@@ -43,8 +43,13 @@ const fetchPage = async (page: number, kind?: PlaceKind, keyword = '', tag?: str
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
   if (tag) query = query.filter('place.tags', 'cs', `{"${tag.replace(/"/g, '')}"}`);
-  const search = recordSearchFilter(keyword);
-  if (search) query = query.or(search);
+  const text = cleanKeyword(keyword);
+  if (text) {
+    // 어종은 다른 표에 있어 그 어종을 잡은 기록을 먼저 찾아 조건에 더합니다.
+    const fish = await supabase.from('fish_catches').select('record_id').ilike('species', `%${text}%`).limit(500);
+    if (fish.error) throw new Error('기록을 불러오지 못했습니다.');
+    query = query.or(recordSearchFilter(text, [...new Set(fish.data.map((row) => row.record_id as string))]));
+  }
   const { data, error } = await query
     .order('visited_on', { ascending: false })
     .order('id')
