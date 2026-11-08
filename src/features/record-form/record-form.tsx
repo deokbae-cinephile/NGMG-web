@@ -56,6 +56,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     return items.length ? items.map(newMenuRow) : [newMenuRow()];
   });
   const [checkedMenu, setCheckedMenu] = useState(false);
+  const [savedMenu] = useState(() => formatMenu(menu)); // 메뉴를 고치지 않으면 저장된 합계를 그대로 둡니다.
   // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
   const [legacyTotal] = useState(() => {
     const items = parseMenu(record?.menu ?? '');
@@ -101,7 +102,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         memo: values.memo,
         rating: values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
-        price: kind === 'restaurant' ? (menuTotal(menu) ?? legacyTotal) : null,
+        price: kind === 'restaurant' ? (record && formatMenu(menu) === savedMenu ? record.price : (menuTotal(menu) ?? legacyTotal)) : null,
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         files,
