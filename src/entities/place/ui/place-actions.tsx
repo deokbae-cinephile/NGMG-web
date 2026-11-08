@@ -2,22 +2,11 @@ import { useState } from 'react';
 import type { Place } from '@/shared/api';
 import { copyText, sharePlace } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
-import { BASE_ORIGIN, directionsUrl, setRouteFromBase, useRouteFromBase } from '../model/route-origin';
-
-/** 길찾기 출발지로 무악재역을 쓸지 켜고 끕니다. 기본은 켜짐입니다. */
-export const OriginButton = () => {
-  const fromBase = useRouteFromBase();
-  return (
-    <button type="button" className="button" aria-label={`출발지 ${BASE_ORIGIN.name}`} aria-pressed={fromBase} onClick={() => setRouteFromBase(!fromBase)}>
-      {BASE_ORIGIN.name}
-    </button>
-  );
-};
+import { directionsUrl } from '../model/route-origin';
 
 /** 길찾기, 주소 복사, 공유 버튼. 결과는 바로 아래에 읽어 줍니다. */
 export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' | 'latitude' | 'longitude'> }) => {
   const [message, setMessage] = useState('');
-  const fromBase = useRouteFromBase();
 
   const copy = async () => {
     const text = place.address || `${place.latitude}, ${place.longitude}`;
@@ -35,7 +24,7 @@ export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' 
           className="button"
           target="_blank"
           rel="noreferrer"
-          href={directionsUrl(place, fromBase)}
+          href={directionsUrl(place)}
         >
           <Icon name="map" size={16} />
           길찾기 (새 창)

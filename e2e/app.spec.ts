@@ -515,26 +515,25 @@ test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', asyn
   await expectAccessible(page);
 });
 
-test('출발지: 지도 화면의 무악재역 토글로 길찾기 출발지를 정하고, 버튼 세 개가 한 줄에 놓인다', async ({ page }) => {
+test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼이 한 줄에 놓이며, 길찾기 출발지가 된다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
-  const toggle = page.getByRole('button', { name: '출발지 무악재역' });
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(toggle).toHaveText('무악재역');
-  const boxes = await Promise.all([page.getByRole('button', { name: '지도를 눌러 위치 지정' }), page.getByRole('button', { name: '장소 추가' }), toggle].map((button) => button.boundingBox()));
+  const base = page.getByRole('button', { name: '무악재역', exact: true });
+  await expect(base).toHaveAttribute('aria-pressed', 'false');
+  const boxes = await Promise.all([page.getByRole('button', { name: '지도를 눌러 위치 지정' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()));
   expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
+  await base.click();
+  await expect(base).toHaveAttribute('aria-pressed', 'true');
+  const popup = page.getByRole('group', { name: '무악재역 정보' });
+  await expect(popup.getByText('길찾기 출발지')).toBeVisible();
+  await expect(popup.getByRole('link', { name: '상세 보기' })).toHaveCount(0);
   await expectFits(page);
   await expectAccessible(page);
+  await base.click();
+  await expect(popup).toBeHidden();
 
   await page.goto('./places/p2');
-  await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
-
-  await page.goto('./');
-  await page.getByRole('button', { name: '출발지 무악재역' }).click();
-  await expect(page.getByRole('button', { name: '출발지 무악재역' })).toHaveAttribute('aria-pressed', 'false');
-  await page.goto('./places/p2');
-  await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/to\//);
 });
 
 test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 쉼표로 이어 보인다', async ({ page }) => {
@@ -605,7 +604,7 @@ test('지도: 평균 별점에 따라 핀 색이 바뀌고 숫자로도 보여 �
   });
   await page.goto('./');
   const pin = page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 별점 4\.5$/ });
-  await expect(pin).toHaveClass(/rate-5/);
+  await expect(pin).toHaveClass(/rate-4/);
   await expect(pin.locator('.pin-score')).toHaveText('4.5');
   await expect(page.getByRole('button', { name: /바다횟집 \(맛집\) 선택, 평균 별점 2\.0$/ })).toHaveClass(/rate-2/);
   const none = page.getByRole('button', { name: new RegExp(`${LONG_NAME} \\(낚시\\) 선택$`) });
@@ -639,4 +638,22 @@ test('저장하는 동안 저장 중 화면을 띄우고 닫기를 막는다', a
   await expect(dialog).toBeVisible();
   release();
   await expect(dialog).toBeHidden();
+});
+
+test('기록 사진 여러 장은 슬라이드로 넘긴다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    record_photos: [
+      { id: 'a', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
+      { id: 'b', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },
+    ],
+  });
+  await page.goto('./places/p1');
+  const slider = page.getByRole('region', { name: /기록 사진 2장/ });
+  await expect(slider.getByText('1 / 2')).toBeVisible();
+  await expect(slider.getByRole('button', { name: '이전 사진' })).toBeDisabled();
+  await slider.getByRole('button', { name: '다음 사진' }).click();
+  await expect(slider.getByText('2 / 2')).toBeVisible();
+  await expect(page.getByText('옆으로 넘겨 보기')).toHaveCount(0);
+  await expectAccessible(page);
 });

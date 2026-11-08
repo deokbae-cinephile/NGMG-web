@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_ORIGIN, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
+import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
 import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
@@ -16,14 +16,14 @@ type Props = {
 };
 
 /** 저장된 위치가 없을 때의 지도 중심 */
-const START_VIEW = { latitude: BASE_ORIGIN.latitude, longitude: BASE_ORIGIN.longitude, level: 5 };
+const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE.longitude, level: 5 };
 
 const createBasePin = () => {
   const pin = document.createElement('div');
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
-  pin.setAttribute('aria-label', `기준 위치: ${BASE_ORIGIN.name}`);
-  pin.innerHTML = `${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_ORIGIN.name}</span>`;
+  pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
+  pin.innerHTML = `${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
   return pin;
 };
 
@@ -90,7 +90,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [popupHost] = useState(() => document.createElement('div'));
   const popup = useRef<HTMLDivElement>(null);
   const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
-  const selected = places.find((place) => place.id === selectedId);
+  const selected = selectedId === BASE_PLACE.id ? BASE_PLACE : places.find((place) => place.id === selectedId);
+  const isBase = selected?.id === BASE_PLACE.id;
+  const basePin = useRef<HTMLDivElement>(null);
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
@@ -187,21 +189,27 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   }, [map, satellite]);
 
   useEffect(() => {
-    const place = places.find((item) => item.id === selectedId);
-    if (!map || !place) return;
+    if (!map || !selected) return;
+    if (selected.id === BASE_PLACE.id && map.instance.getLevel() > START_VIEW.level) map.instance.setLevel(START_VIEW.level); // 멀리서 봐도 무악재역으로 다가갑니다.
     // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
     const bounds = map.instance.getBounds();
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
-    map.instance.panTo(new map.kakao.maps.LatLng(place.latitude + latitudePerPixel * 90, place.longitude));
-  }, [map, places, selectedId]);
+    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude));
+  }, [map, selected]);
+
+  useEffect(() => {
+    basePin.current?.setAttribute('data-selected', String(isBase));
+  }, [map, isBase]);
 
   // 기준 위치(무악재역) 핀
   useEffect(() => {
     if (!map) return;
+    const content = createBasePin();
+    basePin.current = content;
     const overlay = new map.kakao.maps.CustomOverlay({
       map: map.instance,
-      position: new map.kakao.maps.LatLng(BASE_ORIGIN.latitude, BASE_ORIGIN.longitude),
-      content: createBasePin(),
+      position: new map.kakao.maps.LatLng(BASE_PLACE.latitude, BASE_PLACE.longitude),
+      content,
       yAnchor: 1.2,
     });
     return () => overlay.setMap(null);
@@ -253,9 +261,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     <div className="relative h-full w-full">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점부터 5점까지">
-        <span aria-hidden="true">★</span>
-        {[1, 2, 3, 4, 5].map((score) => (
+      <div className="map-legend" role="group" aria-label="핀 색상: 평균 별점 1점대부터 4점대까지">
+        <strong className="font-normal">별점</strong>
+        {[1, 2, 3, 4].map((score) => (
           <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
         ))}
       </div>
@@ -286,15 +294,21 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
                 <Icon name="close" size={16} />
               </button>
             </div>
-            <div className="flex items-center gap-1.5">
-              <KindBadge kind={selected.kind} />
-              <RatingChip rating={ratings?.get(selected.id)} />
-            </div>
+            {isBase ? (
+              <p className="text-sm text-muted">길찾기 출발지</p>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <KindBadge kind={selected.kind} />
+                <RatingChip rating={ratings?.get(selected.id)} />
+              </div>
+            )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {selected.tags.length > 0 && <p className="break-words text-sm text-muted">{selected.tags.map((tag) => `#${tag}`).join(' ')}</p>}
-            <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
-              상세 보기
-            </Link>
+            {!isBase && (
+              <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
+                상세 보기
+              </Link>
+            )}
           </div>,
           popupHost,
         )}

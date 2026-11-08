@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
-import { collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces, OriginButton } from '@/entities/place';
+import { BASE_PLACE, collectTags, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
@@ -93,7 +93,9 @@ export const MapPage = () => {
             <button type="button" className="button button-primary" onClick={() => setDraft({})}>
               장소 추가
             </button>
-            <OriginButton />
+            <button type="button" className="button" aria-pressed={selectedId === BASE_PLACE.id} onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}>
+              {BASE_PLACE.name}
+            </button>
           </div>
         </div>
 

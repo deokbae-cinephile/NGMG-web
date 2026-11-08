@@ -49,7 +49,8 @@ export const Modal = ({ title, onClose, children }: Props) => {
         edited.current = true;
       }}
       onFocus={(event) => {
-        if (event.target !== overlay.current && event.target instanceof HTMLElement) lastFocus.current = event.target;
+        const target: EventTarget = event.target;
+        if (target !== overlay.current && target instanceof HTMLElement) lastFocus.current = target;
       }}
       onCancel={(event) => {
         if (event.target !== event.currentTarget) return; // 파일 선택 취소도 cancel 이벤트로 올라옵니다.
