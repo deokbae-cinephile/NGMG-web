@@ -657,3 +657,22 @@ test('기록 사진 여러 장은 슬라이드로 넘긴다', async ({ page }) =
   await expect(page.getByText('옆으로 넘겨 보기')).toHaveCount(0);
   await expectAccessible(page);
 });
+
+test('일정 및 기록: 넓은 화면은 페이지 전체가 아니라 칸마다 스크롤한다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop');
+  await fakeBackend(page, seed());
+  for (const width of [1280, 1100]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('./schedule?date=2026-11-07');
+    await expect(page.getByText('감성돔 1마리').first()).toBeVisible();
+    const sizes = await page.evaluate(() => {
+      const doc = document.documentElement;
+      const main = document.querySelector('main')!;
+      return { document: doc.scrollHeight - doc.clientHeight, main: main.scrollHeight - main.clientHeight };
+    });
+    expect(sizes.document).toBeLessThanOrEqual(0);
+    expect(sizes.main).toBeLessThanOrEqual(1);
+    const records = page.locator('.pane-records');
+    expect(await records.evaluate((pane) => pane.scrollHeight > pane.clientHeight)).toBe(true);
+  }
+});
