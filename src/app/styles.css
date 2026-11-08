@@ -301,9 +301,17 @@ select {
     background: var(--color-accent);
   }
   @media (width >= 64rem) {
+    /* 메뉴와 설치 버튼을 합친 너비를 오른쪽 칸(26rem)에 맞춥니다. 간격을 두어 다른 묶음임을 보여 줍니다. */
     .install-button {
-      margin-left: 1.5rem; /* 메뉴 칸들과 띄워 다른 묶음임을 보여 줍니다. */
+      width: 7.5rem;
+      flex-shrink: 0;
+      justify-content: center;
+      margin-left: 1.5rem;
+      padding: 0;
       font-size: 1.0625rem;
+    }
+    .main-nav:has(+ .install-button) {
+      width: 17rem;
     }
     .main-nav:has(+ .install-button) {
       border-right: 1px solid var(--color-line); /* 메뉴 묶음의 오른쪽 끝을 닫습니다. */
@@ -386,13 +394,15 @@ select {
     .main-nav {
       position: static;
       display: flex;
+      width: 26rem; /* 3분할 화면 오른쪽 칸과 같은 너비로 왼쪽 선을 맞춥니다. */
+      flex-shrink: 0;
       margin-left: auto;
       border-top: 0;
       background: none;
       padding: 0;
     }
     .nav-link {
-      width: 5rem;
+      flex: 1;
       border-left: 1px solid var(--color-line);
     }
   }
