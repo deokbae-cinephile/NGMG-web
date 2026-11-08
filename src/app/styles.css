@@ -261,31 +261,31 @@ select {
   }
 
   /* 로고: 왼쪽 그림, 오른쪽 NG / MG 두 줄 */
-  .logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .logo-image {
+  .logo-md {
     width: 2.5rem;
     height: 2.5rem;
   }
-  .logo-text {
-    display: flex;
-    flex-direction: column;
-    font-size: 1.125rem;
-    letter-spacing: 0.04em;
-    line-height: 0.92;
-  }
-  .logo-lg .logo-image {
-    width: 6rem;
-    height: 6rem;
-  }
   .logo-lg {
-    gap: 1rem;
+    width: 8rem;
+    height: 8rem;
   }
-  .logo-lg .logo-text {
-    font-size: 3.25rem;
+
+  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 머리글 오른쪽 칸으로 나타납니다. */
+  .install-button {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    border-left: 1px solid var(--color-line);
+    padding: 0 1.25rem;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .install-button:hover {
+    background: var(--color-accent);
+  }
+  .install-button + .main-nav {
+    margin-left: 0 !important;
   }
 
   /* 머리글: 선으로 나눈 칸. 메뉴 칸은 너비가 정해져 있어 현재 메뉴가 바뀌어도 흔들리지 않습니다. */

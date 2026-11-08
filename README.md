@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.6.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.7.0-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 준비물, 조과 기록과 통계를 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -19,7 +19,7 @@
 | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | <img src="docs/images/schedule-mobile.jpg" alt="휴대폰 폭의 달력과 선택한 날짜, 하단 아이콘 탭 메뉴" width="240"> | <img src="docs/images/records.jpg" alt="분류·태그 필터 아래 조과, 별점, 사진이 있는 기록 카드 목록" width="240"> |
 | **통계**                                                                                     | **로그인**                                                                    |
-| <img src="docs/images/stats.jpg" alt="연도별 출조 횟수, 전체 기록, 맛집 방문, 평균 별점과 월별 출조 막대그래프" width="240"> | <img src="docs/images/login.jpg" alt="생선 접시 로고와 NGMG 글자 아래 이메일, 비밀번호 입력란" width="240"> |
+| <img src="docs/images/stats.jpg" alt="연도별 출조 횟수, 전체 기록, 맛집 방문, 평균 별점과 월별 출조 막대그래프" width="240"> | <img src="docs/images/login.jpg" alt="가운데 생선 접시 로고 아래 이메일, 비밀번호 입력란" width="240"> |
 
 ## 주요 기능
 
@@ -32,7 +32,7 @@
 | 준비물   | 날짜별 장비·준비물, 기본 목록·이전 목록 복사, 모두 선택·모두 해제·전체 삭제      |
 | 기록     | 조과·별점, 낚시(인원, 동행, 장비, 채비, 미끼, 물때, 바람, 수온)·맛집(메뉴, 가격) 항목, 사진 10장 넘겨 보기 |
 | 통계     | 연도별 출조 횟수, 맛집 방문, 평균 별점, 월별 출조, 자주 간 장소·미끼·동행        |
-| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 데이터 백업, 홈 화면 추가 |
+| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 데이터 백업, 앱 설치(PWA, 바로가기·설치 미리보기) |
 
 ## 기술 스택
 
@@ -76,13 +76,13 @@ pnpm run demo
 ```
 docs/          문서, 스크린샷
 e2e/           Playwright E2E, 가짜 서버, 데모
-public/        아이콘, 웹 앱 매니페스트
+public/        아이콘, 웹 앱 매니페스트, 설치 미리보기 화면
 supabase/      마이그레이션
 src/
 ├─ app/        앱 진입, 라우팅, 전역 스타일
 ├─ pages/      지도, 일정, 기록, 통계, 장소 상세, 로그인
 ├─ widgets/    앱 틀, 장소 지도
-├─ features/   로그인, 장소·기록·일정 작성, 날짜별 준비물, 데이터 백업
+├─ features/   로그인, 장소·기록·일정 작성, 날짜별 준비물, 데이터 백업, 앱 설치
 ├─ entities/   세션, 장소, 기록, 일정, 준비물, 물때·날씨
 └─ shared/     Supabase 연결, Kakao SDK, 공통 UI·유틸
 ```

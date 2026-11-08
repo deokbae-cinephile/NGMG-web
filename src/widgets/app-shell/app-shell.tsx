@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { InstallButton } from '@/features/install-app';
 import { Icon, Loader, Logo, type IconName } from '@/shared/ui';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
@@ -29,6 +30,7 @@ export const AppShell = () => {
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>
+        <InstallButton />
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link">
