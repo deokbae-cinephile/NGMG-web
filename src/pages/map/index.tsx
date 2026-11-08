@@ -187,8 +187,8 @@ export const MapPage = () => {
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">
                       <PlaceActions place={place} />
-                      <Link to={`/places/${place.id}`} className="button button-primary self-start">
-                        {`${place.name} 자세히 보기`}
+                      <Link to={`/places/${place.id}`} className="button button-primary self-start" aria-label={`${place.name} 자세히 보기`}>
+                        자세히 보기
                       </Link>
                     </div>
                   )}
