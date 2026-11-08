@@ -42,10 +42,16 @@ export const demoSeed = (start: Date): Seed => {
         bait: restaurant ? '' : (BAITS[index % BAITS.length] ?? ''),
         weather: restaurant ? '' : '맑음',
         tide: restaurant ? '' : '8물',
-        menu: restaurant ? '모둠회 중, 매운탕' : '',
+        menu: restaurant ? '모둠회 중 50000원 / 매운탕 10000원' : '',
         price: restaurant ? 60000 : null,
       };
     }),
+    menu_items: Array.from({ length: 24 }, (_, index) => index)
+      .filter((index) => index % 3 === 2)
+      .flatMap((index) => [
+        { id: `m${index}a`, record_id: `r${String(index).padStart(2, '0')}`, name: '모둠회 중', price: 50000, rating: 5, position: 0 },
+        { id: `m${index}b`, record_id: `r${String(index).padStart(2, '0')}`, name: '매운탕', price: 10000, rating: 4, position: 1 },
+      ]),
     // 낚시 기록마다 한두 마리. 조사는 번갈아, 길이는 조금씩 다르게. 첫 기록의 첫 물고기에는 사진을 붙입니다.
     fish_catches: Array.from({ length: 24 }, (_, index) => index)
       .filter((index) => index % 3 !== 2)

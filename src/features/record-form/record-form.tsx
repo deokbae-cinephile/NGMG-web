@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuTotal, parseMenu, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuTotal, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
@@ -49,18 +49,13 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     })),
   );
   const [checkedFish, setCheckedFish] = useState(false);
-  const [menu, setMenu] = useState<MenuRow[]>(() => {
-    const items = parseMenu(record?.menu ?? '');
-    // 예전 기록은 메뉴가 하나면 적어 둔 가격을 그 줄에 넣습니다.
-    if (items.length === 1 && !items[0]!.price && record?.price != null) items[0]!.price = String(record.price);
-    return items.length ? items.map(newMenuRow) : [newMenuRow()];
-  });
+  const [menu, setMenu] = useState<MenuRow[]>(() => (record?.menu_items.length ? record.menu_items.map(newMenuRow) : [newMenuRow()]));
   const [checkedMenu, setCheckedMenu] = useState(false);
   const [savedMenu] = useState(() => formatMenu(menu)); // 메뉴를 고치지 않으면 저장된 합계를 그대로 둡니다.
   // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
   const [legacyTotal] = useState(() => {
-    const items = parseMenu(record?.menu ?? '');
-    return items.length !== 1 && !items.some((item) => item.price) ? (record?.price ?? null) : null;
+    const items = record?.menu_items ?? [];
+    return items.length !== 1 && !items.some((item) => item.price !== null) ? (record?.price ?? null) : null;
   });
   const registeredGear = useGear();
   const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
@@ -90,6 +85,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     if (keptFish.some((item) => fishError(item))) return;
     setCheckedMenu(true);
     if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
+    const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
     if (tooMany || save.isPending) return;
     save.mutate(
       {
@@ -119,6 +115,17 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           removePhoto: item.removePhoto,
         })),
         removedFish: (record?.fish ?? []).filter((item) => !keptFish.some((next) => next.id === item.id)),
+        menuItems: keptMenu.map((row, position) => ({
+          id: row.id,
+          name: row.name.trim(),
+          price: row.price ? Number(row.price) : null,
+          rating: row.rating ? Number(row.rating) : null,
+          photo_path: row.photo_path,
+          position,
+          file: row.file,
+          removePhoto: row.removePhoto,
+        })),
+        removedMenu: (record?.menu_items ?? []).filter((item) => !keptMenu.some((next) => next.id === item.id)),
       },
       { onSuccess: onDone },
     );

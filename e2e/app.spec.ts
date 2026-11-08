@@ -583,7 +583,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
       { id: 'f3', record_id: 'r02', angler: '김 조사', species: '거대 망둥어', length_cm: 17, position: 0 },
       { id: 'f4', record_id: 'r03', angler: '김 조사', species: '', length_cm: 10, position: 0 },
     ],
-    records: [...seed().records!, { id: 'm1', place_id: 'p2', visited_on: '2026-11-01', catches: '', menu: '모둠회 30000원 / 매운탕' }],
+    records: [...seed().records!, { id: 'm1', place_id: 'p2', visited_on: '2026-11-01', catches: '' }],
+    menu_items: [{ id: 'x1', record_id: 'm1', name: '모둠회', price: 30000, rating: 4, position: 0 }, { id: 'x2', record_id: 'm1', name: '매운탕', position: 1 }],
   });
   await page.goto('./dex');
   await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 / 총 4마리');
@@ -597,6 +598,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await page.getByRole('button', { name: '메뉴 도감' }).click();
   await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 / 총 2번');
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
 });
 
 test('지도: 평균 평점에 따라 핀 색이 바뀌고 숫자로도 보여 준다', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useFishDex, useStatRecords } from '@/entities/record';
+import { useFishDex, useMenuDex } from '@/entities/record';
 import { formatDate } from '@/shared/lib';
 import { ErrorText, Icon, PageSkeleton, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
@@ -75,9 +75,9 @@ const FishDex = () => {
   );
 };
 
-/** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격과 먹은 횟수를 보여 줍니다. */
+/** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격, 평균 평점, 먹은 횟수를 보여 줍니다. */
 const MenuDex = () => {
-  const { data = [], isPending, error } = useStatRecords();
+  const { data = [], isPending, error } = useMenuDex();
   if (isPending) return <PageSkeleton />;
   const entries = buildMenuDex(data);
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
@@ -87,12 +87,26 @@ const MenuDex = () => {
       <Summary title="메뉴 도감" status={`${entries.length}종 발견 / 총 ${total}번`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {entries.map(({ number, name, count, price, visitedOn, place }) => (
-          <DexCard key={name} number={number} title={name} icon="food">
+        {entries.map(({ number, name, count, price, rating, latest, photo }) => (
+          <DexCard
+            key={name}
+            number={number}
+            title={name}
+            icon="food"
+            photo={
+              photo ? (
+                <a href={photo} target="_blank" rel="noreferrer">
+                  <img src={photo} alt={`${name} 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
+                </a>
+              ) : undefined
+            }
+          >
+            <dt className="mono-label">평점</dt>
+            <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
             <dt className="mono-label">최근 가격</dt>
             <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
             <dt className="mono-label">시간 및 장소</dt>
-            <dd className="break-words">{`${formatDate(visitedOn)} / ${place}`}</dd>
+            <dd className="break-words">{`${formatDate(latest.record.visited_on)} / ${latest.record.place.name}`}</dd>
             <dt className="mono-label">먹은 횟수</dt>
             <dd>{`${count}번`}</dd>
           </DexCard>
