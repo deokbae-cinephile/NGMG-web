@@ -62,7 +62,7 @@ const createPin = (place: Place, rating: number | undefined, offset: number, onS
   pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
   // 색만으로 구분되지 않도록 평균 별점 숫자를 함께 보여 줍니다.
   pin.innerHTML = `${iconSvg(KIND_ICON[place.kind], 18)}${rating === undefined ? '' : `<span aria-hidden="true" class="pin-score">${rating.toFixed(1)}</span>`}`;
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}점`}`);
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 별점 ${rating.toFixed(1)}`}`);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
   if (offset) pin.style.transform = `translateX(${offset}px)`;
