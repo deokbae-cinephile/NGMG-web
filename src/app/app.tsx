@@ -47,7 +47,7 @@ export const App = () => {
 
   return (
     <ErrorBoundary>
-      {(session === undefined || !fontsReady) && <Loader fullscreen />}
+      {(session === undefined || !fontsReady) && <Loader />}
       {session !== undefined && (
         <QueryClientProvider client={client}>
           {session === null ? (

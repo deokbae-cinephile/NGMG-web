@@ -78,9 +78,10 @@ select {
   }
 
   /* 칸 머리: 위아래를 선으로 나눈 제목 줄 */
+  /* 칸 머리: 버튼이 있든 없든 높이를 같게 두어 화면을 옮겨도 제목이 흔들리지 않습니다. */
   .cell-head {
     display: flex;
-    min-height: 3.5rem;
+    min-height: calc(3.75rem + 1px); /* 버튼 높이(2.75rem) + 위아래 여백 + 아래 선 */
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
@@ -453,20 +454,18 @@ select {
   }
 
   .loader {
-    display: flex;
-    min-height: 12rem;
-    align-items: center;
-    justify-content: center;
-  }
-  .loader-fullscreen {
     position: fixed;
     inset: 0;
     z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--color-paper);
   }
+  /* 장면(3:2)을 화면 너비만큼 채우고, 세로 화면에서는 높이를 너비의 1.44배로 두어 낚시하는 사람이 잘리지 않게 키웁니다. */
   .loader-animation {
-    width: min(15rem, 60vw);
-    aspect-ratio: 3 / 2;
+    width: 100vw;
+    height: min(100dvh, 144vw);
   }
 
   /* 막대그래프 */
