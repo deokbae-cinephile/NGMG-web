@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatGear, formatMenu, MAX_PHOTOS, menuAverage, menuTotal, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { fetchLatestGear, formatBait, formatGear, formatMenu, MAX_PHOTOS, menuAverage, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
@@ -31,6 +31,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       memo: record?.memo ?? '',
       rating: record?.rating?.toString() ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
+      bait: formatBait(record?.bait ?? ''),
     },
   });
   const [id] = useState(() => record?.id ?? crypto.randomUUID());
@@ -51,14 +52,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
   const [checkedFish, setCheckedFish] = useState(false);
   const [menu, setMenu] = useState<MenuRow[]>(() => (record?.menu_items.length ? record.menu_items.map(newMenuRow) : [newMenuRow()]));
   const [checkedMenu, setCheckedMenu] = useState(false);
-  const [savedMenu] = useState(() => formatMenu(menu)); // 메뉴를 고치지 않으면 저장된 합계를 그대로 둡니다.
-  // 메뉴별 가격 없이 합계만 남긴 예전 기록의 값입니다. 메뉴가 하나면 그 줄에 넣었으므로, 지우면 합계도 비웁니다.
   // 메뉴 평점이 생기기 전에 기록에 남긴 평점입니다. 메뉴에 평점을 주면 평균으로 바뀝니다.
   const [legacyRating] = useState(() => (record?.menu_items.some((item) => item.rating !== null) ? null : (record?.rating ?? null)));
-  const [legacyTotal] = useState(() => {
-    const items = record?.menu_items ?? [];
-    return items.length !== 1 && !items.some((item) => item.price !== null) ? (record?.price ?? null) : null;
-  });
   const registeredGear = useGear();
   const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
   // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
@@ -70,7 +65,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
 
   const gear = useMutation({
     mutationFn: fetchLatestGear,
-    onSuccess: (latest) => (['gear', 'rig', 'bait'] as const).forEach((name) => latest[name] && setValue(name, latest[name])),
+    onSuccess: (latest) => (['gear', 'rig', 'bait'] as const).forEach((name) => latest[name] && setValue(name, name === 'bait' ? formatBait(latest[name]) : latest[name])),
   });
 
   const kept = (record?.photos ?? []).filter((photo) => !removed.includes(photo));
@@ -100,8 +95,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         memo: values.memo,
         rating: kind === 'restaurant' ? (menuAverage(keptMenu) ?? legacyRating) : values.rating ? Number(values.rating) : null,
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
-        price: kind === 'restaurant' ? (record && formatMenu(menu) === savedMenu ? record.price : (menuTotal(menu) ?? legacyTotal)) : null,
-        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
+        price: kind === 'restaurant' ? (record?.price ?? null) : null, // 합계는 보여 주지 않지만 예전에 남긴 값은 지우지 않습니다.
+        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : name === 'bait' ? formatBait(values.bait) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         files,
         removedPhotos: removed,

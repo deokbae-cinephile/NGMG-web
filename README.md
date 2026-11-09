@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.20.2-2f7bd8)
+![version](https://img.shields.io/badge/version-1.21.0-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 장비와 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -17,7 +17,7 @@
 | 통계     | 연도별 출조 횟수, 맛집 방문, 월별 출조, 자주 간 장소, 조사별 마릿수와 최대어 |
 | 장비     | 조사별·분류별(로드, 릴, 라인(원줄·목줄), 채비, 미끼, 기타) 장비 목록, 끌어서 정렬, 브랜드, 사진, 사용 횟수 |
 | 도감 | 어종 도감(번호, 빅원 길이, 잡은 조사, 마릿수)과 메뉴 도감(사진, 평점, 최근 가격, 장소, 먹은 횟수)을 탭으로 구분 |
-| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 데이터 백업, 앱 설치(PWA, 바로가기·설치 미리보기) |
+| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 앱 설치(PWA, 바로가기·설치 미리보기), 기기 설정에 맞춘 다크 테마 |
 
 ## 기술 스택
 
@@ -67,7 +67,7 @@ src/
 ├─ app/        앱 진입, 라우팅, 전역 스타일
 ├─ pages/      지도, 일정 및 기록, 통계, 장비, 도감, 장소 상세, 로그인
 ├─ widgets/    앱 틀, 장소 지도
-├─ features/   로그인, 장소·기록·일정·장비 작성, 데이터 백업, 앱 설치
+├─ features/   로그인, 장소·기록·일정·장비 작성, 앱 설치
 ├─ entities/   세션, 장소, 기록, 일정, 장비
 └─ shared/     Supabase 연결, Kakao SDK, 공통 UI·유틸
 ```

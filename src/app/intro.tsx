@@ -24,16 +24,16 @@ const markSeen = () => {
 
 /** 벽을 미는 낚시꾼. 오른쪽 끝의 손이 벽에 닿습니다. */
 const Pusher = () => (
-  <svg viewBox="0 0 120 150" className="intro-pusher" fill="none" stroke="#0a0a0a" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 120 150" className="intro-pusher" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
     <g className="intro-leg intro-leg-back">
       <path d="M44 92 42 142h15" />
     </g>
     <g className="intro-leg">
       <path d="M44 92 42 142h15" />
     </g>
-    <path d="M60 48c-13 6-22 23-25 44h22c5-13 9-26 10-40z" fill="#fafafa" />
+    <path d="M60 48c-13 6-22 23-25 44h22c5-13 9-26 10-40z" className="intro-fill" />
     <path d="M62 56h56M62 66l55-4" />
-    <circle cx="70" cy="33" r="13" fill="#fafafa" />
+    <circle cx="70" cy="33" r="13" className="intro-fill" />
     <path d="M52 27c2-13 34-13 36 0 4 1 8 2 10 4H45c2-2 4-3 7-4z" fill="#f0932b" />
   </svg>
 );

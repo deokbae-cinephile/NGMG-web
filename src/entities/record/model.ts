@@ -43,7 +43,7 @@ export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; 
   fishing: [
     { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대 / 2500번 릴' },
     { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
-    { name: 'bait', label: '미끼', placeholder: '여러 개면 쉼표로: 크릴, 홍갯지렁이' },
+    { name: 'bait', label: '미끼', placeholder: '여러 개면 / 로 구분: 크릴 / 홍갯지렁이' },
   ],
   restaurant: [], // 메뉴는 MenuFieldset에서 줄마다 받습니다.
   etc: [],
@@ -65,6 +65,9 @@ export const gearList = (text: string) => splitList((text.includes(',') ? text :
 /** 장비를 '로드 / 릴 / 채비'처럼 빗금으로 이어 씁니다. */
 export const formatGear = (text: string) => gearList(text).join(' / ');
 
+/** 미끼를 '크릴 / 홍갯지렁이'처럼 ' / '로 이어 씁니다. 쉼표로 적은 예전 값도 같은 모양으로 바꿉니다. */
+export const formatBait = (text: string) => splitList(text.replace(/\s+\/\s+/g, ',')).join(' / ');
+
 /** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
 
@@ -77,12 +80,6 @@ export const formatMenu = (items: MenuDraft[]) =>
     .filter(({ name }) => name)
     .map(({ name, price }) => (price ? `${name} ${Number(price)}원` : name))
     .join(' / ');
-
-/** 줄에 적은 가격의 합계. 가격을 하나도 적지 않았으면 null입니다. */
-export const menuTotal = (items: MenuDraft[]) => {
-  const prices = items.filter((item) => item.name.trim() && item.price);
-  return prices.length ? prices.reduce((sum, item) => sum + Number(item.price), 0) : null;
-};
 
 /** 맛집 기록의 평점: 평점을 준 메뉴들의 평균(소수 첫째 자리). 하나도 없으면 null입니다. */
 export const menuAverage = (items: { name: string; rating: string }[]) => {

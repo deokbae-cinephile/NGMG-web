@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { KIND_LABEL, KINDS, KindBadge } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
-import { DownloadRecordButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceKind, PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
@@ -15,20 +14,20 @@ export const AllRecords = () => {
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [editing, setEditing] = useState<PlaceRecord>();
-  const { data, error, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword);
-  const more = useRef<HTMLButtonElement>(null);
+  const { data, error, isPending, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword);
+  const more = useRef<HTMLDivElement>(null);
   const records = data?.pages.flat() ?? [];
 
-  // 무한 스크롤. 버튼이 화면에 보이면 다음 페이지를 불러옵니다. 키보드로는 버튼을 눌러 불러옵니다.
+  // 무한 스크롤. 아래 끝 표시가 화면 근처에 오면 다음 페이지를 불러옵니다. 처음에는 10건만 받습니다.
   useEffect(() => {
-    const button = more.current;
-    if (!button) return;
+    const end = more.current;
+    if (!end) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) void fetchNextPage({ cancelRefetch: false });
+      if (entry?.isIntersecting && !isFetchNextPageError) void fetchNextPage({ cancelRefetch: false });
     }, { rootMargin: '200px' });
-    observer.observe(button);
+    observer.observe(end);
     return () => observer.disconnect();
-  }, [hasNextPage, records.length, fetchNextPage]);
+  }, [hasNextPage, records.length, fetchNextPage, isFetchNextPageError, isFetching]); // 기존 기록을 다시 받는 일이 끝나면 다시 지켜봐 이어서 불러옵니다.
 
   return (
     <section aria-labelledby="records-title" className="pane pane-records">
@@ -93,12 +92,9 @@ export const AllRecords = () => {
             key={record.id}
             record={record}
             actions={
-              <div className="flex flex-wrap items-center">
-                <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
-                  수정
-                </button>
-                <DownloadRecordButton record={record} />
-              </div>
+              <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
+                수정
+              </button>
             }
             heading={
               <h3 className="flex flex-wrap items-center gap-2">
@@ -110,10 +106,17 @@ export const AllRecords = () => {
             }
           />
         ))}
+        {/* 무한 스크롤: 이 표시가 화면 근처에 오면 다음 기록을 불러옵니다. */}
         {hasNextPage && (
-          <button ref={more} type="button" className="button mt-4" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-            기록 더 불러오기
-          </button>
+          <div ref={more} className="flex min-h-16 items-center justify-center">
+            {isFetchNextPageError ? (
+              <button type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+                다시 불러오기
+              </button>
+            ) : (
+              <span aria-hidden="true" className="saving-spinner size-8!" />
+            )}
+          </div>
         )}
       </div>
       {editing && (

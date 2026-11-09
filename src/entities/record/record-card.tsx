@@ -3,16 +3,14 @@ import type { PlaceRecord } from '@/shared/api';
 import { formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
 import { RecordPhotos } from './photo-slider';
-import { formatGear, menuLine, RECORD_LABELS } from './model';
+import { formatBait, formatGear, menuLine, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const menu = record.menu_items;
-  const priced = menu.some((item) => item.price !== null);
   const details = [
-    ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: field.name === 'gear' ? formatGear(record.gear) : field.name === 'menu' ? menu.map(menuLine).join('\n') : record[field.name] }] : [])),
-    ...(record.price !== null && !(priced && menu.length === 1) ? [{ label: priced ? '합계' : '가격', value: `${record.price.toLocaleString('ko-KR')}원` }] : []),
+    ...RECORD_LABELS.flatMap((field) => (record[field.name] ? [{ label: field.label, value: field.name === 'gear' ? formatGear(record.gear) : field.name === 'bait' ? formatBait(record.bait) : field.name === 'menu' ? menu.map(menuLine).join('\n') : record[field.name] }] : [])),
   ];
 
   return (
@@ -29,17 +27,8 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
       </div>
       {record.rating !== null && (
         <p>
-          {record.place.kind === 'restaurant' ? (
-            <>
-              <span className="mono-label mr-2">{menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</span>
-              {`${record.rating.toFixed(1)}점`}
-            </>
-          ) : (
-            <>
-              <span className="sr-only">{`평점 5점 중 ${record.rating}점`}</span>
-              <span aria-hidden="true">{'★'.repeat(record.rating) + '☆'.repeat(5 - record.rating)}</span>
-            </>
-          )}
+          <span className="mono-label mr-2">{record.place.kind === 'restaurant' && menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</span>
+          {`${Number(record.rating).toFixed(1)}점`}
         </p>
       )}
       {record.catches && record.fish.length === 0 && (

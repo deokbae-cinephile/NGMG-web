@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
 import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
@@ -31,21 +31,35 @@ const createBasePin = () => {
 };
 
 // 핀 묶음 색은 분류별 핀의 채움과 같습니다. (낚시 검정, 맛집 흰색, 기타 연회색)
-const CLUSTER_COLOR: Record<PlaceKind, { background: string; color: string }> = {
-  fishing: { background: '#0a0a0a', color: '#fafafa' },
-  restaurant: { background: '#fafafa', color: '#0a0a0a' },
-  etc: { background: '#d9d9d9', color: '#0a0a0a' },
-};
-const clusterStyle = (kind: PlaceKind) => ({
-  ...CLUSTER_COLOR[kind],
-  width: '64px',
-  height: '36px',
-  border: '2px solid #0a0a0a',
-  borderRadius: '18px',
-  fontSize: '13px',
-  lineHeight: '32px',
-  textAlign: 'center',
+const CLUSTER_COLOR = (dark: boolean): Record<PlaceKind, { background: string; color: string }> => ({
+  fishing: dark ? { background: '#121212', color: '#f2f2f2' } : { background: '#0a0a0a', color: '#fafafa' },
+  restaurant: dark ? { background: '#1e1e1e', color: '#f2f2f2' } : { background: '#fafafa', color: '#0a0a0a' },
+  etc: dark ? { background: '#3b3b3b', color: '#f2f2f2' } : { background: '#d9d9d9', color: '#0a0a0a' },
 });
+const DARK = '(prefers-color-scheme: dark)';
+/** 기기가 어두운 화면 모드인지. 바뀌면 다시 그립니다. */
+const useDarkMode = () =>
+  useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia(DARK);
+      query.addEventListener('change', notify);
+      return () => query.removeEventListener('change', notify);
+    },
+    () => window.matchMedia(DARK).matches,
+  );
+
+const clusterStyle = (kind: PlaceKind, dark: boolean) => {
+  return {
+    ...CLUSTER_COLOR(dark)[kind],
+    width: '64px',
+    height: '36px',
+    border: `2px solid ${dark ? '#f2f2f2' : '#0a0a0a'}`,
+    borderRadius: '18px',
+    fontSize: '13px',
+    lineHeight: '32px',
+    textAlign: 'center',
+  };
+};
 
 /** 거의 같은 지점(약 10m 안)의 핀은 겹쳐서 눌리지 않으므로 옆으로 나란히 벌려 놓습니다. 값은 가로 이동 픽셀입니다. */
 const pinOffsets = (places: Place[]) => {
@@ -90,6 +104,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
+  const dark = useDarkMode();
 
   const [popupHost] = useState(() => document.createElement('div'));
   const popup = useRef<HTMLDivElement>(null);
@@ -157,7 +172,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           averageCenter: true,
           minLevel: 10,
           calculator: [10, 30, 50],
-          styles: Array.from({ length: 4 }, () => clusterStyle(kind)),
+          styles: Array.from({ length: 4 }, () => clusterStyle(kind, dark)),
           texts: (count: number) => `${KIND_LABEL[kind]} ${count}`, // 색만으로 구분되지 않게 분류 이름을 함께 씁니다.
           markers: places
             .filter((place) => place.kind === kind)
@@ -173,19 +188,19 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         }),
     );
     return () => clusterers.forEach((clusterer) => clusterer.clear());
-  }, [map, places, offsets, selectFromPin]);
+  }, [map, places, offsets, selectFromPin, dark]);
 
   useEffect(() => {
     places.forEach((place) => {
       const pin = pins.current.get(place.id);
       if (pin) applyRating(pin, place, ratings?.get(place.id));
     });
-  }, [map, places, offsets, ratings]);
+  }, [map, places, offsets, ratings, dark]);
 
   // 고른 핀만 표시를 바꿉니다. 핀 전체를 다시 그리지 않아 깜빡이지 않습니다.
   useEffect(() => {
     pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
-  }, [map, places, selectedId]);
+  }, [map, places, selectedId, dark]);
 
   useEffect(() => {
     if (!map) return;
@@ -310,7 +325,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
-                상세 보기
+                자세히 보기
               </Link>
             )}
           </div>,
