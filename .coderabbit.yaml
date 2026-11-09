@@ -19,10 +19,8 @@ reviews:
   # 자동 생성되거나 리뷰할 필요가 없는 파일
   path_filters:
     - '!pnpm-lock.yaml'
-    - '!docs/images/**'
     - '!public/screenshots/**'
     - '!public/*.png'
-    - '!src/shared/assets/**'
   path_instructions:
     - path: 'src/**'
       instructions: |

@@ -52,14 +52,14 @@ pnpm run demo
 | `pnpm run build:demo`         | 가상 데이터로 동작하는 웹 데모 빌드      |
 | `pnpm run lint` / `typecheck` | ESLint / 타입 검사                       |
 | `pnpm run test:e2e`           | 핵심 흐름 E2E (360·768·1280px, axe)      |
-| `pnpm run shots`              | 앱 설치 미리보기용 화면 생성             |
+| `pnpm run shots`              | 앱 설치 미리보기 화면(`public/screenshots`) 다시 만들기 |
 
 서버 준비와 배포 방법은 [개발 가이드](docs/development.md)를 참고하세요.
 
 ## 프로젝트 구조
 
 ```
-docs/          문서, 설치 미리보기 원본 화면
+docs/          문서
 e2e/           Playwright E2E, 가짜 서버, 데모
 public/        아이콘, 웹 앱 매니페스트, 설치 미리보기 화면
 supabase/      마이그레이션
