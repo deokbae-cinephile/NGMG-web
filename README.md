@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.22.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.22.1-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 장비와 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -52,14 +52,14 @@ pnpm run demo
 | `pnpm run build:demo`         | 가상 데이터로 동작하는 웹 데모 빌드      |
 | `pnpm run lint` / `typecheck` | ESLint / 타입 검사                       |
 | `pnpm run test:e2e`           | 핵심 흐름 E2E (360·768·1280px, axe)      |
-| `pnpm run shots`              | 앱 설치 미리보기용 화면 생성             |
+| `pnpm run shots`              | 앱 설치 미리보기 화면(`public/screenshots`) 다시 만들기 |
 
 서버 준비와 배포 방법은 [개발 가이드](docs/development.md)를 참고하세요.
 
 ## 프로젝트 구조
 
 ```
-docs/          문서, 설치 미리보기 원본 화면
+docs/          문서
 e2e/           Playwright E2E, 가짜 서버, 데모
 public/        아이콘, 웹 앱 매니페스트, 설치 미리보기 화면
 supabase/      마이그레이션

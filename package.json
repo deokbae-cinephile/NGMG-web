@@ -1,6 +1,6 @@
 {
   "name": "ngmg-web",
-  "version": "1.22.0",
+  "version": "1.22.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.16.1",
@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "shots": "SHOTS=1 playwright test readme-shots --workers=1",
+    "shots": "SHOTS=1 playwright test install-shots --workers=1",
     "demo": "node e2e/demo.ts"
   },
   "dependencies": {
