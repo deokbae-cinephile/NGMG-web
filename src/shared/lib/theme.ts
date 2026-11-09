@@ -6,10 +6,12 @@ export type Theme = 'light' | 'dark';
 const KEY = 'theme';
 const COLOR: Record<Theme, string> = { light: '#fafafa', dark: '#121212' };
 const listeners = new Set<() => void>();
+let inMemory: Theme | undefined; // 저장소를 쓸 수 없는 환경에서도 이번 방문 동안은 고른 테마를 씁니다.
 const system = () => window.matchMedia('(prefers-color-scheme: dark)');
 
 /** 버튼으로 직접 고른 테마. 고른 적이 없으면 없습니다. */
 const chosen = (): Theme | undefined => {
+  if (inMemory) return inMemory;
   const value = getPreference<unknown>(KEY, null);
   return value === 'light' || value === 'dark' ? value : undefined;
 };
@@ -33,6 +35,7 @@ if (typeof window !== 'undefined') {
 }
 
 export const setTheme = (theme: Theme) => {
+  inMemory = theme;
   setPreference(KEY, theme);
   sync();
 };
