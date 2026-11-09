@@ -954,6 +954,18 @@ body::after {
     background: var(--color-soft);
     animation: skeleton-pulse 1s ease-in-out infinite alternate;
   }
+  /* 사진: 받는 동안 회색 칸이 깜빡이고, 다 받으면 부드럽게 나타납니다. */
+  .photo-loading {
+    background: var(--color-soft);
+    color: transparent; /* 받는 동안 대체 글자가 비치지 않게 합니다. */
+    animation: skeleton-pulse 1s ease-in-out infinite alternate;
+  }
+  .photo-loaded {
+    animation: photo-in 0.3s ease-out;
+  }
+  .photo-failed {
+    background: var(--color-surface);
+  }
   .skeleton-page {
     min-height: calc(100dvh - var(--spacing-topbar) - 1px);
   }
@@ -1142,9 +1154,16 @@ body::after {
     opacity: 0.45;
   }
 }
+@keyframes photo-in {
+  from {
+    opacity: 0;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton {
+  .skeleton,
+  .photo-loading,
+  .photo-loaded {
     animation: none;
   }
   .saving-spinner {

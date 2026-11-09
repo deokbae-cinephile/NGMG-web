@@ -2,11 +2,11 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { useEffect, useState } from 'react';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate } from '@/shared/lib';
-import { Icon } from '@/shared/ui';
+import { Icon, Photo } from '@/shared/ui';
 
 const PhotoLink = ({ url, alt }: { url: string; alt: string }) => (
   <a href={url} target="_blank" rel="noreferrer" className="block">
-    <img src={url} alt={alt} loading="lazy" className="aspect-[4/3] w-full border border-line bg-surface object-cover" />
+    <Photo src={url} alt={alt} loading="lazy" className="aspect-[4/3] w-full border border-line object-cover" />
   </a>
 );
 

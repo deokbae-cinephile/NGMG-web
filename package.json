@@ -1,6 +1,6 @@
 {
   "name": "ngmg-web",
-  "version": "1.22.1",
+  "version": "1.23.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.16.1",

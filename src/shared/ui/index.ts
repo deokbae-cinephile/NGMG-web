@@ -6,3 +6,4 @@ export * from './logo';
 export * from './modal';
 export * from './skeleton';
 export * from './file-preview';
+export * from './photo';
