@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useFishDex, useMenuDex } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
-import { ErrorText, Icon, PageSkeleton, type IconName } from '@/shared/ui';
+import { ErrorText, Icon, Photo, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
 
 const TABS = [
@@ -48,10 +48,33 @@ const DexCard = ({ number, title, icon, photo, to, children }: { number: number;
   );
 };
 
+/** 도감 자료를 받는 동안 카드가 들어올 자리를 보여 줍니다. */
+const DexSkeleton = () => (
+  <div role="status">
+    <span className="sr-only">불러오는 중입니다.</span>
+    <div aria-hidden="true" className="cell-head">
+      <span className="skeleton h-6 w-28" />
+    </div>
+    <ol aria-hidden="true" className="dex-grid">
+      {Array.from({ length: 4 }, (_, index) => (
+        <li key={index} className="flex flex-col bg-paper">
+          <span className="skeleton aspect-[4/3] w-full" />
+          <span className="flex flex-col gap-2 p-4">
+            <span className="skeleton h-3.5 w-12" />
+            <span className="skeleton h-5 w-2/5" />
+            <span className="skeleton h-3.5 w-4/5" />
+            <span className="skeleton h-3.5 w-3/5" />
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+);
+
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = () => {
   const { data = [], isPending, error } = useFishDex();
-  if (isPending) return <PageSkeleton />;
+  if (isPending) return <DexSkeleton />;
   const entries = buildDex(data);
 
   return (
@@ -68,7 +91,7 @@ const FishDex = () => {
             photo={
               big.photo_url ? (
                 <a href={big.photo_url} target="_blank" rel="noreferrer">
-                  <img src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
+                  <Photo src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full object-cover" />
                 </a>
               ) : undefined
             }
@@ -91,7 +114,7 @@ const FishDex = () => {
 /** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격, 평균 평점, 먹은 횟수를 보여 줍니다. */
 const MenuDex = () => {
   const { data = [], isPending, error } = useMenuDex();
-  if (isPending) return <PageSkeleton />;
+  if (isPending) return <DexSkeleton />;
   const entries = buildMenuDex(data);
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
@@ -107,7 +130,7 @@ const MenuDex = () => {
             title={name}
             icon="food"
             to={`/schedule?date=${latest.record.visited_on}`}
-            photo={photo ? <img src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
+            photo={photo ? <Photo src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : undefined}
           >
             <dt className="mono-label">평점</dt>
             <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>

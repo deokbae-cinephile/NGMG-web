@@ -3,7 +3,7 @@ import { GEAR_CATEGORIES, GEAR_SECTIONS, gearIcon, gearLabel, gearSubcategory, u
 import { gearList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
-import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, Modal, Photo, SkeletonRows } from '@/shared/ui';
 import { byPosition, inSection, moveGear, type GearSection } from './model';
 
 type Drop = GearSection & { beforeId: string | null };
@@ -185,7 +185,7 @@ export const GearPage = () => {
                               </span>
                               {item.photo_url ? (
                                 <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                                  <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+                                  <Photo src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
                                 </a>
                               ) : (
                                 <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
