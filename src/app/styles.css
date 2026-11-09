@@ -961,14 +961,14 @@ body::after {
     z-index: 60;
     height: 3px;
     overflow: hidden;
-    background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+    background: color-mix(in srgb, var(--color-ink) 15%, transparent);
   }
   .loading-bar::before {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
     width: 40%;
-    background: var(--color-accent);
+    background: var(--color-ink); /* 포인트 색은 흰 바탕에서 대비가 모자라 글자색을 씁니다. */
     animation: loading-slide 1s ease-in-out infinite;
   }
 

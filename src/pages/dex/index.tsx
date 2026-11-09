@@ -79,7 +79,8 @@ const menuImage = (entry: MenuDexEntry) => entry.photo;
 
 /** 끝까지 내리면 이어서 보여 주는 자리. 다음 카드의 사진을 받는 동안 돌아갑니다. */
 const DexEnd = ({ end }: { end: RefObject<HTMLDivElement | null> }) => (
-  <div ref={end} className="flex min-h-20 items-center justify-center">
+  <div ref={end} role="status" className="flex min-h-20 items-center justify-center">
+    <span className="sr-only">다음 도감을 불러오는 중입니다.</span>
     <span aria-hidden="true" className="saving-spinner size-8!" />
   </div>
 );
