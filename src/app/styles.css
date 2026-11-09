@@ -23,12 +23,28 @@
   --spacing-topbar: 4rem;
 }
 
-/* 다크 테마: 기기의 화면 모드가 어두우면 같은 구조를 반전해 씁니다. 포인트 색과 평점 색은 그대로입니다. */
+/* 다크 테마: 버튼으로 고르거나, 고르지 않았으면 기기의 화면 모드가 어두울 때 같은 구조를 반전해 씁니다. 포인트 색과 평점 색은 그대로입니다. */
 :root {
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%230a0a0a' stroke-width='1.6'/%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+      --color-paper: #121212;
+      --color-surface: #1e1e1e;
+      --color-ink: #f2f2f2;
+      --color-muted: #b3b3b3;
+      --color-line: #e6e6e6;
+      --color-soft: #3b3b3b;
+      --color-field: #8c8c8c;
+      --color-sun: #ff7a6e;
+      --color-sat: #7db1ff;
+      --color-danger: #ff8a80;
+      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
     --color-paper: #121212;
     --color-surface: #1e1e1e;
     --color-ink: #f2f2f2;
@@ -40,7 +56,9 @@
     --color-sat: #7db1ff;
     --color-danger: #ff8a80;
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
-  }
+}
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 html {
@@ -401,10 +419,39 @@ body::after {
     height: 8rem;
   }
 
-  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 오른쪽 아래에 떠 있습니다. 휴대폰은 하단 탭 위에 놓습니다. */
-  .install-button {
+  /* 테마 전환 버튼: 휴대폰은 하단 탭 위 오른쪽 아래에 떠 있고, 넓은 화면은 머리글에서 메뉴 왼쪽에 놓입니다. */
+  .theme-toggle {
     position: fixed;
     right: 0.75rem;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    z-index: 30;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .theme-toggle:hover {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  @media (width >= 64rem) {
+    .theme-toggle {
+      position: static;
+      align-self: center;
+      margin-left: auto;
+      margin-right: 1rem;
+    }
+  }
+
+  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 오른쪽 아래에 떠 있습니다. 휴대폰은 하단 탭 위, 테마 전환 버튼 왼쪽에 놓습니다. */
+  .install-button {
+    position: fixed;
+    right: 4.25rem;
     bottom: calc(4.25rem + env(safe-area-inset-bottom));
     z-index: 30;
     display: flex;
@@ -495,7 +542,7 @@ body::after {
       display: flex;
       width: 26rem; /* 3분할 화면 오른쪽 칸과 같은 너비로 왼쪽 선을 맞춥니다. */
       flex-shrink: 0;
-      margin-left: auto;
+      margin-left: 0; /* 왼쪽의 테마 전환 버튼이 남는 자리를 차지해 메뉴를 오른쪽 끝에 붙입니다. */
       border-top: 0;
       background: none;
       padding: 0;
@@ -594,9 +641,12 @@ body::after {
     filter: grayscale(0.85) contrast(1.05);
   }
   @media (prefers-color-scheme: dark) {
-    .map img {
+    :root:not([data-theme='light']) .map img {
       filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9); /* 밝은 지도 타일을 어둡게 뒤집습니다. */
     }
+  }
+  :root[data-theme='dark'] .map img {
+    filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9);
   }
 
   /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 아이콘, 평균 평점은 핀 전체의 색으로 나타냅니다. */

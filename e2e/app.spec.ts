@@ -270,7 +270,14 @@ test('앱 설치 버튼은 메뉴 밖 오른쪽 아래에 떠 있다', async ({ 
 
   const install = (await button.boundingBox())!;
   const { width, height } = await page.evaluate(() => ({ width: document.documentElement.clientWidth, height: window.innerHeight }));
-  expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
+  if (width < 1024) {
+    // 좁은 화면은 테마 전환 버튼이 맨 오른쪽 아래에 있고, 설치 버튼은 그 왼쪽에 놓입니다.
+    const theme = (await page.getByRole('button', { name: /테마로 바꾸기/ }).boundingBox())!;
+    expect(width - (theme.x + theme.width)).toBeLessThanOrEqual(20);
+    expect(install.x + install.width).toBeLessThanOrEqual(theme.x);
+  } else {
+    expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
+  }
   expect(install.y + install.height).toBeGreaterThan(height - 120);
   if (testInfo.project.name === 'mobile') {
     const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;

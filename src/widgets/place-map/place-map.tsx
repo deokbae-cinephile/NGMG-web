@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
 import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
-import { getPreference, Link, loadKakao, setPreference, type Kakao } from '@/shared/lib';
+import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
 
 type Props = {
@@ -36,18 +36,6 @@ const CLUSTER_COLOR = (dark: boolean): Record<PlaceKind, { background: string; c
   restaurant: dark ? { background: '#1e1e1e', color: '#f2f2f2' } : { background: '#fafafa', color: '#0a0a0a' },
   etc: dark ? { background: '#3b3b3b', color: '#f2f2f2' } : { background: '#d9d9d9', color: '#0a0a0a' },
 });
-const DARK = '(prefers-color-scheme: dark)';
-/** 기기가 어두운 화면 모드인지. 바뀌면 다시 그립니다. */
-const useDarkMode = () =>
-  useSyncExternalStore(
-    (notify) => {
-      const query = window.matchMedia(DARK);
-      query.addEventListener('change', notify);
-      return () => query.removeEventListener('change', notify);
-    },
-    () => window.matchMedia(DARK).matches,
-  );
-
 const clusterStyle = (kind: PlaceKind, dark: boolean) => {
   return {
     ...CLUSTER_COLOR(dark)[kind],
@@ -104,7 +92,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
-  const dark = useDarkMode();
+  const dark = useTheme() === 'dark';
 
   const [popupHost] = useState(() => document.createElement('div'));
   const popup = useRef<HTMLDivElement>(null);

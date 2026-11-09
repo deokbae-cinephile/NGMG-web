@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { InstallButton } from '@/features/install-app';
+import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
 
@@ -44,6 +45,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>
+        <ThemeToggle />
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link" title={item.label}>
