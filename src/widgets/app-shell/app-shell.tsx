@@ -3,6 +3,7 @@ import { InstallButton } from '@/features/install-app';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
+import { LoadingBar } from './loading-bar';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: '지도', icon: 'pin' },
@@ -42,6 +43,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         본문 바로가기
       </a>
       <header className="topbar">
+        <LoadingBar />
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>

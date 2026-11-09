@@ -34,14 +34,13 @@ export const SchedulePage = () => {
   const remove = useDeleteEvent();
 
   const counts = new Map<string, number>();
-  // 연박 일정이 걸친 날. 앞뒤 날과 이어지는지 함께 둡니다.
-  const stays = new Map<string, { left: boolean; right: boolean }>();
+  // 일정이 있는 날. 연박이면 앞뒤 날과 이어지는지 함께 둡니다.
+  const marks = new Map<string, { left: boolean; right: boolean; stay: boolean }>();
   monthEvents.data?.forEach((event) =>
     eachDay(event.date, event.end_date).forEach((key) => {
       counts.set(key, (counts.get(key) ?? 0) + 1);
-      if (event.end_date === event.date) return;
-      const stay = stays.get(key) ?? { left: false, right: false };
-      stays.set(key, { left: stay.left || key > event.date, right: stay.right || key < event.end_date });
+      const mark = marks.get(key) ?? { left: false, right: false, stay: false };
+      marks.set(key, { left: mark.left || key > event.date, right: mark.right || key < event.end_date, stay: mark.stay || event.end_date !== event.date });
     }),
   );
   const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
@@ -80,11 +79,10 @@ export const SchedulePage = () => {
             label={(day) => {
               const count = counts.get(toDateKey(day));
               const name = holidayName(day);
-              return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}${stays.has(toDateKey(day)) ? ', 연박 일정' : ''}`;
+              return `${formatDayLabel(day)}${name ? `, ${name}` : ''}${count ? `, 일정 ${count}건` : ''}${marks.get(toDateKey(day))?.stay ? ', 연박 일정' : ''}`;
             }}
             classOf={(day) =>
               [
-                counts.has(toDateKey(day)) && !stays.has(toDateKey(day)) && 'has-event',
                 (holidayName(day) || day.getDay() === 0) && 'is-sun',
                 day.getDay() === 6 && !holidayName(day) && 'is-sat',
               ]
@@ -92,8 +90,8 @@ export const SchedulePage = () => {
                 .join(' ')
             }
             cellClassOf={(day) => {
-              const stay = stays.get(toDateKey(day));
-              return stay ? `cal-stay ${stay.left ? 'cal-stay-left' : ''} ${stay.right ? 'cal-stay-right' : ''}` : '';
+              const mark = marks.get(toDateKey(day));
+              return mark ? `cal-stay ${mark.left ? 'cal-stay-left' : ''} ${mark.right ? 'cal-stay-right' : ''}` : '';
             }}
           />
         </div>
@@ -108,7 +106,8 @@ export const SchedulePage = () => {
               {date.slice(8)}
             </p>
             <div className="pb-1">
-              {holiday && <p className="text-sm text-sun">{holiday}</p>}
+              {/* 공휴일이 아닌 날도 같은 높이를 비워 두어, 날짜를 옮겨도 위아래 간격이 그대로입니다. */}
+              <p aria-hidden={!holiday} className="text-sm text-sun">{holiday ?? '\u00a0'}</p>
               <h2 id="day-title" aria-live="polite" className="title text-xl">
                 {formatDate(date)}
               </h2>

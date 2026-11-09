@@ -299,7 +299,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             style={{ transform: `translateX(${offsets.get(selected.id) ?? 0}px)` }} // 벌려 놓은 핀 위에 맞춥니다.
           >
             <div className="flex w-full items-start justify-between gap-2">
-              <p className="line-clamp-2 min-w-0 break-words" title={selected.name}>{selected.name}</p> {/* 긴 이름이 말풍선을 키워 지도 버튼에 닫기 버튼이 가리지 않게 두 줄로 줄입니다. */}
+              <p className="min-w-0 flex-1 truncate" title={selected.name}>{selected.name}</p> {/* 긴 이름은 한 줄로 줄이고 말줄임표를 붙입니다. 전체 이름은 자세히 보기에서 볼 수 있습니다. */}
               <button type="button" className="map-popup-close" aria-label="정보 닫기" onClick={closePopup}>
                 <Icon name="close" size={16} />
               </button>

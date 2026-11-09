@@ -108,13 +108,16 @@ export const AllRecords = () => {
         ))}
         {/* 무한 스크롤: 이 표시가 화면 근처에 오면 다음 기록을 불러옵니다. */}
         {hasNextPage && (
-          <div ref={more} className="flex min-h-16 items-center justify-center">
+          <div ref={more} role="status" className="flex min-h-16 items-center justify-center">
             {isFetchNextPageError ? (
               <button type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
                 다시 불러오기
               </button>
             ) : (
-              <span aria-hidden="true" className="saving-spinner size-8!" />
+              <>
+                <span className="sr-only">다음 기록을 불러오는 중입니다.</span>
+                <span aria-hidden="true" className="saving-spinner size-8!" />
+              </>
             )}
           </div>
         )}

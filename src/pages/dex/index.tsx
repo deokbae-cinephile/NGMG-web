@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
-import { useFishDex, useMenuDex } from '@/entities/record';
+import { useMemo, useState, type ReactNode, type RefObject } from 'react';
+import { useFishDex, useMenuDex, type DexFish, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
-import { ErrorText, Icon, Photo, type IconName } from '@/shared/ui';
-import { buildDex, buildMenuDex } from './model';
+import { ErrorText, Icon, type IconName } from '@/shared/ui';
+import { buildDex, buildMenuDex, type DexEntry, type MenuDexEntry } from './model';
+import { useBatches } from './use-batches';
 
 const TABS = [
   { value: 'fish', label: '어종 도감' },
@@ -71,18 +72,32 @@ const DexSkeleton = () => (
   </div>
 );
 
+const NO_FISH: DexFish[] = [];
+const NO_MENU: DexMenu[] = [];
+const fishImage = (entry: DexEntry) => entry.big.photo_url;
+const menuImage = (entry: MenuDexEntry) => entry.photo;
+
+/** 끝까지 내리면 이어서 보여 주는 자리. 다음 카드의 사진을 받는 동안 돌아갑니다. */
+const DexEnd = ({ end }: { end: RefObject<HTMLDivElement | null> }) => (
+  <div ref={end} role="status" className="flex min-h-20 items-center justify-center">
+    <span className="sr-only">다음 도감을 불러오는 중입니다.</span>
+    <span aria-hidden="true" className="saving-spinner size-8!" />
+  </div>
+);
+
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = () => {
-  const { data = [], isPending, error } = useFishDex();
-  if (isPending) return <DexSkeleton />;
-  const entries = buildDex(data);
+  const { data = NO_FISH, isPending, error } = useFishDex();
+  const entries = useMemo(() => buildDex(data), [data]);
+  const { visible, ready, more, end } = useBatches(isPending ? undefined : entries, fishImage);
+  if (!ready) return <DexSkeleton />;
 
   return (
     <>
       <Summary title="어종 도감" status={`${entries.length}종 발견 / 총 ${data.length}마리`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 낚시 기록에 잡은 물고기를 추가하면 어종이 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {entries.map(({ number, species, count, big }) => (
+        {visible.map(({ number, species, count, big }) => (
           <DexCard
             key={species}
             number={number}
@@ -91,7 +106,7 @@ const FishDex = () => {
             photo={
               big.photo_url ? (
                 <a href={big.photo_url} target="_blank" rel="noreferrer">
-                  <Photo src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full object-cover" />
+                  <img src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} className="aspect-[4/3] w-full bg-surface object-cover" />
                 </a>
               ) : undefined
             }
@@ -107,15 +122,17 @@ const FishDex = () => {
           </DexCard>
         ))}
       </ol>
+      {more && <DexEnd end={end} />}
     </>
   );
 };
 
 /** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격, 평균 평점, 먹은 횟수를 보여 줍니다. */
 const MenuDex = () => {
-  const { data = [], isPending, error } = useMenuDex();
-  if (isPending) return <DexSkeleton />;
-  const entries = buildMenuDex(data);
+  const { data = NO_MENU, isPending, error } = useMenuDex();
+  const entries = useMemo(() => buildMenuDex(data), [data]);
+  const { visible, ready, more, end } = useBatches(isPending ? undefined : entries, menuImage);
+  if (!ready) return <DexSkeleton />;
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
   return (
@@ -123,14 +140,14 @@ const MenuDex = () => {
       <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {entries.map(({ number, name, count, price, rating, latest, photo }) => (
+        {visible.map(({ number, name, count, price, rating, latest, photo }) => (
           <DexCard
             key={name}
             number={number}
             title={name}
             icon="food"
             to={`/schedule?date=${latest.record.visited_on}`}
-            photo={photo ? <Photo src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : undefined}
+            photo={photo ? <img src={photo} alt={`${name} 사진`} className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
           >
             <dt className="mono-label">평점</dt>
             <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
@@ -143,6 +160,7 @@ const MenuDex = () => {
           </DexCard>
         ))}
       </ol>
+      {more && <DexEnd end={end} />}
     </>
   );
 };
