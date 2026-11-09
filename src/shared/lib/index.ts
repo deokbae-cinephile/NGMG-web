@@ -6,3 +6,4 @@ export * from './kakao';
 export * from './preferences';
 export * from './share';
 export * from './router';
+export * from './theme';

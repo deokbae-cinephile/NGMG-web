@@ -26,10 +26,10 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         {actions}
       </div>
       {record.rating !== null && (
-        <p>
-          <span className="mono-label mr-2">{record.place.kind === 'restaurant' && menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</span>
-          {`${Number(record.rating).toFixed(1)}점`}
-        </p>
+        <dl>
+          <dt className="mono-label">{record.place.kind === 'restaurant' && menu.some((item) => item.rating !== null) ? '평균 평점' : '평점'}</dt>
+          <dd>{`${Number(record.rating).toFixed(1)}점`}</dd>
+        </dl>
       )}
       {record.catches && record.fish.length === 0 && (
         <p>
