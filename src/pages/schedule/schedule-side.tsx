@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { usePastEvents, useUpcomingEvents } from '@/entities/event';
 import { FishRow, useRecentFish, useRecordedEventIds } from '@/entities/record';
-import { ExportButton } from '@/features/export-data';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent } from '@/shared/api';
 import { formatDate, formatDateRange, formatDday, formatStay, formatTime, toDateKey } from '@/shared/lib';
@@ -78,9 +77,6 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
           </ul>
         </div>
       </section>
-      <div className="cell-body border-t border-line">
-        <ExportButton />
-      </div>
       {recordEvent?.place && (
         <Modal title={`${recordEvent.place.name} 기록`} onClose={() => setRecordEvent(undefined)}>
           <RecordForm place={recordEvent.place} date={recordEvent.date} endDate={recordEvent.end_date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />

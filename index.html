@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#fafafa" />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="낚시 포인트와 맛집을 지도에 남기고 출조 일정·기록·장비·어종 도감을 함께 챙기는 서비스" />
     <link rel="icon" href="%BASE_URL%favicon.png" type="image/png" sizes="48x48" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
@@ -19,12 +20,18 @@
     <!-- 자바스크립트를 받는 동안 보이는 첫 화면. 인트로의 검은 벽과 이어집니다. React가 그리면 사라집니다. -->
     <div id="root"><div id="boot" style="position: fixed; inset: 0; background: #0a0a0a"></div></div>
     <script>
-      try {
-        if (sessionStorage.getItem('ngmg:intro') || matchMedia('(prefers-reduced-motion: reduce)').matches)
-          document.getElementById('boot').style.background = '#fafafa';
-      } catch {
-        document.getElementById('boot').style.background = '#fafafa';
-      }
+      (function () {
+        var dark = false;
+        var skip = false;
+        try {
+          dark = matchMedia('(prefers-color-scheme: dark)').matches;
+          skip = !!sessionStorage.getItem('ngmg:intro') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (error) {
+          skip = true;
+        }
+        // 인트로를 건너뛰면 앱 바탕색, 아니면 인트로의 벽 색(어두운 화면에서는 반전)으로 이어집니다.
+        document.getElementById('boot').style.background = skip ? (dark ? '#121212' : '#fafafa') : dark ? '#f2f2f2' : '#0a0a0a';
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

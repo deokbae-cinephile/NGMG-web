@@ -31,21 +31,24 @@ const createBasePin = () => {
 };
 
 // 핀 묶음 색은 분류별 핀의 채움과 같습니다. (낚시 검정, 맛집 흰색, 기타 연회색)
-const CLUSTER_COLOR: Record<PlaceKind, { background: string; color: string }> = {
-  fishing: { background: '#0a0a0a', color: '#fafafa' },
-  restaurant: { background: '#fafafa', color: '#0a0a0a' },
-  etc: { background: '#d9d9d9', color: '#0a0a0a' },
-};
-const clusterStyle = (kind: PlaceKind) => ({
-  ...CLUSTER_COLOR[kind],
-  width: '64px',
-  height: '36px',
-  border: '2px solid #0a0a0a',
-  borderRadius: '18px',
-  fontSize: '13px',
-  lineHeight: '32px',
-  textAlign: 'center',
+const CLUSTER_COLOR = (dark: boolean): Record<PlaceKind, { background: string; color: string }> => ({
+  fishing: dark ? { background: '#121212', color: '#f2f2f2' } : { background: '#0a0a0a', color: '#fafafa' },
+  restaurant: dark ? { background: '#1e1e1e', color: '#f2f2f2' } : { background: '#fafafa', color: '#0a0a0a' },
+  etc: dark ? { background: '#3b3b3b', color: '#f2f2f2' } : { background: '#d9d9d9', color: '#0a0a0a' },
 });
+const clusterStyle = (kind: PlaceKind) => {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    ...CLUSTER_COLOR(dark)[kind],
+    width: '64px',
+    height: '36px',
+    border: `2px solid ${dark ? '#f2f2f2' : '#0a0a0a'}`,
+    borderRadius: '18px',
+    fontSize: '13px',
+    lineHeight: '32px',
+    textAlign: 'center',
+  };
+};
 
 /** 거의 같은 지점(약 10m 안)의 핀은 겹쳐서 눌리지 않으므로 옆으로 나란히 벌려 놓습니다. 값은 가로 이동 픽셀입니다. */
 const pinOffsets = (places: Place[]) => {
@@ -310,7 +313,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
-                상세 보기
+                자세히 보기
               </Link>
             )}
           </div>,

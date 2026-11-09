@@ -294,7 +294,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' }).click(); // 같은 지점의 핀은 옆으로 벌려 놓아 모두 눌립니다.
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
   await expect(popup.getByText('전남 여수시 삼산면')).toBeVisible();
-  await expect(popup.getByRole('link', { name: '상세 보기' })).toBeFocused();
+  await expect(popup.getByRole('link', { name: '자세히 보기' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(popup).toBeHidden();
 
@@ -533,7 +533,7 @@ test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼�
   await expect(base).toHaveAttribute('aria-pressed', 'true');
   const popup = page.getByRole('group', { name: '무악재역 정보' });
   await expect(popup.getByText('길찾기 출발지')).toHaveCount(0);
-  await expect(popup.getByRole('link', { name: '상세 보기' })).toHaveCount(0);
+  await expect(popup.getByRole('link', { name: '자세히 보기' })).toHaveCount(0);
   await expectFits(page);
   await expectAccessible(page);
   await base.click();
