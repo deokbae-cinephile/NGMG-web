@@ -14,7 +14,7 @@ export const AllRecords = () => {
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [editing, setEditing] = useState<PlaceRecord>();
-  const { data, error, isPending, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword);
+  const { data, error, isPending, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = useRecordPages(filter === 'all' ? undefined : filter, keyword);
   const more = useRef<HTMLDivElement>(null);
   const records = data?.pages.flat() ?? [];
 
@@ -27,7 +27,7 @@ export const AllRecords = () => {
     }, { rootMargin: '200px' });
     observer.observe(end);
     return () => observer.disconnect();
-  }, [hasNextPage, records.length, fetchNextPage, isFetchNextPageError]);
+  }, [hasNextPage, records.length, fetchNextPage, isFetchNextPageError, isFetching]); // 기존 기록을 다시 받는 일이 끝나면 다시 지켜봐 이어서 불러옵니다.
 
   return (
     <section aria-labelledby="records-title" className="pane pane-records">
@@ -110,7 +110,7 @@ export const AllRecords = () => {
         {hasNextPage && (
           <div ref={more} className="flex min-h-16 items-center justify-center">
             {isFetchNextPageError ? (
-              <button type="button" className="button" onClick={() => void fetchNextPage()}>
+              <button type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
                 다시 불러오기
               </button>
             ) : (
