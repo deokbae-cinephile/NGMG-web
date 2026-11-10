@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
 
-const SHOW_AFTER = 400;
+const SHOW_AFTER = 120; // 짧은 화면(통계, 장비)에서도 조금만 내리면 보이게 합니다.
 
 /**
  * 맨 위로 버튼. 휴대폰은 문서가, 넓은 화면은 본문이나 칸마다 따로 스크롤되므로 방금 내린 곳을 기억해 그곳을 올립니다.
- * 어느 정도 내렸을 때만 보이고, 화면을 옮기면 숨깁니다.
+ * 조금이라도 내렸을 때 보이고, 맨 위에 있거나 화면을 옮기면 숨깁니다.
  */
 export const ScrollTopButton = () => {
   const { pathname } = useLocation();

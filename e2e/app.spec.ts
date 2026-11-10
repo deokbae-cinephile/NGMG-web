@@ -146,7 +146,9 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
-  await dialog.getByLabel('평점').selectOption('5');
+  // 평점은 조사마다 따로 주고, 두 사람이 다 주면 평균을 냅니다.
+  await dialog.getByLabel('김 조사 평점').selectOption('5');
+  await dialog.getByLabel('류 조사 평점').selectOption('4');
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 8;
@@ -176,6 +178,7 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.fish_catches).toHaveLength(1);
   expect(db.fish_catches![0]).toMatchObject({ angler: '류 조사', species: '볼락', length_cm: 21.5, position: 0 });
   expect(db.fish_catches![0]!.photo_path).toMatch(/fish-/);
+  expect(db.records!.at(-1)).toMatchObject({ rating: 4.5, angler_ratings: { '김 조사': 5, '류 조사': 4 } });
 });
 
 test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {
@@ -465,11 +468,38 @@ test('장비: 끌어서 옮기고, 위·아래 버튼으로도 옮기며, 사용
   await expectFits(page);
 });
 
-test('기본값: 새 기록의 장비 칸에 등록한 로드·릴이 들어간다', async ({ page }) => {
-  await fakeBackend(page, gearSeed());
-  await page.goto('./places/p1');
-  await page.getByRole('button', { name: '기록 추가' }).click();
-  await expect(page.getByRole('dialog', { name: '새 기록' }).getByLabel('장비', { exact: true })).toHaveValue('[A] 로드하나 / 로드둘 / [다이와] 릴하나');
+test('장비 세트: 만들어 일정에 고르면 기록에 담기고, 한 사람만 평점을 주면 평점 대기로 알린다', async ({ page }) => {
+  const db = await fakeBackend(page, { ...gearSeed(), events: [{ id: 'ev', date: '2026-11-07', end_date: '2026-11-07', start_time: '06:00:00', title: '출조', place_id: 'p1', memo: '' }] });
+  await page.goto('./gear');
+  await page.getByRole('button', { name: '김 조사 장비 세트 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 장비 세트' });
+  await dialog.getByLabel('세트 이름').fill('바다 워킹 루어 세트');
+  await dialog.getByLabel('[A] 로드하나').check();
+  await dialog.getByLabel('[다이와] 릴하나').check();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.gear_set_items).toHaveLength(2);
+
+  // 일정에 세트를 고르면 일정에 보이고, 기록을 남길 때 불러옵니다.
+  await page.goto('./schedule?date=2026-11-07');
+  await page.getByRole('button', { name: '출조 일정 수정' }).click();
+  const eventDialog = page.getByRole('dialog', { name: '일정 수정' });
+  await eventDialog.getByLabel('김 조사 세트').selectOption({ label: '바다 워킹 루어 세트' });
+  await eventDialog.getByRole('button', { name: '저장' }).click();
+  await expect(eventDialog).toBeHidden();
+  await expect(page.getByText('장비 세트 김 조사 바다 워킹 루어 세트')).toBeVisible();
+  await page.getByRole('button', { name: '출조 기록 남기기' }).click();
+  const recordDialog = page.getByRole('dialog', { name: /기록/ });
+  await expect(recordDialog.getByLabel('[A] 로드하나')).toBeChecked();
+  await recordDialog.getByLabel('[다이와] 릴하나').uncheck(); // 그날 쓴 장비로 고칩니다.
+  await recordDialog.getByLabel('김 조사 평점').selectOption('4');
+  await recordDialog.getByRole('button', { name: '저장' }).click();
+  await expect(recordDialog).toBeHidden();
+  const saved = db.records!.find((row) => row.event_id === 'ev')!;
+  expect(saved.gear_sets).toEqual([{ angler: '김 조사', name: '바다 워킹 루어 세트', items: [expect.objectContaining({ label: '[A] 로드하나' })] }]);
+  expect(saved.rating).toBeNull();
+  await expect(page.getByRole('button', { name: '평점 대기 1건' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('김 조사 장비 세트 / 바다 워킹 루어 세트')).toBeVisible();
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {

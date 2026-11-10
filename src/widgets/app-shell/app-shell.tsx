@@ -4,6 +4,7 @@ import { ScrollTopButton } from '@/features/scroll-top';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName, type PageVariant } from '@/shared/ui';
+import { PendingRatings } from './pending-ratings';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: '지도', icon: 'pin' },
@@ -67,13 +68,14 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           ))}
         </nav>
       </header>
-      <main id="main" ref={main} tabIndex={-1} className="min-h-0 flex-1 pb-16 outline-none lg:overflow-y-auto lg:pb-0">
+      <main id="main" ref={main} tabIndex={-1} className="main-area min-h-0 flex-1 outline-none lg:overflow-y-auto">
         <Suspense fallback={<PageSkeleton variant={skeletonFor(pathname)} />}>
           {children}
         </Suspense>
       </main>
       {/* 설치와 맨 위로는 메뉴(GNB)와 다른 동작이라 메뉴 밖 오른쪽 아래에 따로 띄웁니다. */}
       <div className="floating-actions">
+        <PendingRatings />
         <InstallButton />
         <ScrollTopButton />
       </div>

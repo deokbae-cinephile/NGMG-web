@@ -483,6 +483,39 @@ body::after {
   .floating-actions > * {
     pointer-events: auto;
   }
+  /* 평점 대기 알림: 한 사람만 평점을 준 기록이 있는 동안 계속 보입니다. 누르면 기록 목록이 위로 열립니다. */
+  .pending-ratings {
+    position: relative;
+  }
+  .pending-ratings-toggle {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-accent);
+    padding: 0 0.875rem;
+    color: var(--color-on-accent);
+    cursor: pointer;
+  }
+  .pending-ratings-list {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.5rem);
+    width: max-content;
+    max-width: min(18rem, calc(100vw - 1.5rem));
+    max-height: 50dvh;
+    overflow-y: auto;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+  }
+  .pending-ratings-list li + li {
+    border-top: 1px solid var(--color-soft);
+  }
+  @media (hover: hover) {
+    .pending-ratings-list a:hover {
+      background: var(--color-surface);
+    }
+  }
   .install-button {
     display: flex;
     min-height: 2.75rem;
@@ -989,6 +1022,25 @@ body::after {
     display: block;
     background: var(--color-soft);
     animation: skeleton-pulse 1s ease-in-out infinite alternate;
+  }
+  /*
+   * 떠 있는 버튼(맨 위로·앱 설치·평점 대기, 휴대폰은 테마 전환)에 마지막 내용이 가리지 않게 끝에 여백을 둡니다.
+   * 휴대폰은 하단 탭과 버튼 높이만큼 본문 아래를 비웁니다. 넓은 화면은 버튼이 오른쪽 아래에만 있어,
+   * 본문이 스크롤되는 화면은 본문 끝에, 칸마다 스크롤되는 화면은 오른쪽 끝 칸의 끝에 여백을 둡니다.
+   */
+  .main-area {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+  @media (width >= 64rem) {
+    .main-area {
+      padding-bottom: 0;
+    }
+    .main-area > :not(.panes)::after,
+    .main-area > .panes > section.pane:last-of-type::after {
+      content: '';
+      display: block;
+      height: 4.5rem;
+    }
   }
   .skeleton-page {
     min-height: calc(100dvh - var(--spacing-topbar) - 1px);

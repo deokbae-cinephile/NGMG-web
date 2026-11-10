@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordPhoto } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
-import { cleanKeyword, recordSearchFilter } from './model';
+import { cleanKeyword, pendingRating, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
 
 export const MAX_PHOTOS = 10;
@@ -224,20 +224,21 @@ export const useMenuDex = () =>
     },
   });
 
-/** 가장 최근 낚시 기록의 장비·채비·미끼 */
-export const fetchLatestGear = async () => {
-  const { data, error } = await supabase
-    .from('records')
-    .select('gear, rig, bait, place:places!inner(kind)')
-    .eq('place.kind', 'fishing')
-    .or('gear.neq.,rig.neq.,bait.neq.')
-    .order('visited_on', { ascending: false })
-    .limit(1);
-  if (error) throw new Error('지난 기록을 불러오지 못했습니다.');
-  const latest = data[0] as Pick<RecordDetails, 'gear' | 'rig' | 'bait'> | undefined;
-  if (!latest) throw new Error('불러올 지난 낚시 기록이 없습니다.');
-  return latest;
-};
+export type PendingRating = { id: string; visited_on: string; place: { name: string } };
+
+/** 한 사람만 평점을 준 기록 (최근 순). 나머지 사람의 평점을 받을 때까지 알려 줍니다. */
+export const usePendingRatings = () =>
+  useQuery({
+    queryKey: ['records', 'pending-ratings'],
+    queryFn: async (): Promise<PendingRating[]> => {
+      const { data, error } = await supabase
+        .from('records')
+        .select('id, visited_on, angler_ratings, place:places!inner(name), menu_items(angler_ratings)')
+        .order('visited_on', { ascending: false });
+      if (error) throw new Error('평점을 기다리는 기록을 불러오지 못했습니다.');
+      return (data as unknown as (PendingRating & { angler_ratings: AnglerRatings; menu_items: { angler_ratings: AnglerRatings }[] })[]).filter(pendingRating);
+    },
+  });
 
 export type RecordInput = RecordDetails & {
   id: string; // 폼을 열 때 만듭니다. 실패 후 다시 저장해도 기록이 중복되지 않습니다.
@@ -248,6 +249,8 @@ export type RecordInput = RecordDetails & {
   catches: string;
   memo: string;
   rating: number | null;
+  angler_ratings: AnglerRatings;
+  gear_sets: RecordGearSet[];
   files: File[];
   removedPhotos: Pick<RecordPhoto, 'id' | 'storage_path'>[];
   nextPosition: number;

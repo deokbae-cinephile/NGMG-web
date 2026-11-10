@@ -1,4 +1,4 @@
-import type { Gear } from '@/shared/api';
+import type { Gear, GearSet, RecordGearSet } from '@/shared/api';
 import type { IconName } from '@/shared/ui';
 
 export const GEAR_CATEGORIES = ['로드', '릴', '라인', '채비', '미끼', '기타'] as const;
@@ -27,3 +27,24 @@ export const gearLabel = (gear: Pick<Gear, 'brand' | 'name'>) => (gear.brand ? `
 export const defaultGearLabels = (gear: Gear[]) => [
   ...new Set(['로드', '릴'].flatMap((category) => gear.filter((item) => item.category === category).map(gearLabel))),
 ];
+
+/** 기록에 남길 장비 한 개: 그때의 분류와 이름 */
+export const snapshotItem = (gear: Gear): RecordGearSet['items'][number] => ({
+  gear_id: gear.id,
+  category: gear.category,
+  subcategory: gearSubcategory(gear),
+  label: gearLabel(gear),
+});
+
+/** 기록에 남길 세트: 세트에 넣은 장비 중 지금 남아 있는 것만 담습니다. */
+export const snapshotSet = (set: Pick<GearSet, 'angler' | 'name' | 'items'>, gear: Gear[]): RecordGearSet => ({
+  angler: set.angler,
+  name: set.name,
+  items: set.items.flatMap((item) => {
+    const found = gear.find((candidate) => candidate.id === item.gear_id);
+    return found ? [snapshotItem(found)] : [];
+  }),
+});
+
+/** '로드', '원줄'처럼 보여 줄 분류 이름 */
+export const itemKind = (item: Pick<RecordGearSet['items'][number], 'category' | 'subcategory'>) => item.subcategory || item.category;

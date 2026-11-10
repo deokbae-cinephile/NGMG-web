@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { GEAR_CATEGORIES, GEAR_SECTIONS, gearIcon, gearLabel, gearSubcategory, useDeleteGear, useGear, useReorderGear } from '@/entities/gear';
+import { GEAR_CATEGORIES, GEAR_SECTIONS, gearIcon, gearLabel, gearSubcategory, useDeleteGear, useDeleteGearSet, useGear, useGearSets, useReorderGear } from '@/entities/gear';
 import { gearList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
-import { ANGLERS, type Gear } from '@/shared/api';
+import { GearSetForm } from '@/features/gear-set-form';
+import { ANGLERS, type Gear, type GearSet } from '@/shared/api';
 import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
 import { byPosition, inSection, moveGear, type GearSection } from './model';
 
@@ -19,6 +20,9 @@ export const GearPage = () => {
   const remove = useDeleteGear();
   const reorder = useReorderGear();
   const [form, setForm] = useState<{ angler: string; gear?: Gear }>();
+  const [setEditor, setSetEditor] = useState<{ angler: string; set?: GearSet }>();
+  const sets = useGearSets();
+  const removeSet = useDeleteGearSet();
   const [dragging, setDragging] = useState<Dragging>();
   const [drop, setDrop] = useState<Drop>();
   const [message, setMessage] = useState('');
@@ -159,7 +163,54 @@ export const GearPage = () => {
             </button>
           </div>
           <div className="cell-body flex flex-col gap-6">
-            <ErrorText error={error ?? remove.error ?? reorder.error} />
+            <ErrorText error={error ?? remove.error ?? reorder.error ?? sets.error ?? removeSet.error} />
+            {/* 장비 세트: 자주 쓰는 장비 묶음. 일정과 기록에서 불러옵니다. */}
+            <section aria-label={`${angler} 장비 세트`}>
+              <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
+                <h3 className="title text-lg">장비 세트</h3>
+                <button type="button" className="button" aria-label={`${angler} 장비 세트 추가`} onClick={() => setSetEditor({ angler })}>
+                  세트 추가
+                </button>
+              </div>
+              {(sets.data ?? []).filter((set) => set.angler === angler).length === 0 ? (
+                <p className="py-3 text-sm text-muted">만든 세트가 없습니다. 자주 쓰는 장비를 묶어 두면 일정과 기록에서 불러올 수 있습니다.</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {(sets.data ?? [])
+                    .filter((set) => set.angler === angler)
+                    .map((set) => {
+                      const labels = set.items.flatMap((item) => {
+                        const found = data.find((candidate) => candidate.id === item.gear_id);
+                        return found ? [gearLabel(found)] : [];
+                      });
+                      return (
+                        <li key={set.id} className="panel flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="break-words">{set.name}</h4>
+                            <p className="mt-1 break-words text-sm text-muted">{labels.length ? labels.join(' / ') : '넣은 장비 없음'}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center">
+                            <button type="button" className="text-action" aria-label={`${set.name} 세트 수정`} onClick={() => setSetEditor({ angler, set })}>
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              className="text-action text-action-accent"
+                              aria-label={`${set.name} 세트 삭제`}
+                              disabled={removeSet.isPending}
+                              onClick={() => {
+                                if (window.confirm(`${set.name} 세트를 삭제할까요? 장비는 지워지지 않습니다.`)) removeSet.mutate(set.id);
+                              }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </section>
             {isPending && <SkeletonRows count={3} variant="gear" />}
             {!isPending &&
               GEAR_CATEGORIES.map((category) => (
@@ -227,6 +278,16 @@ export const GearPage = () => {
         <div aria-hidden="true" className="gear-ghost" style={{ left: dragging.x + 12, top: dragging.y + 12 }}>
           {gearLabel(dragging.item)}
         </div>
+      )}
+      {setEditor && (
+        <Modal title={setEditor.set ? '장비 세트 수정' : '새 장비 세트'} onClose={() => setSetEditor(undefined)}>
+          <GearSetForm
+            angler={setEditor.angler}
+            set={setEditor.set}
+            nextPosition={Math.max(-1, ...(sets.data ?? []).map((set) => set.position)) + 1}
+            onDone={() => setSetEditor(undefined)}
+          />
+        </Modal>
       )}
       {form && (
         <Modal title={form.gear ? '장비 수정' : '새 장비'} onClose={() => setForm(undefined)}>

@@ -30,16 +30,37 @@ export type FishCatch = {
   photo_url?: string;
 };
 
+/** 조사별 평점 (1~5점). 준 사람만 들어 있습니다. */
+export type AnglerRatings = Partial<Record<string, number>>;
+
 /** 맛집 기록의 메뉴 한 개 */
 export type MenuItem = {
   id: string;
   name: string;
   price: number | null;
-  /** 1~5점 */
+  /** 두 조사가 모두 준 평점의 평균. 한 사람만 주면 비어 있습니다. (예전 기록은 하나만 준 평점) */
   rating: number | null;
+  angler_ratings: AnglerRatings;
   photo_path: string | null;
   position: number;
   photo_url?: string;
+};
+
+/** 조사의 장비 세트. items는 세트에 넣은 장비입니다. */
+export type GearSet = {
+  id: string;
+  angler: string;
+  name: string;
+  position: number;
+  created_at: string;
+  items: { gear_id: string; position: number }[];
+};
+
+/** 기록에 남긴 장비 세트. 그때의 장비 이름을 그대로 담아 장비를 고치거나 지워도 기록은 그대로입니다. */
+export type RecordGearSet = {
+  angler: string;
+  name: string;
+  items: { gear_id: string | null; category: string; subcategory: string; label: string }[];
 };
 
 /** 조사별 장비 한 개 */
@@ -88,6 +109,8 @@ export type PlaceRecord = RecordDetails & {
   photos: RecordPhoto[];
   fish: FishCatch[];
   menu_items: MenuItem[];
+  gear_sets: RecordGearSet[];
+  angler_ratings: AnglerRatings;
 };
 
 export type CalendarEvent = {
@@ -100,6 +123,8 @@ export type CalendarEvent = {
   title: string;
   place_id: string | null;
   memo: string;
+  /** 조사마다 고른 장비 세트 */
+  gear_set_ids: string[];
   place: Place | null;
 };
 
