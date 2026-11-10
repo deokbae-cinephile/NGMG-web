@@ -227,7 +227,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
       instance.setCenter(target);
       fallback = window.setTimeout(reveal, 1200);
-    }, 150);
+    }, 220); // styles.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
     return () => {
       window.clearTimeout(timer);
       reveal();
