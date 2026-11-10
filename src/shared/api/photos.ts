@@ -16,6 +16,8 @@ export type PhotoUrls = { url: string; thumb: string };
 const signedCache = new Map<string, PhotoUrls & { expires: number }>();
 /** 남은 시간이 이보다 짧으면 새로 받습니다. */
 const REUSE_MARGIN = 3_600_000;
+/** 썸네일 없이 원본으로 대신한 주소를 다시 쓰는 시간 */
+const FALLBACK_REUSE = 600_000;
 
 /** 사진을 줄여 올리고 썸네일도 함께 올립니다. 썸네일을 못 올려도 원본을 쓰므로 실패로 보지 않습니다. */
 export const uploadPhoto = async (path: string, file: File) => {
@@ -66,9 +68,11 @@ export const signPhotos = async (paths: string[], { throwOnError = false } = {})
   unique.forEach((path) => {
     const url = signed.get(path);
     if (!url) return;
-    const photo = { url, thumb: signed.get(thumbPath(path)) ?? url };
+    const thumb = signed.get(thumbPath(path));
+    const photo = { url, thumb: thumb ?? url };
     urls.set(path, photo);
-    signedCache.set(path, { ...photo, expires: now + SIGNED_URL_SECONDS * 1000 });
+    // 썸네일이 없어 원본으로 대신한 결과는 10분만 기억합니다. 그 사이 썸네일이 생기면 곧 썸네일로 바뀝니다.
+    signedCache.set(path, { ...photo, expires: thumb ? now + SIGNED_URL_SECONDS * 1000 : now + REUSE_MARGIN + FALLBACK_REUSE });
   });
   return urls;
 };
