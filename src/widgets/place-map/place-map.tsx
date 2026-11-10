@@ -133,12 +133,24 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           if (!latest.current.picking) return;
           latest.current.onPick(event.latLng.getLat(), event.latLng.getLng());
         });
+        const node = container.current;
+        // 화면을 옮기는 중이거나(크기 0, 문서에서 빠짐) 크기를 다시 맞추는 중에는 위치를 저장하지 않습니다.
+        let resizing = false;
         kakao.maps.event.addListener(instance, 'idle', () => {
+          if (resizing || !node.isConnected || !node.clientWidth || !node.clientHeight) return;
           const center = instance.getCenter();
           setPreference('map-view', { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() });
         });
-        observer = new ResizeObserver(() => instance.relayout());
-        observer.observe(container.current);
+        // 지도 칸의 크기가 바뀌면 relayout이 가운데를 옮기므로, 보던 가운데를 다시 맞춥니다.
+        observer = new ResizeObserver(() => {
+          if (!node.clientWidth || !node.clientHeight) return;
+          const center = instance.getCenter();
+          resizing = true;
+          instance.relayout();
+          instance.setCenter(center);
+          resizing = false;
+        });
+        observer.observe(node);
         setMap({ kakao, instance });
       })
       .catch(() => setError(true));
