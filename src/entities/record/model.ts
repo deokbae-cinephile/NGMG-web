@@ -51,7 +51,7 @@ export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'tide', label: '물때' },
   { name: 'wind', label: '바람' },
   { name: 'water_temp', label: '수온' },
-  { name: 'menu', label: '메뉴' },
+  { name: 'menu', label: '음식' },
 ];
 
 /** 쉼표로 나눈 값을 낱개로 셉니다. (동행) */

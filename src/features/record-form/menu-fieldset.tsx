@@ -28,7 +28,7 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
   removePhoto: false,
 });
 
-const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '메뉴 이름을 입력해 주세요.' : undefined);
+const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
 const priceError = (row: MenuRow) => (Number(row.price) < 0 || !Number.isInteger(Number(row.price)) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
 /** 내용을 적다 만 줄 */
@@ -42,7 +42,7 @@ const fitHeight = (input: HTMLTextAreaElement) => {
   input.style.height = `${input.scrollHeight + 2}px`; // 위아래 테두리 1px씩
 };
 
-/** 맛집 기록의 메뉴. 메뉴마다 가격, 평점, 사진 한 장을 적고, 버튼으로 줄을 늘립니다. */
+/** 맛집 기록의 음식(화면 표기는 '음식', 코드와 DB는 menu). 음식마다 가격, 평점, 사진 한 장을 적고, 버튼으로 줄을 늘립니다. */
 export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
   const add = useRef<HTMLButtonElement>(null);
   const focusId = useRef<string>(undefined);
@@ -50,10 +50,10 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="sr-only">메뉴</legend>
+      <legend className="sr-only">음식</legend>
       <ul className="flex flex-col gap-3">
         {value.map((row, index) => {
-          const label = `메뉴 ${index + 1}`;
+          const label = `음식 ${index + 1}`;
           return (
             <li key={row.id} className="flex flex-col gap-3 border border-soft p-3">
               {/* 이름은 한 줄을 다 쓰고, 길면 칸이 아래로 늘어납니다. 줄바꿈은 넣지 않습니다. */}
@@ -139,7 +139,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
           onChange([...value, row]);
         }}
       >
-        메뉴 추가
+        음식 추가
       </button>
     </fieldset>
   );

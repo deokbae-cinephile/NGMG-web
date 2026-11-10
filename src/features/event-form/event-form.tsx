@@ -4,10 +4,9 @@ import { useForm } from 'react-hook-form';
 import { saveEvent } from '@/entities/event';
 import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
 import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
-import { formatTime } from '@/shared/lib';
 import { ErrorText, Field, TextareaField, SAVE_KEY } from '@/shared/ui';
 
-type Values = { title: string; date: string; end_date: string; start_time: string; memo: string };
+type Values = { title: string; date: string; end_date: string; memo: string };
 type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => void };
 type Input = Values & { place: PlaceDraft | null };
 
@@ -17,7 +16,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
       title: event?.title ?? '',
       date: event?.date ?? date,
       end_date: event?.end_date ?? date,
-      start_time: event ? formatTime(event.start_time) : '',
       memo: event?.memo ?? '',
     },
   });
@@ -37,6 +35,8 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         ...values,
         id,
         isNew: !event,
+        // 시작 시간은 사용자 요청으로 받지 않습니다. DB 칸은 비울 수 없어 새 일정은 0시로 두고, 예전 일정은 저장된 값을 그대로 둡니다.
+        start_time: event?.start_time ?? '00:00:00',
         end_time: null, // 끝나는 시간 대신 끝나는 날짜를 씁니다.
         place_id: saved?.id ?? null,
         gear_set_ids: event?.gear_set_ids ?? [], // 장비 세트는 더 고르지 않고 예전 값은 그대로 둡니다.
@@ -85,7 +85,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
           })}
         />
       </div>
-      <Field label="시작 시간" type="time" error={errors.start_time?.message} {...register('start_time', { required: '시작 시간을 입력해 주세요.' })} />
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mono-label pb-1.5">장소</legend>

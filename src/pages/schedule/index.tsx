@@ -6,7 +6,7 @@ import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/recor
 import { EventForm } from '@/features/event-form';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
-import { formatDate, formatDayLabel, formatTimeRange, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
+import { formatDate, formatDayLabel, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
 import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
 import { AllRecords } from './all-records';
 import { MonthCalendar } from './month-calendar';
@@ -131,7 +131,6 @@ export const SchedulePage = () => {
             <ol className="flex flex-col">
               {events.map((event) => (
                 <li key={event.id} className="panel panel-roomy flex flex-col gap-2 sm:flex-row sm:items-start">
-                  <p className="mono-label shrink-0 sm:w-28 sm:pt-1">{formatTimeRange(event.start_time, event.end_time)}</p>
                   <div className="min-w-0 flex-1">
                     <h4 className="break-words">{event.title}</h4>
                     {event.end_date !== event.date && (

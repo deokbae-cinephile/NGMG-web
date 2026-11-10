@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { RatingChip, useStatRecords } from '@/entities/record';
+import { Link } from '@/shared/lib';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { summarize, yearsOf, type PlaceRank } from './model';
 
@@ -17,16 +18,19 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
         {rows.length === 0 ? (
           <p className="text-muted">아직 기록이 없습니다.</p>
         ) : (
-          <ol className="flex flex-col gap-3">
+          <ol className="flex flex-col gap-1">
             {rows.map((row, index) => (
-              <li key={`${row.name}-${index}`} className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
-                <span aria-hidden="true" className="mono-label">{index + 1}</span>
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="truncate">{row.name}</span>
-                  {detail(row)}
-                </span>
-                <span className="mono-label">{`${row.count}번`}</span>
-                <span aria-hidden="true" className={`bar col-start-2 col-end-4 ${index === 0 ? 'bar-top' : ''}`} style={{ width: `${(row.count / max) * 100}%` }} />
+              <li key={row.id}>
+                {/* 줄 전체가 그 장소의 상세로 가는 링크입니다(도감 카드처럼). */}
+                <Link to={`/places/${row.id}`} className="rank-link grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+                  <span aria-hidden="true" className="mono-label">{index + 1}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate underline-offset-4">{row.name}</span>
+                    {detail(row)}
+                  </span>
+                  <span className="mono-label">{`${row.count}번`}</span>
+                  <span aria-hidden="true" className={`bar col-start-2 col-end-4 ${index === 0 ? 'bar-top' : ''}`} style={{ width: `${(row.count / max) * 100}%` }} />
+                </Link>
               </li>
             ))}
           </ol>

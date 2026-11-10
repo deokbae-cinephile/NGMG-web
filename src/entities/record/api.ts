@@ -375,7 +375,7 @@ const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInpu
 const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInput['removedMenu']) => {
   if (removed.length) {
     const removal = await supabase.from('menu_items').delete().in('id', removed.map((item) => item.id));
-    if (removal.error) throw new Error('메뉴를 삭제하지 못했습니다.');
+    if (removal.error) throw new Error('음식을 삭제하지 못했습니다.');
     await removePhotos(removed.map((item) => item.photo_path));
   }
   await forEachLimit(items, UPLOAD_LIMIT, async ({ file, removePhoto, ...item }) => {
@@ -383,10 +383,10 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
     if (file) {
       photo_path = `${recordId}/menu-${item.id}-${file.lastModified}-${file.size}.jpg`;
       const upload = await uploadPhoto(photo_path, file);
-      if (upload.error) throw new Error(`메뉴 사진을 올리지 못했습니다: ${file.name}`);
+      if (upload.error) throw new Error(`음식 사진을 올리지 못했습니다: ${file.name}`);
     }
     const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path });
-    if (row.error) throw new Error('메뉴를 저장하지 못했습니다.');
+    if (row.error) throw new Error('음식을 저장하지 못했습니다.');
     if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
   });
 };
