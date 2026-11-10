@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
@@ -14,6 +14,14 @@ const NO_PLACES: Place[] = [];
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
   const { data: ratings, error: ratingsError, isPending: ratingsPending } = usePlaceRatings();
+  // 평점을 3초 기다려도 오지 않으면(느린 회선·오프라인) 이름순 목록을 먼저 보여 줍니다.
+  const [ratingsLate, setRatingsLate] = useState(false);
+  useEffect(() => {
+    if (!ratingsPending) return;
+    const timer = window.setTimeout(() => setRatingsLate(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [ratingsPending]);
+  const waitingRatings = ratingsPending && !ratingsError && !ratingsLate;
   // 지도에 들어올 때마다 '전체'에서 시작합니다(사용자 요청).
   const [filter, setFilter] = useState<Filter>('all');
   const [selectedId, setSelectedId] = useState<string>();
@@ -97,9 +105,10 @@ export const MapPage = () => {
           </p>
 
           {/* 목록은 평점순이라 평점까지 받은 뒤 보여 줍니다(평점을 못 받으면 이름순으로 보여 주고 위에 오류를 알립니다). */}
-          {(isPending || (ratingsPending && !ratingsError)) && <SkeletonRows variant="place" />}
+          {(isPending || waitingRatings) && <SkeletonRows variant="place" />}
+          {!isPending && ratingsPending && ratingsLate && <p className="text-sm text-muted">평점을 불러오는 중이라 이름순으로 보여 줍니다.</p>}
           <ul aria-label="장소 목록" className="flex flex-col">
-            {!(ratingsPending && !ratingsError) && listed.map((place) => {
+            {!waitingRatings && listed.map((place) => {
               const selected = place.id === selectedId;
               return (
                 <li key={place.id} className={`panel ${selected ? 'panel-active' : ''}`}>
