@@ -1,24 +1,12 @@
 import type { ReactNode } from 'react';
-import type { PlaceRecord, RecordGearSet } from '@/shared/api';
+import type { PlaceRecord } from '@/shared/api';
 import { formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
-import { formatBait, formatGear, isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
+import { isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
-
-const SET_FIELDS = new Set(['gear', 'rig', 'bait']);
-
-/** 세트의 장비를 분류별로 한 줄씩: '로드 [다이와] 레가리스 / ...' */
-const setLines = (set: RecordGearSet) => {
-  const groups = new Map<string, string[]>();
-  set.items.forEach((item) => {
-    const kind = item.subcategory || item.category;
-    groups.set(kind, [...(groups.get(kind) ?? []), item.label]);
-  });
-  return [...groups].map(([kind, labels]) => `${kind} ${labels.join(' / ')}`).join('\n');
-};
 
 /** 평점: 두 사람이 다 주면 평균과 각자의 점수, 한 사람만 주면 기다리는 사람을 보여 줍니다. */
 const Rating = ({ record }: { record: PlaceRecord }) => {
@@ -46,15 +34,8 @@ const Rating = ({ record }: { record: PlaceRecord }) => {
 
 export const RecordCard = ({ record, heading, actions }: Props) => {
   const menu = record.menu_items;
-  const sets = record.gear_sets ?? [];
-  // 세트가 없는 예전 기록은 장비·채비·미끼 글을 한 묶음으로 보여 줍니다.
-  const legacyGear = [
-    record.gear && `장비 ${formatGear(record.gear)}`,
-    record.rig && `채비 ${record.rig}`,
-    record.bait && `미끼 ${formatBait(record.bait)}`,
-  ].filter(Boolean);
   const details = RECORD_LABELS.flatMap((field) =>
-    !SET_FIELDS.has(field.name) && !(field.name === 'menu' && menu.length) && record[field.name] ? [{ label: field.label, value: record[field.name] }] : [],
+    !(field.name === 'menu' && menu.length) && record[field.name] ? [{ label: field.label, value: record[field.name] }] : [],
   );
 
   return (
@@ -75,23 +56,6 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           <span className="mono-label mr-2">조과</span>
           {record.catches}
         </p>
-      )}
-      {(sets.length > 0 || legacyGear.length > 0) && (
-        <dl className="flex flex-col gap-y-2">
-          {sets.length > 0 ? (
-            sets.map((set) => (
-              <div key={set.angler} className="min-w-0">
-                <dt className="mono-label">{`${set.angler} 장비 세트 / ${set.name}`}</dt>
-                <dd className="whitespace-pre-line break-words">{setLines(set) || '고른 장비 없음'}</dd>
-              </div>
-            ))
-          ) : (
-            <div className="min-w-0">
-              <dt className="mono-label">장비 세트</dt>
-              <dd className="whitespace-pre-line break-words">{legacyGear.join('\n')}</dd>
-            </div>
-          )}
-        </dl>
       )}
       {details.length > 0 && (
         <dl className="flex flex-col gap-y-2">

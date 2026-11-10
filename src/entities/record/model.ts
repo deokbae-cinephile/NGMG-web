@@ -20,7 +20,7 @@ export const cleanKeyword = (keyword: string) => keyword.replace(/[\\"%_]/g, ' '
 /** 기록 검색 조건. fishRecordIds는 어종이 맞는 물고기가 있는 기록, placeIds는 이름이 맞는 장소입니다. */
 export const recordSearchFilter = (text: string, fishRecordIds: string[] = [], placeIds: string[] = []) =>
   [
-    ...['catches', 'memo', 'bait', 'gear', 'rig', 'menu', 'companions'].map((column) => `${column}.ilike."%${text}%"`),
+    ...['catches', 'memo', 'menu', 'companions'].map((column) => `${column}.ilike."%${text}%"`),
     ...(fishRecordIds.length ? [`id.in.(${fishRecordIds.join(',')})`] : []),
     ...(placeIds.length ? [`place_id.in.(${placeIds.join(',')})`] : []),
   ].join(',');
@@ -41,31 +41,20 @@ export const WEATHER_STATES = ['맑음', '구름', '흐림', '비', '폭우', '�
 
 /** 기록 폼에서 입력받는 항목 */
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
-  fishing: [], // 장비·채비·미끼는 조사별 장비 세트(GearSetFieldset) 하나로 받습니다.
+  fishing: [], // 장비·채비·미끼는 사용자 요청으로 받지 않습니다(예전 값은 저장해 둔 채 둡니다).
   restaurant: [], // 메뉴는 MenuFieldset에서 줄마다 받습니다.
   etc: [],
 };
 
 /** 기록 카드에 보여 주는 항목. 물때·바람·수온처럼 지금은 입력받지 않아도 예전에 남긴 값은 보여 줍니다. 인원과 동행은 저장만 되어 있고, 날씨는 날짜 옆에 보여 줍니다. */
 export const RECORD_LABELS: { name: TextField; label: string }[] = [
-  { name: 'gear', label: '장비' },
-  { name: 'rig', label: '채비' },
-  { name: 'bait', label: '미끼' },
   { name: 'tide', label: '물때' },
   { name: 'wind', label: '바람' },
   { name: 'water_temp', label: '수온' },
   { name: 'menu', label: '메뉴' },
 ];
 
-/** 장비 칸을 낱개로 나눕니다. '[브랜드]'가 이어지거나 줄을 바꿔 적어도 나눕니다. 쉼표로 저장한 예전 값에서는 ' / '를 이름의 일부로 둡니다. */
-export const gearList = (text: string) => splitList((text.includes(',') ? text : text.replace(/\s+\/\s+/g, ',')).replace(/[;\n]+/g, ',').replace(/([^,\s])\s+(?=\[)/g, '$1,'));
-/** 장비를 '로드 / 릴 / 채비'처럼 빗금으로 이어 씁니다. */
-export const formatGear = (text: string) => gearList(text).join(' / ');
-
-/** 미끼를 '크릴 / 홍갯지렁이'처럼 ' / '로 이어 씁니다. 쉼표로 적은 예전 값도 같은 모양으로 바꿉니다. */
-export const formatBait = (text: string) => splitList(text.replace(/\s+\/\s+/g, ',')).join(' / ');
-
-/** 쉼표로 나눈 값을 낱개로 셉니다. (미끼, 동행) */
+/** 쉼표로 나눈 값을 낱개로 셉니다. (동행) */
 export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
 
 type MenuDraft = { name: string; price: string };

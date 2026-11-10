@@ -2,9 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { saveEvent } from '@/entities/event';
-import { useGearSets } from '@/entities/gear';
 import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
-import { ANGLERS, type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
+import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
 import { formatTime } from '@/shared/lib';
 import { ErrorText, Field, TextareaField, SAVE_KEY } from '@/shared/ui';
 
@@ -24,8 +23,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   });
   const [place, setPlace] = useState<PlaceDraft | null>(event?.place ?? null);
   const places = usePlaces();
-  const sets = useGearSets();
-  const [setIds, setSetIds] = useState<string[]>(() => event?.gear_set_ids ?? []);
   const client = useQueryClient();
   const [id] = useState(() => event?.id ?? crypto.randomUUID());
   const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
@@ -42,7 +39,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         isNew: !event,
         end_time: null, // 끝나는 시간 대신 끝나는 날짜를 씁니다.
         place_id: saved?.id ?? null,
-        gear_set_ids: setIds,
+        gear_set_ids: event?.gear_set_ids ?? [], // 장비 세트는 더 고르지 않고 예전 값은 그대로 둡니다.
       });
     },
     onSuccess: () => client.invalidateQueries(),
@@ -119,37 +116,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
             </select>
           </label>
         )}
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mono-label pb-1.5">장비 세트</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {ANGLERS.map((angler, index) => {
-            const mine = (sets.data ?? []).filter((set) => set.angler === angler);
-            const current = mine.find((set) => setIds.includes(set.id))?.id ?? '';
-            return (
-              <div key={angler} className="flex flex-col gap-1.5">
-                <label htmlFor={`event-set-${index}`} className="mono-label">{`${angler} 세트`}</label>
-                <select
-                  id={`event-set-${index}`}
-                  className="min-h-11 border border-field bg-surface px-3 text-ink"
-                  value={current}
-                  disabled={mine.length === 0}
-                  onChange={(change) => {
-                    const others = setIds.filter((setId) => !mine.some((set) => set.id === setId));
-                    setSetIds(change.target.value ? [...others, change.target.value] : others);
-                  }}
-                >
-                  <option value="">{mine.length ? '고르지 않음' : '만든 세트 없음'}</option>
-                  {mine.map((set) => (
-                    <option key={set.id} value={set.id}>{set.name}</option>
-                  ))}
-                </select>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-sm text-muted">고른 세트는 이 일정에서 기록을 남길 때 장비 세트로 불러옵니다. 세트는 장비 화면에서 만듭니다.</p>
       </fieldset>
 
       <TextareaField label="메모" {...register('memo')} />

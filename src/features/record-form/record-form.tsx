@@ -1,13 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { snapshotSet, useGear, useGearSets } from '@/entities/gear';
-import { combinedRating, formatBait, formatGear, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
-import type { Place, PlaceRecord, RecordDetails, RecordGearSet, RecordPhoto } from '@/shared/api';
+import { combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
+import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
-import { GearSetFieldset } from './gear-set-fieldset';
 import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
@@ -18,8 +16,6 @@ type Props = {
   date?: string;
   endDate?: string;
   eventId?: string;
-  /** 일정에서 고른 장비 세트. 새 기록의 장비 세트로 불러옵니다. */
-  gearSetIds?: string[];
   onDone: () => void;
 };
 
@@ -41,7 +37,7 @@ const restaurantRating = (rows: MenuRow[]) => {
   return values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : undefined;
 };
 
-export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds = [], onDone }: Props) => {
+export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Props) => {
   const kind = place.kind;
   const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<Values>({
     defaultValues: {
@@ -49,7 +45,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
       end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
       memo: record?.memo ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
-      bait: formatBait(record?.bait ?? ''),
     },
   });
   const [id] = useState(() => record?.id ?? crypto.randomUUID());
@@ -75,15 +70,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
     record && !Object.keys(record.angler_ratings ?? {}).length && !record.menu_items.some((item) => Object.keys(item.angler_ratings ?? {}).length) ? record.rating : null,
   );
   const [ratings, setRatings] = useState<RatingDraft>(() => toDraft(record?.angler_ratings));
-  // 장비 세트: 기록에 남긴 세트, 새 기록이면 일정에서 고른 세트를 불러옵니다. 고치기 시작하면 그 값을 씁니다.
-  const gear = useGear();
-  const gearSets = useGearSets();
-  const [editedSets, setEditedSets] = useState<RecordGearSet[] | undefined>(() => (record ? (record.gear_sets ?? []) : undefined));
-  const eventSets = useMemo(
-    () => (gearSets.data ?? []).filter((set) => gearSetIds.includes(set.id)).map((set) => snapshotSet(set, gear.data ?? [])),
-    [gearSets.data, gear.data, gearSetIds],
-  );
-  const sets = editedSets ?? eventSets;
   const lock = useSubmitLock();
   const save = useSaveRecord();
   const remove = useDeleteRecord();
@@ -104,7 +90,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
     if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
     const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
     const anglerRatings = toRatings(ratings);
-    const setsToSave = sets.filter((set) => set.items.length);
     // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 못 막으므로 ref로 바로 잠급니다.
     // 두 번째 저장은 같은 base_updated_at으로 충돌 검사를 해 가짜 '먼저 고쳤습니다' 안내가 뜰 수 있습니다.
     if (tooMany || !lock.tryLock()) return;
@@ -121,14 +106,11 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
         memo: values.memo,
         rating: kind === 'restaurant' ? (restaurantRating(keptMenu) === undefined ? legacyRating : (restaurantRating(keptMenu) ?? null)) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
         angler_ratings: kind === 'restaurant' ? {} : anglerRatings,
-        gear_sets: kind === 'fishing' ? setsToSave : (record?.gear_sets ?? []),
+        gear_sets: record?.gear_sets ?? [], // 장비 세트는 더 받지 않고 예전 값은 그대로 둡니다.
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' ? (record?.price ?? null) : null, // 합계는 보여 주지 않지만 예전에 남긴 값은 지우지 않습니다.
-        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : name === 'bait' ? formatBait(values.bait) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
+        ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? values[name].trim() : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
-        // 세트의 장비 이름을 장비 칸에도 남겨 검색과 장비 사용 횟수에 씁니다. 세트가 없으면 예전 글을 그대로 둡니다.
-        // 세트가 있던 기록에서 세트를 모두 비우면 장비 칸도 비웁니다.
-        ...(kind === 'fishing' && (setsToSave.length || record?.gear_sets?.length) ? { gear: setsToSave.flatMap((set) => set.items.map((item) => item.label)).join(' / ') } : {}),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
@@ -209,7 +191,6 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
               ))}
             </select>
           </div>
-          <GearSetFieldset value={sets} onChange={setEditedSets} />
         </>
       )}
       {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}

@@ -14,7 +14,7 @@ const Status = ({ children, className = '' }: { children: ReactNode; className?:
   </div>
 );
 
-export type RowVariant = 'list' | 'place' | 'gear' | 'event' | 'record' | 'fish';
+export type RowVariant = 'list' | 'place' | 'event' | 'record' | 'fish';
 
 const Row = ({ variant }: { variant: RowVariant }) => {
   switch (variant) {
@@ -26,18 +26,6 @@ const Row = ({ variant }: { variant: RowVariant }) => {
             <Bar className="h-3.5 w-3/5" />
           </span>
           <Bar className="size-16 shrink-0" />
-        </div>
-      );
-    case 'gear': // 장비: 손잡이, 사진, 이름과 사용 횟수, 옮기기·수정 버튼
-      return (
-        <div className="panel flex items-start gap-2">
-          <Bar className="h-16 w-6 shrink-0 opacity-40" />
-          <Bar className="size-16 shrink-0" />
-          <span className="flex min-w-0 flex-1 flex-col gap-2">
-            <Bar className="h-5 w-3/5" />
-            <Bar className="h-3.5 w-16" />
-            <Bar className="h-8 w-40" />
-          </span>
         </div>
       );
     case 'event': // 일정: 시간, 제목과 장소 (넓으면 옆으로)
@@ -233,24 +221,6 @@ const LAYOUTS = {
           </section>
         ))}
       </div>
-    </div>
-  ),
-  // 장비: 휴대폰은 조사 탭과 한 사람의 장비, 넓은 화면은 두 사람 나란히
-  gear: (
-    <div className="panes lg:grid-cols-2">
-      <div className="grid h-12 grid-cols-2 lg:hidden">
-        <Bar className="h-full" />
-        <span />
-      </div>
-      {[0, 1].map((index) => (
-        <section key={index} className={`pane ${index ? 'max-lg:hidden' : ''}`}>
-          <Head action />
-          <div className="cell-body flex flex-col gap-6">
-            <Bar className="h-6 w-16" />
-            <Rows count={3} variant="gear" />
-          </div>
-        </section>
-      ))}
     </div>
   ),
   // 도감: 탭, 머리, 카드

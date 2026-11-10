@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 import { PHOTO } from './e2e/fake-server.ts';
+import pkg from './package.json' with { type: 'json' };
 
 // vite build --mode demo: 서버와 키 없이 가상 데이터로 동작하는 데모를 만듭니다. (e2e/demo-setup.ts)
 const demo = (): Plugin => ({
@@ -33,14 +34,17 @@ const woff2Only = (): Plugin => ({
 export default defineConfig(({ mode }) => ({
   base: '/', // GitHub Pages 사용자 도메인(ngmg.kr)의 루트
   plugins: [woff2Only(), react(), tailwindcss(), mode === 'demo' && demo()],
-  define:
-    mode === 'demo'
+  define: {
+    // 설정의 앱 정보: 버전
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    ...(mode === 'demo'
       ? {
           'import.meta.env.VITE_SUPABASE_URL': 'globalThis.__DEMO_API__',
           'import.meta.env.VITE_SUPABASE_ANON_KEY': '"demo"',
           'import.meta.env.VITE_KAKAO_MAP_KEY': '"demo"',
         }
-      : {},
+      : {}),
+  },
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   // 작은 글꼴 조각을 CSS에 base64로 넣으면 첫 화면이 모든 조각을 한꺼번에 받습니다. 글꼴은 파일로 두어 필요한 조각만 받게 합니다.
   build: { assetsInlineLimit: (file: string) => (/\.woff2?$/.test(file) ? false : undefined) },

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useGearSets } from '@/entities/gear';
 import { KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
@@ -16,21 +15,16 @@ export const AllRecords = () => {
   const [keyword, setKeyword] = useState('');
   const [placeId, setPlaceId] = useState('');
   const [angler, setAngler] = useState('');
-  /** 고른 장비 세트의 id. 기록에는 그때의 조사와 세트 이름이 남아 있어 그것으로 찾습니다. */
-  const [setId, setSetId] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editing, setEditing] = useState<PlaceRecord>();
   const places = usePlaces();
-  const sets = useGearSets();
-  const gearSet = sets.data?.find((set) => set.id === setId);
   const { data, error, isPending, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = useRecordPages({
     kind: filter === 'all' ? undefined : filter,
     keyword,
     placeId: placeId || undefined,
     angler: angler || undefined,
-    gearSet: gearSet ? { angler: gearSet.angler, name: gearSet.name } : undefined,
   });
-  const extra = [placeId, angler, gearSet].filter(Boolean).length;
+  const extra = [placeId, angler].filter(Boolean).length;
   const more = useRef<HTMLDivElement>(null);
   const records = data?.pages.flat() ?? [];
 
@@ -83,7 +77,7 @@ export const AllRecords = () => {
           >
             <div className="min-w-0 flex-1">
               <Field
-                label="장소·조과·어종·장비·메뉴·메모에서 찾기"
+                label="장소·조과·어종·메뉴·메모에서 찾기"
                 type="search"
                 value={draft}
                 onChange={(event) => {
@@ -99,7 +93,7 @@ export const AllRecords = () => {
               {extra ? `조건 더 보기 (${extra}개 적용 중)` : '조건 더 보기'}
               <Icon name="chevronDown" size={18} />
             </summary>
-            <div className="grid gap-3 pt-3 sm:grid-cols-3">
+            <div className="grid gap-3 pt-3 sm:grid-cols-2">
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label htmlFor="records-place" className="mono-label">장소</label>
                 <select id="records-place" className="min-h-11 min-w-0 border border-field bg-surface px-3 text-ink" value={placeId} onChange={(event) => setPlaceId(event.target.value)}>
@@ -118,15 +112,6 @@ export const AllRecords = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <label htmlFor="records-set" className="mono-label">장비 세트</label>
-                <select id="records-set" className="min-h-11 min-w-0 border border-field bg-surface px-3 text-ink" value={setId} onChange={(event) => setSetId(event.target.value)}>
-                  <option value="">모든 세트</option>
-                  {(sets.data ?? []).map((set) => (
-                    <option key={set.id} value={set.id}>{`${set.angler} ${set.name}`}</option>
-                  ))}
-                </select>
-              </div>
             </div>
             {extra > 0 && (
               <button
@@ -135,7 +120,6 @@ export const AllRecords = () => {
                 onClick={() => {
                   setPlaceId('');
                   setAngler('');
-                  setSetId('');
                 }}
               >
                 조건 지우기

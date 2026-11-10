@@ -48,16 +48,13 @@ export type RecordFilters = {
   placeId?: string;
   /** 이 조사가 잡은 물고기가 있는 기록 */
   angler?: string;
-  /** 이 장비 세트(조사와 세트 이름)를 쓴 기록 */
-  gearSet?: { angler: string; name: string };
 };
 
-const fetchPage = async (page: number, { kind, keyword = '', placeId, angler, gearSet }: RecordFilters) => {
+const fetchPage = async (page: number, { kind, keyword = '', placeId, angler }: RecordFilters) => {
   const from = page * PAGE_SIZE;
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
   if (placeId) query = query.eq('place_id', placeId);
-  if (gearSet) query = query.contains('gear_sets', JSON.stringify([gearSet]));
   if (angler) {
     const caught = await supabase.from('fish_catches').select('record_id').eq('angler', angler).limit(2000);
     if (caught.error) throw new Error('기록을 불러오지 못했습니다.');
@@ -162,7 +159,7 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'catches' | 'rating'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
@@ -177,7 +174,7 @@ export const useStatRecords = () =>
         const { data, error } = await supabase
           .from('records')
           .select(
-            'id, visited_on, bait, gear, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)',
+            'id, visited_on, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)',
           )
           .order('visited_on')
           .order('id')
