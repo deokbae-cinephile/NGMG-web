@@ -64,8 +64,8 @@ export const placeCatchRates = (fishing: StatRecord[]) => {
     place.fish += record.fish.length;
     places.set(record.place.id, place);
   });
-  return [...places.values()]
-    .map(({ name, days, catchDays, fish }) => ({ name, trips: days.size, catchDays: catchDays.size, blankRate: 1 - catchDays.size / days.size, average: fish / days.size }))
+  return [...places.entries()]
+    .map(([id, { name, days, catchDays, fish }]) => ({ id, name, trips: days.size, catchDays: catchDays.size, blankRate: 1 - catchDays.size / days.size, average: fish / days.size }))
     .sort((a, b) => b.trips - a.trips || b.average - a.average || a.name.localeCompare(b.name, 'ko'));
 };
 
@@ -85,7 +85,7 @@ export const restaurantStats = (restaurants: StatRecord[]) => {
     place.spend += spendOf(record);
     places.set(record.place.id, place);
   });
-  const list = [...places.values()].map(({ ratings, ...place }) => ({ ...place, rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null }));
+  const list = [...places.entries()].map(([id, { ratings, ...place }]) => ({ ...place, id, rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null }));
   return {
     spend: restaurants.reduce((sum, record) => sum + spendOf(record), 0),
     topRated: list.filter((place) => place.rating !== null).sort((a, b) => b.rating! - a.rating! || b.visits - a.visits).slice(0, 5),

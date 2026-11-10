@@ -779,7 +779,9 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
 });
 
 test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점 성향, 작년 비교, 최대어 기록 변화', async ({ page }) => {
-  const year = new Date().getFullYear();
+  // 작년 비교는 오늘 날짜까지 세므로 시계를 고정합니다.
+  const year = 2026;
+  await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
   await fakeBackend(page, {
     places: [place('p1', '거문도 방파제'), place('p4', '가거도 갯바위'), place('p2', '바다횟집', 'restaurant')],
     records: [

@@ -217,8 +217,8 @@ export const StatsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {stats.placeRates.map(({ name, trips, blankRate, average }) => (
-                  <tr key={name}>
+                {stats.placeRates.map(({ id, name, trips, blankRate, average }) => (
+                  <tr key={id}>
                     <th scope="row" className="break-words">{name}</th>
                     <td>{`${trips}회`}</td>
                     <td>{`${Math.round(blankRate * 100)}%`}</td>
@@ -245,8 +245,8 @@ export const StatsPage = () => {
                 <Empty>두 사람이 모두 평점을 준 맛집이 없습니다.</Empty>
               ) : (
                 <ol className="flex flex-col">
-                  {stats.restaurant.topRated.map(({ name, rating, visits }) => (
-                    <li key={name} className="panel flex justify-between gap-3">
+                  {stats.restaurant.topRated.map(({ id, name, rating, visits }) => (
+                    <li key={id} className="panel flex justify-between gap-3">
                       <span className="min-w-0 break-words">{name}</span>
                       <span className="shrink-0">{`${rating!.toFixed(1)}점 / ${visits}번`}</span>
                     </li>
@@ -260,8 +260,8 @@ export const StatsPage = () => {
                 <Empty>두 번 이상 간 맛집이 없습니다.</Empty>
               ) : (
                 <ol className="flex flex-col">
-                  {stats.restaurant.revisited.map(({ name, visits, spend }) => (
-                    <li key={name} className="panel flex justify-between gap-3">
+                  {stats.restaurant.revisited.map(({ id, name, visits, spend }) => (
+                    <li key={id} className="panel flex justify-between gap-3">
                       <span className="min-w-0 break-words">{name}</span>
                       <span className="shrink-0">{`${visits}번 / ${won(spend)}`}</span>
                     </li>
