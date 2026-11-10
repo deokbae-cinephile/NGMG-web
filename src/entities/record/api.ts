@@ -1,9 +1,12 @@
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { forEachLimit } from '@/shared/lib';
 import { removePhotos, signPhotos, supabase, uploadPhoto, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto, type PhotoUrls } from '@/shared/api';
 import { cleanKeyword, pendingRating, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
 
 export const MAX_PHOTOS = 10;
+/** 사진을 동시에 올리는 수 */
+const UPLOAD_LIMIT = 3;
 export const PAGE_SIZE = 10;
 
 const SELECT =
@@ -309,7 +312,7 @@ const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInpu
     if (removal.error) throw new Error('물고기 기록을 삭제하지 못했습니다.');
     await removePhotos(removed.map((item) => item.photo_path));
   }
-  for (const [position, { file, removePhoto, ...item }] of fish.entries()) {
+  await forEachLimit(fish, UPLOAD_LIMIT, async ({ file, removePhoto, ...item }, position) => {
     let photo_path = removePhoto ? null : item.photo_path;
     if (file) {
       // 같은 파일은 같은 경로가 되어 다시 저장해도 중복되지 않습니다.
@@ -320,7 +323,7 @@ const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInpu
     const row = await supabase.from('fish_catches').upsert({ ...item, record_id: recordId, photo_path, position });
     if (row.error) throw new Error('물고기 기록을 저장하지 못했습니다.');
     if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
-  }
+  });
 };
 
 const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInput['removedMenu']) => {
@@ -329,7 +332,7 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
     if (removal.error) throw new Error('메뉴를 삭제하지 못했습니다.');
     await removePhotos(removed.map((item) => item.photo_path));
   }
-  for (const { file, removePhoto, ...item } of items) {
+  await forEachLimit(items, UPLOAD_LIMIT, async ({ file, removePhoto, ...item }) => {
     let photo_path = removePhoto ? null : item.photo_path;
     if (file) {
       photo_path = `${recordId}/menu-${item.id}-${file.lastModified}-${file.size}.jpg`;
@@ -339,7 +342,7 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
     const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path });
     if (row.error) throw new Error('메뉴를 저장하지 못했습니다.');
     if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
-  }
+  });
 };
 
 const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, menuItems, removedMenu, ...values }: RecordInput) => {
@@ -352,8 +355,8 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
     await removePhotos(removedPhotos.map((photo) => photo.storage_path));
   }
 
-  for (const [index, file] of files.entries()) {
-    // 같은 파일은 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
+  // 사진은 3장씩 함께 올립니다. 같은 파일은 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
+  await forEachLimit(files, UPLOAD_LIMIT, async (file, index) => {
     const path = `${values.id}/${file.lastModified}-${file.size}.jpg`;
     const upload = await uploadPhoto(path, file);
     if (upload.error) throw new Error(`사진을 올리지 못했습니다: ${file.name}`);
@@ -361,7 +364,7 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
       .from('record_photos')
       .upsert({ record_id: values.id, storage_path: path, position: nextPosition + index }, { onConflict: 'storage_path' });
     if (row.error) throw new Error(`사진을 저장하지 못했습니다: ${file.name}`);
-  }
+  });
 
   await saveFish(values.id, fish, removedFish);
   await saveMenu(values.id, menuItems, removedMenu);
