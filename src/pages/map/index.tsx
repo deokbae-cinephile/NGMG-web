@@ -3,7 +3,7 @@ import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } fro
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
-import { findAddress, getPreference, setPreference, Link } from '@/shared/lib';
+import { findAddress, Link } from '@/shared/lib';
 import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
@@ -14,7 +14,8 @@ const NO_PLACES: Place[] = [];
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
   const { data: ratings, error: ratingsError } = usePlaceRatings();
-  const [filter, setFilter] = useState<Filter>(() => getPreference('map-filter', 'all'));
+  // 지도에 들어올 때마다 '전체'에서 시작합니다(사용자 요청).
+  const [filter, setFilter] = useState<Filter>('all');
   const [selectedId, setSelectedId] = useState<string>();
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
@@ -41,7 +42,6 @@ export const MapPage = () => {
 
   const changeFilter = (next: Filter) => {
     setFilter(next);
-    setPreference('map-filter', next);
   };
 
   const onPick = async (latitude: number, longitude: number) => {
@@ -97,7 +97,7 @@ export const MapPage = () => {
           </p>
 
           {isPending && <SkeletonRows variant="place" />}
-          <ul className="flex flex-col">
+          <ul aria-label="장소 목록" className="flex flex-col">
             {listed.map((place) => {
               const selected = place.id === selectedId;
               return (

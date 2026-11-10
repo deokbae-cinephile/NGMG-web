@@ -76,7 +76,7 @@ test('첫 로딩: 스플래시 로고가 보인 뒤 앱이 열리고, 새로고�
   await expect(page.locator('.splash .logo')).toHaveCount(0);
 });
 
-test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async ({ page }) => {
+test('지도: 검색으로 장소를 추가하고, 분류 필터는 다른 메뉴에 다녀오면 전체로 돌아간다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
@@ -103,8 +103,14 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
 
   await page.getByRole('button', { name: '맛집', exact: true }).click();
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeHidden();
-  await page.reload();
-  await expect(page.getByRole('button', { name: '맛집', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  // 다른 메뉴에 다녀오면 다시 '전체'에서 시작합니다.
+  await page.getByRole('link', { name: '통계' }).first().click();
+  await expect(page).toHaveURL(/\/stats$/);
+  await expect(page.getByRole('heading', { name: /년 통계$/ })).toBeVisible(); // 통계 화면이 다 뜬 뒤 지도로 돌아갑니다.
+  await page.getByRole('link', { name: '지도' }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('button', { name: '전체', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
 });
 
 test('장소: 수정하고 삭제한다', async ({ page }) => {
@@ -712,8 +718,11 @@ test('지도: 평균 평점에 따라 핀 색이 바뀌고 숫자로도 보여 �
   await pin.click();
   await expect(page.getByRole('group', { name: '거문도 방파제 정보' }).getByText('4.5')).toBeVisible();
   // 장소 목록은 늘 평점 높은 순이고, 평점이 없는 장소는 뒤에 옵니다.
-  const names = await page.locator('.cell-body ul > li').evaluateAll((items) => items.map((item) => item.textContent ?? ''));
-  expect(names.map((text) => (text.includes('거문도') ? '거문도' : text.includes('바다횟집') ? '바다횟집' : '긴 이름'))).toEqual(['거문도', '바다횟집', '긴 이름']);
+  const items = page.getByRole('list', { name: '장소 목록' }).getByRole('listitem');
+  await expect(items).toHaveCount(3);
+  await expect(items.nth(0)).toContainText('거문도 방파제');
+  await expect(items.nth(1)).toContainText('바다횟집');
+  await expect(items.nth(2)).toContainText(LONG_NAME);
   await expect(page.getByLabel('정렬')).toHaveCount(0);
   await expectAccessible(page);
 });
