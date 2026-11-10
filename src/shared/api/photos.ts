@@ -16,6 +16,17 @@ export type PhotoUrls = { url: string; thumb: string };
 const signedCache = new Map<string, PhotoUrls & { expires: number }>();
 /** 남은 시간이 이보다 짧으면 새로 받습니다. */
 const REUSE_MARGIN = 3_600_000;
+
+// 계정이 바뀌면 받아 둔 주소를 버리고, 바뀌기 전에 시작한 요청의 결과도 기억하지 않습니다.
+let account: string | undefined;
+let generation = 0;
+supabase.auth.onAuthStateChange((_event, session) => {
+  const next = session?.user.id;
+  if (next === account) return;
+  account = next;
+  generation += 1;
+  signedCache.clear();
+});
 /** 썸네일 없이 원본으로 대신한 주소를 다시 쓰는 시간 */
 const FALLBACK_REUSE = 600_000;
 
@@ -55,6 +66,7 @@ export const signPhotos = async (paths: string[], { throwOnError = false } = {})
     return true;
   });
   if (!unique.length) return urls;
+  const started = generation;
   const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls([...unique, ...unique.map(thumbPath)], SIGNED_URL_SECONDS);
   // 오프라인이면 토큰 없는 서명 경로를 씁니다. 서비스 워커(public/sw.js)가 사진을 토큰을 뺀 경로로 저장해 두어 이미 본 사진은 그대로 보입니다.
   if (error && !navigator.onLine) {
@@ -71,6 +83,7 @@ export const signPhotos = async (paths: string[], { throwOnError = false } = {})
     const thumb = signed.get(thumbPath(path));
     const photo = { url, thumb: thumb ?? url };
     urls.set(path, photo);
+    if (started !== generation) return; // 그 사이 계정이 바뀌었습니다.
     // 썸네일이 없어 원본으로 대신한 결과는 10분만 기억합니다. 그 사이 썸네일이 생기면 곧 썸네일로 바뀝니다.
     signedCache.set(path, { ...photo, expires: thumb ? now + SIGNED_URL_SECONDS * 1000 : now + REUSE_MARGIN + FALLBACK_REUSE });
   });
