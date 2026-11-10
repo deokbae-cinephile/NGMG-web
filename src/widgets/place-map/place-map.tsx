@@ -204,7 +204,25 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
     // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
     const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
-    map.instance.panTo(new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0)));
+    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
+    const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
+    const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
+    const near = selected.latitude <= north && selected.latitude >= south && selected.longitude <= east && selected.longitude >= west;
+    if (near) {
+      map.instance.panTo(target); // 화면 안이면 부드럽게 옮깁니다.
+      return;
+    }
+    // 화면 밖 먼 곳은 지도가 한 번에 바뀌어 번쩍이므로 잠깐 흐린 뒤 옮기고 다시 보여 줍니다.
+    const node = container.current;
+    node?.classList.add('map-moving');
+    const timer = window.setTimeout(() => {
+      map.instance.setCenter(target);
+      window.requestAnimationFrame(() => node?.classList.remove('map-moving'));
+    }, 150);
+    return () => {
+      window.clearTimeout(timer);
+      node?.classList.remove('map-moving');
+    };
   }, [map, selected, offsets]);
 
   useEffect(() => {
@@ -270,7 +288,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
 
   return (
     <div className="relative h-full w-full">
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`h-full w-full ${satellite ? '' : 'map'}`} />
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'}`} />
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
         <strong className="font-normal">평점</strong>
         {[1, 2, 3, 4, 5].map((score) => (

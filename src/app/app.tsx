@@ -5,7 +5,7 @@ import { LoginPage } from '@/pages/login';
 import { Navigate, useLocation } from '@/shared/lib';
 import { ErrorBoundary } from '@/shared/ui';
 import { AppShell } from '@/widgets/app-shell';
-import { Intro } from './intro';
+import { Splash } from './splash';
 
 const pages = {
   map: () => import('@/pages/map').then((page) => ({ default: page.MapPage })),
@@ -62,8 +62,8 @@ const useFontsReady = () => {
 export const App = () => {
   const session = useSession();
   const fontsReady = useFontsReady();
-  const [introDone, setIntroDone] = useState(false);
-  const finishIntro = useCallback(() => setIntroDone(true), []);
+  const [splashDone, setSplashDone] = useState(false);
+  const finishSplash = useCallback(() => setSplashDone(true), []);
 
   // 로그인 후 다른 메뉴의 코드를 미리 받아 둡니다. 메뉴를 처음 눌러도 로딩 화면 없이 바로 바뀝니다.
   useEffect(() => {
@@ -78,9 +78,9 @@ export const App = () => {
 
   return (
     <ErrorBoundary>
-      {!introDone && <Intro ready={session !== undefined && fontsReady} onDone={finishIntro} />}
+      {!splashDone && <Splash ready={session !== undefined && fontsReady} onDone={finishSplash} />}
       {session !== undefined && (
-        <div className="contents" inert={!introDone}>
+        <div className="contents" inert={!splashDone}>
         <QueryClientProvider client={client}>
           {session === null ? (
             <LoginPage />

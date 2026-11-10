@@ -1,6 +1,5 @@
 import { useEffect, useState, type MouseEvent } from 'react';
 import { Icon } from './icon';
-import { Photo } from './photo';
 
 /** 고른 사진 파일을 올리기 전에 미리 보여 줍니다. 읽는 동안에는 빈 칸을 둡니다. */
 export const FilePreview = ({ file, alt, className = '' }: { file: File; alt: string; className?: string }) => {
@@ -16,7 +15,7 @@ export const FilePreview = ({ file, alt, className = '' }: { file: File; alt: st
   return src ? (
     <img src={src} alt={alt} className={`border border-line bg-surface object-cover ${className}`} />
   ) : (
-    <span aria-hidden="true" className={`skeleton border border-line ${className}`} />
+    <span aria-hidden="true" className={`block border border-line bg-surface ${className}`} />
   );
 };
 
@@ -45,7 +44,7 @@ export const RemovablePhoto = ({ src, file, alt, removeLabel, onRemove, inputBef
 
   return (
     <div className={`relative ${className}`}>
-      {file ? <FilePreview file={file} alt={alt} className="size-full" /> : <Photo src={src ?? ''} alt={alt} className="size-full border border-line object-cover" />}
+      {file ? <FilePreview file={file} alt={alt} className="size-full" /> : <img src={src} alt={alt} className="size-full border border-line bg-surface object-cover" />}
       <button type="button" className="photo-remove" aria-label={removeLabel} onClick={remove}>
         <Icon name="close" size={16} />
       </button>

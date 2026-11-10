@@ -1,17 +1,28 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { InstallButton } from '@/features/install-app';
+import { ScrollTopButton } from '@/features/scroll-top';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
-import { Icon, Logo, PageSkeleton, type IconName } from '@/shared/ui';
-import { LoadingBar } from './loading-bar';
+import { Icon, Logo, PageSkeleton, type IconName, type PageVariant } from '@/shared/ui';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: '지도', icon: 'pin' },
   { to: '/schedule', label: '일정 및 기록', icon: 'calendar' },
+  { to: '/stats', label: '통계', icon: 'stats' },
   { to: '/dex', label: '도감', icon: 'dex' },
   { to: '/gear', label: '장비', icon: 'rod' },
-  { to: '/stats', label: '통계', icon: 'stats' },
 ];
+
+/** 화면 코드를 받는 동안 그 화면 모양의 자리를 보여 줍니다. */
+const skeletonFor = (pathname: string): PageVariant => {
+  if (pathname === '/') return 'map';
+  if (pathname === '/schedule') return 'schedule';
+  if (pathname === '/stats') return 'stats';
+  if (pathname === '/dex') return 'dex';
+  if (pathname === '/gear') return 'gear';
+  if (pathname.startsWith('/places/')) return 'place';
+  return 'default';
+};
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const main = useRef<HTMLElement>(null);
@@ -43,7 +54,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         본문 바로가기
       </a>
       <header className="topbar">
-        <LoadingBar />
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>
@@ -58,12 +68,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         </nav>
       </header>
       <main id="main" ref={main} tabIndex={-1} className="min-h-0 flex-1 pb-16 outline-none lg:overflow-y-auto lg:pb-0">
-        <Suspense fallback={<PageSkeleton />}>
+        <Suspense fallback={<PageSkeleton variant={skeletonFor(pathname)} />}>
           {children}
         </Suspense>
       </main>
-      {/* 설치는 메뉴(GNB)와 다른 동작이라 메뉴 밖에 따로 띄웁니다. */}
-      <InstallButton />
+      {/* 설치와 맨 위로는 메뉴(GNB)와 다른 동작이라 메뉴 밖 오른쪽 아래에 따로 띄웁니다. */}
+      <div className="floating-actions">
+        <InstallButton />
+        <ScrollTopButton />
+      </div>
     </div>
   );
 };

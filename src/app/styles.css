@@ -62,6 +62,7 @@
 }
 
 html {
+  -webkit-tap-highlight-color: transparent; /* 누를 때 생기는 회색 반짝임 대신 각 버튼의 상태로 보여 줍니다. */
   background: var(--color-paper);
   color-scheme: light dark;
   font-synthesis: none; /* 도현은 굵기가 하나뿐이라 브라우저가 가짜 굵게를 만들지 않게 합니다. */
@@ -187,9 +188,11 @@ body::after {
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
   }
-  .button:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .button:hover:not(:disabled) {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
   }
   .button:disabled {
     cursor: not-allowed;
@@ -210,8 +213,10 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .icon-button:hover {
-    background: var(--color-surface);
+  @media (hover: hover) {
+    .icon-button:hover {
+      background: var(--color-surface);
+    }
   }
   .icon-button-sm {
     display: inline-flex;
@@ -222,8 +227,10 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .icon-button-sm:hover:not(:disabled) {
-    background: var(--color-surface);
+  @media (hover: hover) {
+    .icon-button-sm:hover:not(:disabled) {
+      background: var(--color-surface);
+    }
   }
   .icon-button-sm:disabled {
     cursor: not-allowed;
@@ -244,8 +251,10 @@ body::after {
     color: #fafafa;
     cursor: pointer;
   }
-  .photo-remove:hover {
-    background: rgb(10 10 10 / 0.85);
+  @media (hover: hover) {
+    .photo-remove:hover {
+      background: rgb(10 10 10 / 0.85);
+    }
   }
 
   /* 장비 끌어서 옮기기. 손잡이에서는 터치 스크롤 대신 끌기로 동작합니다. */
@@ -284,17 +293,21 @@ body::after {
     color: var(--color-paper);
     padding-inline: 1.5rem;
   }
-  .button-primary:hover:not(:disabled) {
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .button-primary:hover:not(:disabled) {
+      color: var(--color-on-accent);
+    }
   }
   /* 삭제처럼 눈에 띄어야 하는 버튼. 포인트 색 위의 글자는 검정입니다. */
   .button-accent {
     background: var(--color-accent);
     color: var(--color-on-accent);
   }
-  .button-accent:hover:not(:disabled) {
-    background: var(--color-ink);
-    color: var(--color-paper);
+  @media (hover: hover) {
+    .button-accent:hover:not(:disabled) {
+      background: var(--color-ink);
+      color: var(--color-paper);
+    }
   }
   /* [ 삭제 ] 처럼 대괄호로 감싼 글자 버튼. 대괄호는 읽지 않습니다. */
   .text-action {
@@ -315,8 +328,10 @@ body::after {
   .text-action::after {
     content: '\00a0]' / '';
   }
-  .text-action:hover:not(:disabled) {
-    color: var(--color-ink);
+  @media (hover: hover) {
+    .text-action:hover:not(:disabled) {
+      color: var(--color-ink);
+    }
   }
   .text-action-accent {
     color: var(--color-accent);
@@ -346,8 +361,10 @@ body::after {
     text-align: left;
     cursor: pointer;
   }
-  .result:hover {
-    background: var(--color-surface);
+  @media (hover: hover) {
+    .result:hover {
+      background: var(--color-surface);
+    }
   }
 
   /* 분류는 색 대신 채움으로 구분합니다: 낚시 테두리, 맛집 검정, 기타 형광 */
@@ -422,11 +439,11 @@ body::after {
     height: auto;
   }
 
-  /* 테마 전환 버튼: 휴대폰은 하단 탭 위 오른쪽 아래에 떠 있고, 넓은 화면은 머리글에서 메뉴 왼쪽에 놓입니다. */
+  /* 테마 전환 버튼: 휴대폰은 하단 탭 위 왼쪽 아래에 떠 있고, 넓은 화면은 머리글에서 메뉴 왼쪽에 놓입니다. */
   .theme-toggle {
     position: fixed;
-    right: 0.75rem;
     bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    left: 0.75rem;
     z-index: 30;
     display: flex;
     width: 2.75rem;
@@ -438,9 +455,11 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .theme-toggle:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .theme-toggle:hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
   }
   @media (width >= 64rem) {
     .theme-toggle {
@@ -451,12 +470,20 @@ body::after {
     }
   }
 
-  /* 앱 설치 버튼: 설치할 수 있는 브라우저에서만 오른쪽 아래에 떠 있습니다. 휴대폰은 하단 탭 위, 테마 전환 버튼 왼쪽에 놓습니다. */
-  .install-button {
+  /* 오른쪽 아래에 떠 있는 버튼 묶음: 앱 설치(설치할 수 있는 브라우저에서만)와 맨 위로(내렸을 때만). 휴대폰은 하단 탭 위에 놓습니다. */
+  .floating-actions {
     position: fixed;
-    right: 4.25rem;
+    right: 0.75rem;
     bottom: calc(4.25rem + env(safe-area-inset-bottom));
     z-index: 30;
+    display: flex;
+    gap: 0.5rem;
+    pointer-events: none; /* 버튼 사이 빈 곳은 아래 내용을 누를 수 있게 합니다. */
+  }
+  .floating-actions > * {
+    pointer-events: auto;
+  }
+  .install-button {
     display: flex;
     min-height: 2.75rem;
     align-items: center;
@@ -467,12 +494,31 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .install-button:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .install-button:hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
+  }
+  .scroll-top {
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  @media (hover: hover) {
+    .scroll-top:hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
   }
   @media (width >= 64rem) {
-    .install-button {
+    .floating-actions {
       right: 1.25rem;
       bottom: 1.25rem;
     }
@@ -524,8 +570,10 @@ body::after {
   .nav-link + .nav-link {
     border-left: 1px solid var(--color-line);
   }
-  .nav-link:hover {
-    color: var(--color-ink);
+  @media (hover: hover) {
+    .nav-link:hover {
+      color: var(--color-ink);
+    }
   }
   .nav-link[aria-current='page'] {
     background: var(--color-accent);
@@ -643,6 +691,13 @@ body::after {
   .map img {
     filter: grayscale(0.85) contrast(1.05);
   }
+  /* 화면 밖 먼 곳으로 옮길 때는 지도가 한 번에 바뀌어 번쩍이므로 잠깐 흐렸다가 보여 줍니다. */
+  .map-view {
+    transition: opacity 0.15s ease-out;
+  }
+  .map-moving {
+    opacity: 0.3;
+  }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) .map img {
       filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9); /* 밝은 지도 타일을 어둡게 뒤집습니다. */
@@ -664,6 +719,7 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
     transform-origin: bottom center;
+    transition: scale 0.15s ease-out;
   }
   .pin > svg:not(.pin-shape) {
     position: relative;
@@ -786,9 +842,11 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .map-layer-toggle:hover {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .map-layer-toggle:hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
   }
 
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
@@ -830,6 +888,7 @@ body::after {
 
   /* 핀을 고르면 뜨는 말풍선. 핀 위에 놓이도록 아래를 비우고, 꼬리로 핀을 가리킵니다. */
   .map-popup {
+    animation: popup-in 0.18s ease-out;
     position: relative;
     display: flex;
     width: 14rem;
@@ -855,8 +914,10 @@ body::after {
     color: var(--color-ink);
     cursor: pointer;
   }
-  .map-popup-close:hover {
-    background: var(--color-surface);
+  @media (hover: hover) {
+    .map-popup-close:hover {
+      background: var(--color-surface);
+    }
   }
   .map-popup::after {
     content: '';
@@ -875,55 +936,30 @@ body::after {
   .pin-base[data-selected='true'] {
     scale: 1.15;
   }
+  .pin[aria-pressed='true'] .pin-score {
+    display: none; /* 위에 뜨는 말풍선의 상호와 겹치지 않게 합니다. */
+  }
   .pin[aria-pressed='true'] .pin-shape,
   .pin-base[data-selected='true'] .pin-shape {
     stroke-width: 2;
   }
 
-  /* 첫 로딩: 검은 벽이 낚시꾼에게 밀려 오른쪽으로 빠지면 뒤의 로고가 드러나고, 전체가 위로 걷힙니다. */
-  .intro {
+  /* 첫 화면: 가운데 로고만 놓인 스플래시. 앱이 준비되면 서서히 사라집니다. (index.html의 #boot와 같은 모습) */
+  .splash {
     position: fixed;
     inset: 0;
     z-index: 100;
     display: flex;
-    overflow: hidden;
     align-items: center;
     justify-content: center;
     background: var(--color-paper);
-    transition: transform 0.45s cubic-bezier(0.7, 0, 0.3, 1);
+    transition: opacity 0.3s ease-out;
   }
-  .intro-leaving {
-    transform: translateY(-100%);
+  .splash-leaving {
+    opacity: 0;
   }
-  .intro-logo .logo-lg {
-    width: min(64vw, 20rem);
-    height: auto;
-  }
-  .intro-wall {
-    position: absolute;
-    inset: 0;
-    background: var(--color-ink);
-    animation: intro-push 1.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.25s forwards;
-  }
-  .intro-pusher {
-    position: absolute;
-    top: 50%;
-    right: 100%;
-    width: 9rem;
-    transform: translateY(-50%);
-  }
-  .intro-pusher {
-    color: var(--color-ink);
-  }
-  .intro-fill {
-    fill: var(--color-paper);
-  }
-  .intro-leg {
-    transform-origin: 44px 92px;
-    animation: intro-step 0.42s ease-in-out infinite alternate;
-  }
-  .intro-leg-back {
-    animation-direction: alternate-reverse;
+  .splash .logo-lg {
+    width: min(40vw, 10rem);
   }
 
   /* 저장 중 화면. 입력과 닫기를 막고 진행 중임을 알립니다. */
@@ -953,36 +989,6 @@ body::after {
     display: block;
     background: var(--color-soft);
     animation: skeleton-pulse 1s ease-in-out infinite alternate;
-  }
-  /* 자료를 받는 동안 화면 맨 위에서 움직이는 가는 막대 */
-  .loading-bar {
-    position: fixed;
-    inset: 0 0 auto;
-    z-index: 60;
-    height: 3px;
-    overflow: hidden;
-    background: color-mix(in srgb, var(--color-ink) 15%, transparent);
-  }
-  .loading-bar::before {
-    content: '';
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 40%;
-    background: var(--color-ink); /* 포인트 색은 흰 바탕에서 대비가 모자라 글자색을 씁니다. */
-    animation: loading-slide 1s ease-in-out infinite;
-  }
-
-  /* 사진: 받는 동안 회색 칸이 깜빡이고, 다 받으면 부드럽게 나타납니다. */
-  .photo-loading {
-    background: var(--color-soft);
-    color: transparent; /* 받는 동안 대체 글자가 비치지 않게 합니다. */
-    animation: skeleton-pulse 1s ease-in-out infinite alternate;
-  }
-  .photo-loaded {
-    animation: photo-in 0.3s ease-out;
-  }
-  .photo-failed {
-    background: var(--color-surface);
   }
   .skeleton-page {
     min-height: calc(100dvh - var(--spacing-topbar) - 1px);
@@ -1076,8 +1082,10 @@ body::after {
 .cal-stay-right::after {
   right: 0;
 }
-.cal-day:hover {
-  background: var(--color-surface);
+@media (hover: hover) {
+  .cal-day:hover {
+    background: var(--color-surface);
+  }
 }
 .cal-day.is-sun {
   color: var(--color-sun);
@@ -1135,19 +1143,6 @@ body::after {
   font-size: 0.8125rem;
 }
 
-@keyframes intro-push {
-  to {
-    transform: translateX(calc(100% + 9.5rem));
-  }
-}
-@keyframes intro-step {
-  from {
-    transform: rotate(-20deg);
-  }
-  to {
-    transform: rotate(16deg);
-  }
-}
 @keyframes saving-spin {
   to {
     transform: rotate(360deg);
@@ -1158,28 +1153,15 @@ body::after {
     opacity: 0.45;
   }
 }
-@keyframes loading-slide {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(250%);
-  }
-}
-@keyframes photo-in {
+@keyframes popup-in {
   from {
     opacity: 0;
+    transform: translateY(0.25rem);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton,
-  .photo-loading,
-  .photo-loaded {
-    animation: none;
-  }
-  .loading-bar::before {
-    width: 100%;
+  .skeleton {
     animation: none;
   }
   .saving-spinner {

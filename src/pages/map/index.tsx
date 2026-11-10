@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { distanceKm, findAddress, formatDistance, getCurrentLocation, getPreference, setPreference, Link } from '@/shared/lib';
-import { ErrorText, Field, Modal, Photo, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
@@ -125,7 +125,7 @@ export const MapPage = () => {
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
           </p>
 
-          {isPending && <SkeletonRows />}
+          {isPending && <SkeletonRows variant="place" />}
           <ul className="flex flex-col">
             {listed.map((place) => {
               const distance = origin ? distanceKm(origin, place) : null;
@@ -145,7 +145,7 @@ export const MapPage = () => {
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                       {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
                     </span>
-                    {place.photo_url && <Photo src={place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line object-cover" />}
+                    {place.photo_url && <img src={place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />}
                   </button>
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">

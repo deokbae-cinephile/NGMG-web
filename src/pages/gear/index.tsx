@@ -3,7 +3,7 @@ import { GEAR_CATEGORIES, GEAR_SECTIONS, gearIcon, gearLabel, gearSubcategory, u
 import { gearList, useStatRecords } from '@/entities/record';
 import { GearForm } from '@/features/gear-form';
 import { ANGLERS, type Gear } from '@/shared/api';
-import { ErrorText, Icon, Modal, Photo, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
 import { byPosition, inSection, moveGear, type GearSection } from './model';
 
 type Drop = GearSection & { beforeId: string | null };
@@ -142,7 +142,7 @@ export const GearPage = () => {
       <title>장비 | 낚고먹고</title>
       <h1 className="sr-only">조사별 장비</h1>
       <p role="status" className="sr-only">{message}</p>
-      <div role="group" aria-label="조사 고르기" className="grid grid-cols-2 lg:hidden">
+      <div role="group" aria-label="조사 고르기" className="sticky top-0 z-20 grid grid-cols-2 bg-paper lg:hidden">
         {ANGLERS.map((angler) => (
           <button key={angler} type="button" className="tab-button" aria-pressed={angler === activeAngler} onClick={() => setActiveAngler(angler)}>
             {angler}
@@ -150,8 +150,9 @@ export const GearPage = () => {
         ))}
       </div>
       {ANGLERS.map((angler, index) => (
-        <section key={angler} aria-labelledby={`gear-${index}`} className={`pane max-lg:border-t max-lg:border-line ${angler === activeAngler ? '' : 'max-lg:hidden'}`} data-gear-pane={angler}>
-          <div className="cell-head">
+        <section key={angler} aria-labelledby={`gear-${index}`} className={`pane max-lg:border-t-0 ${angler === activeAngler ? '' : 'max-lg:hidden'}`} data-gear-pane={angler}>
+          {/* 휴대폰은 조사 탭과 함께 장비 추가 줄까지 위에 붙여 둡니다. */}
+          <div className="cell-head max-lg:sticky max-lg:top-12 max-lg:z-10 max-lg:border-t max-lg:border-line max-lg:bg-paper">
             <h2 id={`gear-${index}`} className="title text-xl">{`${angler} 장비`}</h2>
             <button type="button" className="button button-primary" aria-label={`${angler} 장비 추가`} onClick={() => setForm({ angler })}>
               장비 추가
@@ -159,7 +160,7 @@ export const GearPage = () => {
           </div>
           <div className="cell-body flex flex-col gap-6">
             <ErrorText error={error ?? remove.error ?? reorder.error} />
-            {isPending && <SkeletonRows count={3} />}
+            {isPending && <SkeletonRows count={3} variant="gear" />}
             {!isPending &&
               GEAR_CATEGORIES.map((category) => (
                 <section key={category} aria-label={`${angler} ${category}`}>
@@ -185,7 +186,7 @@ export const GearPage = () => {
                               </span>
                               {item.photo_url ? (
                                 <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                                  <Photo src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+                                  <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line bg-surface object-cover" />
                                 </a>
                               ) : (
                                 <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
