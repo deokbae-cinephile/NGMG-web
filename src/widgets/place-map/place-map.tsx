@@ -212,16 +212,25 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       map.instance.panTo(target); // 화면 안이면 부드럽게 옮깁니다.
       return;
     }
-    // 화면 밖 먼 곳은 지도가 한 번에 바뀌어 번쩍이므로 잠깐 흐린 뒤 옮기고 다시 보여 줍니다.
+    // 화면 밖 먼 곳은 지도가 한 번에 넘어가고, 새 지역의 지도 그림이 오기 전까지 빈 화면이 보여 번쩍입니다.
+    // 지도를 잠깐 감췄다가 옮기고, 새 그림을 다 받은 뒤(늦어도 1.2초 뒤) 다시 보여 줍니다.
+    const { kakao, instance } = map;
     const node = container.current;
+    let fallback = 0;
+    const reveal = () => {
+      kakao.maps.event.removeListener(instance, 'tilesloaded', reveal);
+      window.clearTimeout(fallback);
+      node?.classList.remove('map-moving');
+    };
     node?.classList.add('map-moving');
     const timer = window.setTimeout(() => {
-      map.instance.setCenter(target);
-      window.requestAnimationFrame(() => node?.classList.remove('map-moving'));
-    }, 150);
+      kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
+      instance.setCenter(target);
+      fallback = window.setTimeout(reveal, 1200);
+    }, 220); // styles.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
     return () => {
       window.clearTimeout(timer);
-      node?.classList.remove('map-moving');
+      reveal();
     };
   }, [map, selected, offsets]);
 

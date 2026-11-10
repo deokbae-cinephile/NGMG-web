@@ -691,12 +691,12 @@ body::after {
   .map img {
     filter: grayscale(0.85) contrast(1.05);
   }
-  /* 화면 밖 먼 곳으로 옮길 때는 지도가 한 번에 바뀌어 번쩍이므로 잠깐 흐렸다가 보여 줍니다. */
+  /* 화면 밖 먼 곳으로 옮길 때는 새 지도 그림을 다 받을 때까지 감췄다가 부드럽게 다시 보여 줍니다. (빈 화면이 번쩍이지 않게) */
   .map-view {
-    transition: opacity 0.15s ease-out;
+    transition: opacity 0.2s ease-out;
   }
   .map-moving {
-    opacity: 0.3;
+    opacity: 0;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) .map img {
