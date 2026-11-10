@@ -1,5 +1,32 @@
 import { summarizeAnglers, type StatRecord } from '@/entities/record';
 
+type Fish = StatRecord['fish'][number];
+export type GearSetStat = { angler: string; name: string; trips: number; count: number; biggest: Fish | null };
+
+/**
+ * 장비 세트별 조과. 기록에 남은 세트(조사와 세트 이름)마다 쓴 출조 날짜 수, 그 조사가 잡은 마릿수, 최대어를 셉니다.
+ * 출조가 많은 순, 같으면 많이 잡은 순입니다.
+ */
+export const summarizeGearSets = (records: StatRecord[]): GearSetStat[] => {
+  const stats = new Map<string, GearSetStat & { days: Set<string> }>();
+  records.forEach((record) => {
+    new Map(record.gear_sets.map((set) => [`${set.angler}\u0000${set.name}`, set])).forEach((set, key) => {
+      const stat = stats.get(key) ?? { angler: set.angler, name: set.name, trips: 0, count: 0, biggest: null, days: new Set<string>() };
+      stat.days.add(record.visited_on);
+      record.fish
+        .filter((fish) => fish.angler === set.angler)
+        .forEach((fish) => {
+          stat.count += 1;
+          if (!stat.biggest || fish.length_cm > stat.biggest.length_cm) stat.biggest = fish;
+        });
+      stats.set(key, stat);
+    });
+  });
+  return [...stats.values()]
+    .map(({ days, ...stat }) => ({ ...stat, trips: days.size }))
+    .sort((a, b) => b.trips - a.trips || b.count - a.count || a.name.localeCompare(b.name, 'ko'));
+};
+
 const top = (values: string[], limit = 5) => {
   const counts = new Map<string, number>();
   values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
@@ -21,6 +48,7 @@ export const summarize = (records: StatRecord[], year: number) => {
     months,
     places: top(inYear.map((record) => record.place.name)),
     anglers: summarizeAnglers(fishing.flatMap((record) => record.fish)),
+    gearSets: summarizeGearSets(fishing),
   };
 };
 

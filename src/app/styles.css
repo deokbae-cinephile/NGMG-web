@@ -1155,6 +1155,18 @@ body::after {
 }
 
 
+/* 전체 기록의 추가 조건. 누르는 영역을 44px 이상으로 둡니다. */
+.record-filters > summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+.record-filters[open] > summary svg {
+  rotate: 180deg;
+}
+
 /* 기록 사진 넘기기 */
 .photo-slider {
   position: relative;

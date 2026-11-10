@@ -15,6 +15,7 @@ export {
   useSignedPhotos,
   usePendingRatings,
   type DexFish,
+  type RecordFilters,
   type FishInput,
   type StatRecord,
   type DexMenu,

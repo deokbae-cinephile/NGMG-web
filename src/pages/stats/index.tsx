@@ -118,6 +118,28 @@ export const StatsPage = () => {
           </dl>
         </section>
       </div>
+
+      <section aria-labelledby="sets-title" className="border-t border-line">
+        <div className="cell-head">
+          <h2 id="sets-title" className="title text-xl">장비 세트별 조과</h2>
+        </div>
+        {stats.gearSets.length === 0 ? (
+          <p className="cell-body text-muted">장비 세트를 쓴 낚시 기록이 아직 없습니다. 일정이나 기록에서 세트를 고르면 세트별로 모아 보여 드립니다.</p>
+        ) : (
+          <dl className="cell-body grid gap-x-6 lg:grid-cols-2">
+            {stats.gearSets.map(({ angler, name, trips, count, biggest }) => (
+              <div key={`${angler} ${name}`} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
+                <dt className="break-words">{`${angler} ${name}`}</dt>
+                <dd className="col-start-1 text-sm text-muted">{`출조 ${trips}회${biggest ? ` / 최대어 ${fishLabel(biggest)}` : ''}`}</dd>
+                <dd className="col-start-2 row-span-2 row-start-1 flex items-center gap-1">
+                  <span className="display-number text-5xl!">{count}</span>
+                  <span>마리</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
     </div>
   );
 };

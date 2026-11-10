@@ -17,11 +17,12 @@ export const fishLabel = (fish: Pick<FishCatch, 'species' | 'length_cm'>) => `${
 /** 검색어의 특수 문자는 PostgREST 조건을 깨뜨릴 수 있어 빈칸으로 바꿉니다. */
 export const cleanKeyword = (keyword: string) => keyword.replace(/[\\"%_]/g, ' ').trim();
 
-/** 기록 검색 조건. fishRecordIds는 어종이 맞는 물고기가 있는 기록입니다. */
-export const recordSearchFilter = (text: string, fishRecordIds: string[] = []) =>
+/** 기록 검색 조건. fishRecordIds는 어종이 맞는 물고기가 있는 기록, placeIds는 이름이 맞는 장소입니다. */
+export const recordSearchFilter = (text: string, fishRecordIds: string[] = [], placeIds: string[] = []) =>
   [
     ...['catches', 'memo', 'bait', 'gear', 'rig', 'menu', 'companions'].map((column) => `${column}.ilike."%${text}%"`),
     ...(fishRecordIds.length ? [`id.in.(${fishRecordIds.join(',')})`] : []),
+    ...(placeIds.length ? [`place_id.in.(${placeIds.join(',')})`] : []),
   ].join(',');
 
 export const summarizeRecords = (records: Pick<PlaceRecord, 'visited_on' | 'rating'>[]) => {
