@@ -885,9 +885,13 @@ test('기록: 저장을 빠르게 두 번 눌러도 한 번만 저장하고 가�
 });
 
 test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 사진을 모아 본다', async ({ page }) => {
+  const base = seed();
   await fakeBackend(page, {
-    ...seed(),
+    ...base,
+    // 다른 장소(p3)에서 가장 최근에 잡은 사진은 p1의 사진 모음에 나오면 안 됩니다.
+    records: [...base.records!, { id: 'r-other', place_id: 'p3', visited_on: '2026-10-31', catches: '', memo: '' }],
     fish_catches: [
+      { id: 'f0', record_id: 'r-other', angler: '김 조사', species: '참돔', length_cm: 50, position: 0, photo_path: 'r-other/fish-0.jpg' },
       { id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 38, position: 0, photo_path: 'r00/fish-1.jpg' },
       { id: 'f2', record_id: 'r05', angler: '류 조사', species: '볼락', length_cm: 21, position: 0, photo_path: 'r05/fish-2.jpg' },
       { id: 'f3', record_id: 'r06', angler: '류 조사', species: '우럭', length_cm: 25, position: 0, photo_path: null },
