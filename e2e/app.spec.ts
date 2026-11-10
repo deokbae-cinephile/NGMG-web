@@ -945,6 +945,10 @@ test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없�
   });
   await page.getByRole('button', { name: '현재 위치로 이동' }).click();
   await expect(page.getByRole('alert')).toContainText('위치 권한이 꺼져 있습니다');
+  await page.waitForTimeout(5500);
+  await expect(page.getByRole('alert')).toBeVisible(); // 저절로 사라지지 않습니다.
+  await page.getByRole('button', { name: '위치 안내 닫기' }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 없다', async ({ page }) => {
@@ -974,7 +978,11 @@ test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 
   await page.goto('./stats');
   await page.getByRole('region', { name: '자주 간 낚시 포인트' }).getByRole('link', { name: /거문도 방파제/ }).click();
   await expect(page).toHaveURL(/\/places\/p1$/);
+  // 평점 대기 조회가 끝난 뒤에도 칸이 없는지 봅니다(조회 중에도 칸을 그리지 않으므로).
+  const pending = page.waitForResponse((response) => /\/rest\/v1\/records\?select=id%2C\+?visited_on%2C\+?angler_ratings/.test(response.url()));
   await page.goto('./settings');
+  await pending;
   await expect(page.getByRole('region', { name: '알림', exact: true })).toBeVisible();
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   await expect(page.getByRole('region', { name: '평점 대기' })).toHaveCount(0);
 });

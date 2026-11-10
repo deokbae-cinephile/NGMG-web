@@ -403,13 +403,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     );
   };
 
-  // 위치 오류 안내는 잠시 보여 준 뒤 지웁니다.
-  useEffect(() => {
-    if (!locateError) return;
-    const timer = window.setTimeout(() => setLocateError(''), 5000);
-    return () => window.clearTimeout(timer);
-  }, [locateError]);
-
   const closePopup = () => {
     onClose();
     container.current?.focus({ preventScroll: true });
@@ -449,10 +442,14 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         <Icon name="locate" size={22} />
       </button>
       <p role="status" className="sr-only">{locating ? '현재 위치를 찾는 중입니다.' : locateNotice}</p>
+      {/* 위치 오류 안내는 저절로 사라지지 않고, 읽은 뒤 닫기 단추로 닫습니다(응답 시간 제한 없음). */}
       {locateError && (
-        <p role="alert" className="map-locate-error">
-          {locateError}
-        </p>
+        <div className="map-locate-error">
+          <p role="alert" className="min-w-0 flex-1">{locateError}</p>
+          <button type="button" className="map-popup-close" aria-label="위치 안내 닫기" onClick={() => setLocateError('')}>
+            <Icon name="close" size={16} />
+          </button>
+        </div>
       )}
       {selected &&
         createPortal(

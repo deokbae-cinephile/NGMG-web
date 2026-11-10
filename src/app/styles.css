@@ -1036,6 +1036,9 @@ body::after {
     }
   }
   .map-locate-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
     position: absolute;
     right: 0.75rem;
     bottom: 4rem;
