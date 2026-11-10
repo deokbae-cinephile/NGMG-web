@@ -528,7 +528,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
     menu_items: [{ id: 'x1', record_id: 'm1', name: '모둠회', price: 30000, rating: 4, position: 0 }, { id: 'x2', record_id: 'm1', name: '매운탕', position: 1, angler_ratings: { '류 조사': 3.5 } }],
   });
   await page.goto('./dex');
-  await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 / 총 4마리');
+  await expect(page.getByRole('heading', { name: '어종 도감' })).toBeVisible();
+  await expect(page.getByText(/종 발견|총 \d+마리/)).toHaveCount(0); // 집계 문구는 사용자 요청으로 뺐습니다.
   const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '감성돔' }) });
   await expect(card.getByText('42.5cm')).toBeVisible();
   await expect(card.getByText('류 조사')).toBeVisible();
@@ -539,7 +540,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expectFits(page);
   await expectAccessible(page);
   await page.getByRole('button', { name: '메뉴 도감' }).click();
-  await expect(page.getByRole('status').filter({ hasText: '2종 수집' })).toHaveText('2종 수집 / 총 2개');
+  await expect(page.getByRole('heading', { name: '메뉴 도감' })).toBeVisible();
+  await expect(page.getByText(/종 수집|총 \d+개/)).toHaveCount(0);
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
   // 메뉴 도감은 번호 없이 평점 높은 순입니다.
