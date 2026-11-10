@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { snapshotSet, useGear, useGearSets } from '@/entities/gear';
-import { combinedRating, formatBait, formatGear, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import { combinedRating, formatBait, formatGear, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordGearSet, RecordPhoto } from '@/shared/api';
-import { toDateKey } from '@/shared/lib';
+import { formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
@@ -13,7 +13,7 @@ import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fie
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
 type Values = TextValues & { visited_on: string; end_date: string; memo: string };
 type Props = {
-  place: Pick<Place, 'id' | 'kind'>;
+  place: Pick<Place, 'id' | 'name' | 'kind'>;
   record?: PlaceRecord;
   date?: string;
   endDate?: string;
@@ -84,6 +84,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
     [gearSets.data, gear.data, gearSetIds],
   );
   const sets = editedSets ?? eventSets;
+  const lock = useSubmitLock();
   const save = useSaveRecord();
   const remove = useDeleteRecord();
 
@@ -104,10 +105,14 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
     const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
     const anglerRatings = toRatings(ratings);
     const setsToSave = sets.filter((set) => set.items.length);
-    if (tooMany || save.isPending) return;
-    save.mutate(
-      {
+    // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 못 막으므로 ref로 바로 잠급니다.
+    // 두 번째 저장은 같은 base_updated_at으로 충돌 검사를 해 가짜 '먼저 고쳤습니다' 안내가 뜰 수 있습니다.
+    if (tooMany || !lock.tryLock()) return;
+    const { unlock } = lock;
+    const input: RecordInput = {
         id,
+        base_updated_at: record?.updated_at ?? null,
+        label: `${place.name} ${formatDate(values.visited_on)}`,
         place_id: place.id,
         event_id: record?.event_id ?? eventId ?? null,
         visited_on: values.visited_on,
@@ -150,9 +155,20 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
           removePhoto: row.removePhoto,
         })),
         removedMenu: (record?.menu_items ?? []).filter((item) => !keptMenu.some((next) => next.id === item.id)),
+    };
+    save.mutate(input, {
+      onSuccess: onDone, // 성공하면 폼이 닫히므로 잠금을 풀지 않습니다.
+      onError: (error) => {
+        if (!(error instanceof RecordConflictError)) return unlock();
+        // 폼을 연 뒤 다른 사람이 고쳤습니다. 덮어쓰거나, 닫고 최신 내용을 다시 봅니다.
+        const when = new Date(error.updatedAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        if (window.confirm(`다른 사람이 ${when}에 이 기록을 먼저 고쳤습니다. 내가 쓴 내용으로 덮어쓸까요?\n취소하면 창을 닫고 최신 내용을 보여 드립니다.`)) {
+          save.mutate({ ...input, force: true }, { onSuccess: onDone, onError: unlock });
+        } else {
+          onDone();
+        }
       },
-      { onSuccess: onDone },
-    );
+    });
   });
 
   const onDelete = () => {

@@ -1,6 +1,8 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { forEachLimit } from '@/shared/lib';
 import { removePhotos, signPhotos, supabase, uploadPhoto, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto, type PhotoUrls } from '@/shared/api';
+import { OUTBOX_EVENT, outboxList, outboxPut, outboxRemove, type OutboxItem } from '@/shared/lib';
 import { cleanKeyword, pendingRating, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
 
@@ -285,6 +287,12 @@ export const usePendingRatings = () =>
 
 export type RecordInput = RecordDetails & {
   id: string; // 폼을 열 때 만듭니다. 실패 후 다시 저장해도 기록이 중복되지 않습니다.
+  /** 폼을 열 때의 수정 시각. 그 뒤 다른 사람이 고쳤으면 RecordConflictError를 던집니다. 새 기록은 null입니다. */
+  base_updated_at: string | null;
+  /** 다른 사람이 고쳤어도 덮어씁니다. */
+  force?: boolean;
+  /** 저장 대기열에 보일 이름 ('거문도 방파제 2026년 11월 7일') */
+  label: string;
   place_id: string;
   event_id: string | null;
   visited_on: string;
@@ -348,7 +356,21 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
   });
 };
 
-const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, menuItems, removedMenu, ...values }: RecordInput) => {
+/** 폼을 연 뒤 다른 사람이 같은 기록을 고쳤습니다. */
+export class RecordConflictError extends Error {
+  constructor(readonly updatedAt: string) {
+    super('다른 사람이 이 기록을 먼저 고쳤습니다.');
+  }
+}
+
+const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFish, menuItems, removedMenu, base_updated_at, force, label, ...values }: RecordInput) => {
+  void label; // 대기열 표시용이라 저장하지 않습니다.
+  if (base_updated_at && !force) {
+    const current = await supabase.from('records').select('updated_at').eq('id', values.id).maybeSingle();
+    if (current.error) throw new Error('기록을 저장하지 못했습니다.');
+    const updatedAt = (current.data as { updated_at?: string } | null)?.updated_at;
+    if (updatedAt && new Date(updatedAt).getTime() !== new Date(base_updated_at).getTime()) throw new RecordConflictError(updatedAt);
+  }
   const { error } = await supabase.from('records').upsert(values);
   if (error) throw new Error('기록을 저장하지 못했습니다.');
 
@@ -373,13 +395,89 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
   await saveMenu(values.id, menuItems, removedMenu);
 };
 
+const OUTBOX_KIND = 'record';
+
+/** 연결이 없으면 대기열에 넣습니다. queued면 아직 서버에 없고, 연결되면 useRecordOutbox가 올립니다. */
+const saveOrQueue = async (input: RecordInput): Promise<{ queued: boolean }> => {
+  const queue = async () => {
+    await outboxPut({ id: input.id, kind: OUTBOX_KIND, label: input.label, payload: input, createdAt: new Date().toISOString() });
+    return { queued: true };
+  };
+  if (!navigator.onLine) return queue();
+  try {
+    await saveRecord(input);
+    return { queued: false };
+  } catch (error) {
+    // 저장하는 사이 연결이 끊겼으면 대기열로 옮깁니다. 저장은 같은 id·경로로 덮어쓰므로 일부 올라간 것이 있어도 다시 올려도 됩니다.
+    if (!navigator.onLine && !(error instanceof RecordConflictError)) return queue();
+    throw error;
+  }
+};
+
 export const useSaveRecord = () => {
   const client = useQueryClient();
   return useMutation({
     mutationKey: SAVE_KEY,
-    mutationFn: saveRecord,
+    mutationFn: saveOrQueue,
     onSettled: () => client.invalidateQueries({ queryKey: ['records'] }),
   });
+};
+
+let flushing = false;
+
+/**
+ * 저장 대기 중인 기록. 앱을 열 때, 연결이 돌아올 때, 화면으로 돌아올 때 올립니다.
+ * 오프라인에서 저장한 내용은 그 사이 다른 사람이 고쳤어도 덮어씁니다(저장한 사람이 의도한 내용).
+ */
+export const useRecordOutbox = () => {
+  const client = useQueryClient();
+  const [items, setItems] = useState<OutboxItem<RecordInput>[]>([]);
+  const [error, setError] = useState('');
+
+  const flush = useCallback(async () => {
+    if (flushing || !navigator.onLine) return;
+    flushing = true;
+    // 한 항목이 계속 실패해도(예: 그 사이 장소가 지워짐) 뒤 항목은 이어서 올립니다.
+    let failed = 0;
+    try {
+      for (const item of await outboxList<RecordInput>(OUTBOX_KIND)) {
+        try {
+          await saveRecord({ ...item.payload, force: true });
+          await outboxRemove(item.id);
+        } catch {
+          failed += 1;
+        }
+      }
+    } catch {
+      failed += 1; // 기기 저장소를 읽지 못했습니다.
+    } finally {
+      setError(failed ? `저장 대기 중인 기록 ${failed}건을 올리지 못했습니다. 잠시 뒤 다시 시도합니다.` : '');
+      flushing = false;
+      void client.invalidateQueries({ queryKey: ['records'] });
+    }
+  }, [client]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () => void outboxList<RecordInput>(OUTBOX_KIND).then((list) => alive && setItems(list)).catch(() => undefined);
+    const onVisible = () => document.visibilityState === 'visible' && void flush();
+    load();
+    const first = window.setTimeout(() => void flush(), 0); // 첫 화면을 그린 뒤 올립니다.
+    window.addEventListener(OUTBOX_EVENT, load);
+    window.addEventListener('online', flush);
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = window.setInterval(() => void flush(), 60_000);
+    return () => {
+      alive = false;
+      window.removeEventListener(OUTBOX_EVENT, load);
+      window.removeEventListener('online', flush);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.clearInterval(timer);
+      window.clearTimeout(first);
+    };
+  }, [flush]);
+
+  return { items, error, flush };
 };
 
 const deleteRecord = async (record: PlaceRecord) => {

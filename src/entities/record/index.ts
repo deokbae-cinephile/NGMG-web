@@ -9,6 +9,8 @@ export {
   useRecentFish,
   useRecordPages,
   useSaveRecord,
+  useRecordOutbox,
+  RecordConflictError,
   useStatRecords,
   useFishDex,
   useMenuDex,
@@ -17,6 +19,7 @@ export {
   type DexFish,
   type RecordFilters,
   type FishInput,
+  type RecordInput,
   type StatRecord,
   type DexMenu,
 } from './api';
