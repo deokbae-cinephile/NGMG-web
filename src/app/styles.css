@@ -395,6 +395,16 @@ body::after {
   .dex-search {
     padding: 0.75rem 1.25rem;
   }
+  /* 통계 순위 한 줄: 누르면 장소 상세로 갑니다. 누를 자리를 넉넉히 두고, 올리면 이름에 밑줄을 긋습니다. */
+  .rank-link {
+    min-height: 2.75rem;
+    padding-block: 0.375rem;
+  }
+  @media (hover: hover) {
+    .rank-link:hover .truncate {
+      text-decoration: underline;
+    }
+  }
   /* 휴대폰의 전체 기록 여닫기 단추: 머리 칸 전체를 누를 수 있습니다. */
   .records-toggle {
     display: flex;
@@ -874,6 +884,7 @@ body::after {
     inset: 0;
     width: 100%;
     height: 100%;
+    overflow: visible; /* 뾰족한 끝을 그림 아래 끝에 맞췄으므로, 끝의 윤곽선이 잘리지 않게 그림 밖까지 그립니다. */
     fill: var(--pin-fill);
     stroke: var(--color-ink);
     stroke-width: 1.1;
@@ -996,6 +1007,55 @@ body::after {
     }
   }
 
+  /* 현재 위치 단추: 지도 오른쪽 아래(카카오 축척 표시와 겹치지 않는 쪽). 위성 단추와 같은 모양입니다. */
+  .map-locate {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 10;
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .map-locate:disabled {
+    cursor: progress;
+  }
+  .map-locate[aria-busy='true'] svg {
+    animation: skeleton-pulse 0.6s ease-in-out infinite alternate;
+  }
+  @media (hover: hover) {
+    .map-locate:not(:disabled):hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
+  }
+  .map-locate-error {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 4rem;
+    left: 0.75rem;
+    z-index: 10;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.5rem 0.75rem;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+  }
+  /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
+  .my-location {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 3px solid #fff;
+    border-radius: 9999px;
+    background: #1f6feb;
+    box-shadow: 0 0 0 6px rgb(31 111 235 / 0.25), 0 1px 3px rgb(0 0 0 / 0.4);
+  }
   /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
   /* 무악재역: 흰 바탕에 검정 윤곽선. 기차 아이콘과 이름표로 구분합니다. */
   .pin-base {
@@ -1039,7 +1099,7 @@ body::after {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
-    margin-bottom: 3.75rem;
+    margin-bottom: 4.5rem; /* 고른 핀(1.15배, 약 60px) 위로 꼬리까지 띄워 겹치지 않게 합니다. */
     border: 1px solid var(--color-ink);
     background: var(--color-paper);
     padding: 0.625rem 0.75rem;

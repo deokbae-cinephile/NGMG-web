@@ -7,7 +7,7 @@ import { useBatches } from './use-batches';
 
 const TABS = [
   { value: 'fish', label: '어종 도감' },
-  { value: 'menu', label: '메뉴 도감' },
+  { value: 'menu', label: '음식 도감' },
 ] as const;
 
 /** 도감 안 찾기. 탭마다 따로 찾고, 탭 아래에 붙어 스크롤해도 보입니다. 입력하는 대로 걸러 냅니다. */
@@ -22,12 +22,10 @@ const matches = (keyword: string, ...values: string[]) => {
   return !query || values.some((value) => value.toLowerCase().includes(query));
 };
 
-/** 도감 머리. 몇 종·몇 마리 같은 집계는 사용자 요청으로 보여 주지 않습니다. */
+/** 도감 제목. 탭으로 어느 도감인지 보이므로 화면에는 머리 칸을 두지 않고 화면 읽기 프로그램에만 알립니다(사용자 요청). */
 const Summary = ({ title, error }: { title: string; error: unknown }) => (
   <>
-    <div className="cell-head">
-      <h2 className="title text-xl">{title}</h2>
-    </div>
+    <h2 className="sr-only">{title}</h2>
     <ErrorText error={error as Error | null} />
   </>
 );
@@ -135,9 +133,9 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
 
   return (
     <>
-      <Summary title="메뉴 도감" error={error} />
-      {!error && all.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
-      {!error && all.length > 0 && entries.length === 0 && <p role="status" className="cell-body text-muted">{`'${keyword.trim()}'에 맞는 메뉴가 없습니다.`}</p>}
+      <Summary title="음식 도감" error={error} />
+      {!error && all.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 음식을 추가하면 하나씩 등록됩니다.</p>}
+      {!error && all.length > 0 && entries.length === 0 && <p role="status" className="cell-body text-muted">{`'${keyword.trim()}'에 맞는 음식이 없습니다.`}</p>}
       <ol className="dex-grid">
         {visible.map(({ name, count, price, rating, latest, photoPath, pending }) => {
           const photo = photoPath ? urls.get(photoPath) : undefined;
@@ -189,7 +187,7 @@ export const DexPage = () => {
         </div>
         <DexSearch
           key={tab}
-          label={tab === 'fish' ? '어종 찾기 (어종·조사·장소)' : '메뉴 찾기 (메뉴·장소)'}
+          label={tab === 'fish' ? '어종 찾기 (어종·조사·장소)' : '음식 찾기 (음식·장소)'}
           value={keywords[tab]}
           onChange={(value) => setKeywords((current) => ({ ...current, [tab]: value }))}
         />

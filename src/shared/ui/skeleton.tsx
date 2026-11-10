@@ -38,10 +38,9 @@ const Row = ({ variant }: { variant: RowVariant }) => {
           <Bar className="h-3.5 w-3/5" />
         </div>
       );
-    case 'event': // 일정: 시간, 제목과 장소 (넓으면 옆으로)
+    case 'event': // 일정: 제목과 장소 (시작 시간은 쓰지 않습니다)
       return (
         <div className="panel panel-roomy flex flex-col gap-2 sm:flex-row sm:items-start">
-          <Bar className="h-4 w-12 shrink-0 sm:mt-1 sm:mr-16" />
           <span className="flex min-w-0 flex-1 flex-col gap-2">
             <Bar className="h-5 w-2/5" />
             <Bar className="h-3.5 w-1/4" />
@@ -127,10 +126,9 @@ const Choices = ({ count }: { count: number }) => (
   </div>
 );
 
-/** 도감처럼 사진 카드가 늘어선 칸의 자리 (머리 포함). 카드 글은 이름과 5줄입니다. */
+/** 도감처럼 사진 카드가 늘어선 칸의 자리. 카드 글은 이름과 5줄입니다. (도감은 머리 칸 없이 탭 아래에 바로 카드가 옵니다) */
 export const CardGridSkeleton = () => (
   <>
-    <Head />
     <ol className="dex-grid">
       {Array.from({ length: 4 }, (_, index) => (
         <li key={index} className="flex flex-col bg-paper">
@@ -360,11 +358,10 @@ const LAYOUTS = {
       </section>
     </div>
   ),
-  // 설정: 평점 대기, 알림, 화면 테마, 앱 설치, 앱 정보
+  // 설정: 알림, 화면 테마, 앱 설치, 앱 정보 (평점 대기는 있을 때만 보이므로 자리를 잡지 않습니다)
   settings: (
     <div>
       {[
-        ['w-20', ['h-3.5 w-4/5', 'h-3.5 w-24', 'h-5 w-28']],
         ['w-12', ['h-5 w-16', 'h-3.5 w-4/5', 'h-11 w-24']],
         ['w-20', ['h-11 w-36']],
         ['w-20', ['h-3.5 w-4/5']],

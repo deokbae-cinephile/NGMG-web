@@ -46,6 +46,9 @@ const expectFits = async (page: Page) => {
 };
 
 const expectAccessible = async (page: Page) => {
+  // 방금 누른 단추 위에 마우스가 남아 색이 바뀌는 중(0.15초)이면 중간 색으로 대비를 재므로, 마우스를 치우고 전환이 끝나길 기다립니다.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(200);
   // 화면 확대 막기(meta-viewport)는 사용자 결정이라 검사에서 뺍니다(WCAG 1.4.4 위반임을 알고 정함, 2026-11-10).
   const { violations } = await new AxeBuilder({ page }).disableRules(['meta-viewport']).analyze();
   // 개별 삭제 버튼의 포인트 색 글자는 사용자 결정이라 명도 대비 위반에서만 뺍니다.
@@ -229,7 +232,6 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await expectAccessible(page);
 
   await dialog.getByLabel('할 일').fill('점심');
-  await dialog.getByLabel('시작 시간').fill('12:00');
   await dialog.getByLabel('종료 날짜').fill('2026-11-08');
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByText('시작 날짜 이후로 입력해 주세요.')).toBeVisible();
@@ -239,7 +241,6 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await expect(page.getByRole('button', { name: '일정 추가' })).toBeFocused();
   await page.getByRole('button', { name: '일정 추가' }).click();
   await dialog.getByLabel('할 일').fill('점심');
-  await dialog.getByLabel('시작 시간').fill('12:00');
   await dialog.getByLabel('종료 날짜').fill('2026-11-10');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('백도');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
@@ -255,7 +256,7 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await page.getByRole('button', { name: /^10 일 \(화\), 2026년 11월, 일정 1건, 연박 일정/ }).click();
   await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();
   await page.getByRole('button', { name: /^9 일 \(월\), 2026년 11월/ }).click();
-  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', end_date: '2026-11-10', start_time: '12:00', end_time: null });
+  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', end_date: '2026-11-10', start_time: '00:00:00', end_time: null }); // 시작 시간은 받지 않아 새 일정은 0시로 둡니다.
 
   await page.getByRole('button', { name: '점심 일정 삭제' }).click();
   await expect(page.getByRole('heading', { name: '점심' })).toBeHidden();
@@ -533,7 +534,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
     menu_items: [{ id: 'x1', record_id: 'm1', name: '모둠회', price: 30000, rating: 4, position: 0 }, { id: 'x2', record_id: 'm1', name: '매운탕', position: 1, angler_ratings: { '류 조사': 3.5 } }],
   });
   await page.goto('./dex');
-  await expect(page.getByRole('heading', { name: '어종 도감' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어종 도감' })).toBeAttached();
   await expect(page.getByText(/종 발견|총 \d+마리/)).toHaveCount(0); // 집계 문구는 사용자 요청으로 뺐습니다.
   const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '감성돔' }) });
   await expect(card.getByText('42.5cm')).toBeVisible();
@@ -544,12 +545,12 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('heading', { name: '거대 망둥어' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
-  await page.getByRole('button', { name: '메뉴 도감' }).click();
-  await expect(page.getByRole('heading', { name: '메뉴 도감' })).toBeVisible();
+  await page.getByRole('button', { name: '음식 도감' }).click();
+  await expect(page.getByRole('heading', { name: '음식 도감' })).toBeAttached(); // 제목은 화면 읽기 프로그램에만 알립니다(탭으로 보임).
   await expect(page.getByText(/종 수집|총 \d+개/)).toHaveCount(0);
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
-  // 메뉴 도감은 번호 없이 평점 높은 순입니다.
+  // 음식 도감은 번호 없이 평점 높은 순입니다.
   await expect(page.getByText(/^No\./)).toHaveCount(0);
   const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
   expect(menus).toEqual(['모둠회', '매운탕']);
@@ -560,7 +561,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await page.goto('./places/p2');
   await expect(page.getByText('류 조사 3.5점 / 김 조사 평점 대기')).toBeVisible();
   await page.getByRole('button', { name: /기록 수정/ }).first().click();
-  await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/메뉴 2 류 조사 평점/)).toHaveValue('3.5');
+  await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
 test('지도: 평균 평점에 따라 핀 색이 바뀌고 숫자로도 보여 준다', async ({ page }) => {
@@ -891,8 +892,8 @@ test('도감: 탭마다 따로 찾고, 어종 카드는 빅원을 잡은 날로 
   await fishSearch.fill('볼락');
   await expect(page.getByRole('heading', { level: 3 })).toHaveText(['볼락']);
   await expect(page.getByRole('button', { name: '어종 도감' })).toHaveCSS('font-weight', '700'); // 고른 탭은 굵게
-  await page.getByRole('button', { name: '메뉴 도감' }).click();
-  await expect(page.getByRole('searchbox', { name: /메뉴 찾기/ })).toHaveValue(''); // 메뉴 도감은 따로 찾습니다.
+  await page.getByRole('button', { name: '음식 도감' }).click();
+  await expect(page.getByRole('searchbox', { name: /음식 찾기/ })).toHaveValue(''); // 음식 도감은 따로 찾습니다.
   await page.getByRole('button', { name: '어종 도감' }).click();
   await expect(fishSearch).toHaveValue('볼락');
   await fishSearch.fill('없는물고기');
@@ -925,4 +926,55 @@ test('기록 폼: 전에 잡은 어종을 눌러 고른다', async ({ page }) =>
   await fish.getByRole('group', { name: '물고기 1 전에 잡은 어종' }).getByRole('button', { name: '감성돔' }).click();
   await expect(fish.getByLabel('어종')).toHaveValue('감성돔');
   await expect(fish.getByRole('button', { name: '감성돔' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없으면 안내한다', async ({ page, context }) => {
+  await fakeBackend(page, seed());
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 37.5, longitude: 127 });
+  await page.goto('./');
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await expect(page.getByRole('img', { name: '내 위치' })).toBeAttached();
+  await expect(page.getByRole('status').filter({ hasText: '지도를 현재 위치로 옮겼습니다.' })).toBeAttached();
+  await expectAccessible(page);
+
+  // 권한을 거두면 이유와 해결 방법을 알립니다.
+  await context.clearPermissions();
+  await page.evaluate(() => {
+    navigator.geolocation.getCurrentPosition = (_ok, fail) => fail?.({ code: 1, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3, message: '' } as GeolocationPositionError);
+  });
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await expect(page.getByRole('alert')).toContainText('위치 권한이 꺼져 있습니다');
+});
+
+test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 없다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await expect(dialog.getByLabel('날짜', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('종료 날짜')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '음식 추가' })).toBeVisible();
+  await dialog.getByLabel('날짜', { exact: true }).fill('2026-11-02');
+  await dialog.getByLabel('음식 1', { exact: true }).fill('모둠회');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.records!.at(-1)).toMatchObject({ visited_on: '2026-11-02', end_date: '2026-11-02' });
+
+  await page.goto('./schedule?date=2026-11-07');
+  await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
+  await expect(page.getByText('06:00')).toHaveCount(0);
+  await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
+  await expect(page.getByRole('dialog', { name: '일정 수정' }).getByLabel('시작 시간')).toHaveCount(0);
+});
+
+test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 간다. 설정의 평점 대기는 없으면 감춘다', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
+  await fakeBackend(page, seed());
+  await page.goto('./stats');
+  await page.getByRole('region', { name: '자주 간 낚시 포인트' }).getByRole('link', { name: /거문도 방파제/ }).click();
+  await expect(page).toHaveURL(/\/places\/p1$/);
+  await page.goto('./settings');
+  await expect(page.getByRole('region', { name: '알림', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '평점 대기' })).toHaveCount(0);
 });

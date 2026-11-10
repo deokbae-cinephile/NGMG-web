@@ -84,7 +84,7 @@ export const AllRecords = () => {
           >
             <div className="min-w-0 flex-1">
               <Field
-                label="기록 찾기 (장소·조과·어종·메뉴·메모)"
+                label="기록 찾기 (장소·조과·어종·음식·메모)"
                 hideLabel
                 placeholder="기록 찾기"
                 type="search"

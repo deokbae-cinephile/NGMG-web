@@ -97,6 +97,11 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [error, setError] = useState(false);
   const [tilesReady, setTilesReady] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
+  // 현재 위치: 누를 때만 위치를 묻고, 지도에 파란 점으로 표시한 뒤 그곳으로 옮깁니다.
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState('');
+  const [locateNotice, setLocateNotice] = useState('');
+  const myLocation = useRef<Kakao>(undefined);
   const dark = useTheme() === 'dark';
 
   const [popupHost] = useState(() => document.createElement('div'));
@@ -235,7 +240,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
     const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
     // 말풍선 높이만큼 핀을 가운데보다 내립니다. (말풍선의 물고기 사진은 사용자 요청으로 뺐습니다. 사진은 장소 상세에서 봅니다)
-    const lift = 90;
+    const lift = 100;
     const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * lift, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
     const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
     const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
@@ -359,6 +364,52 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     return () => document.removeEventListener('keydown', onKey);
   }, [selectedId, onClose]);
 
+  const locate = () => {
+    if (!map || locating) return;
+    setLocateError('');
+    setLocateNotice('');
+    if (!('geolocation' in navigator)) {
+      setLocateError('이 브라우저에서는 현재 위치를 쓸 수 없습니다.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocating(false);
+        const { kakao, instance } = map;
+        const position = new kakao.maps.LatLng(coords.latitude, coords.longitude);
+        if (myLocation.current) myLocation.current.setPosition(position);
+        else {
+          const dot = document.createElement('div');
+          dot.className = 'my-location';
+          dot.setAttribute('role', 'img');
+          dot.setAttribute('aria-label', '내 위치');
+          myLocation.current = new kakao.maps.CustomOverlay({ map: instance, position, content: dot, xAnchor: 0.5, yAnchor: 0.5, zIndex: 4 });
+        }
+        onClose(); // 고른 장소로 지도를 옮기는 동작과 겹치지 않게 말풍선을 닫습니다.
+        if (instance.getLevel() > START_VIEW.level) instance.setLevel(START_VIEW.level);
+        instance.panTo(position);
+        setLocateNotice('지도를 현재 위치로 옮겼습니다.');
+      },
+      (failure) => {
+        setLocating(false);
+        setLocateError(
+          failure.code === failure.PERMISSION_DENIED
+            ? '위치 권한이 꺼져 있습니다. 브라우저 설정에서 이 사이트의 위치 권한을 허용해 주세요.'
+            : '현재 위치를 찾지 못했습니다. 잠시 뒤 다시 눌러 주세요.',
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
+  };
+
+  // 위치 오류 안내는 잠시 보여 준 뒤 지웁니다.
+  useEffect(() => {
+    if (!locateError) return;
+    const timer = window.setTimeout(() => setLocateError(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [locateError]);
+
   const closePopup = () => {
     onClose();
     container.current?.focus({ preventScroll: true });
@@ -394,6 +445,15 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       >
         <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
+      <button type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
+        <Icon name="locate" size={22} />
+      </button>
+      <p role="status" className="sr-only">{locating ? '현재 위치를 찾는 중입니다.' : locateNotice}</p>
+      {locateError && (
+        <p role="alert" className="map-locate-error">
+          {locateError}
+        </p>
+      )}
       {selected &&
         createPortal(
           <div

@@ -101,7 +101,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         place_id: place.id,
         event_id: record?.event_id ?? eventId ?? null,
         visited_on: values.visited_on,
-        end_date: values.end_date || values.visited_on,
+        // 맛집은 하루 방문이라 종료 날짜를 받지 않고 시작 날짜와 같게 둡니다.
+        end_date: kind === 'restaurant' ? values.visited_on : values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
         rating: kind === 'restaurant' ? (restaurantRating(keptMenu) === undefined ? legacyRating : (restaurantRating(keptMenu) ?? null)) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
@@ -159,26 +160,29 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+      {/* 맛집은 종료 날짜를 숨깁니다(사용자 요청). 날짜 칸 하나만 반 너비로 둡니다. */}
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="시작 날짜"
+          label={kind === 'restaurant' ? '날짜' : '시작 날짜'}
           type="date"
           error={errors.visited_on?.message}
           {...register('visited_on', {
-            required: '시작 날짜를 입력해 주세요.',
+            required: kind === 'restaurant' ? '날짜를 입력해 주세요.' : '시작 날짜를 입력해 주세요.',
             onChange: (change) => {
               if (getValues('end_date') < change.target.value) setValue('end_date', change.target.value); // 끝 날짜가 앞서지 않게 함께 옮깁니다.
             },
           })}
         />
-        <Field
-          label="종료 날짜"
-          type="date"
-          error={errors.end_date?.message}
-          {...register('end_date', {
-            validate: (end) => !end || end >= getValues('visited_on') || '시작 날짜 이후로 입력해 주세요.',
-          })}
-        />
+        {kind !== 'restaurant' && (
+          <Field
+            label="종료 날짜"
+            type="date"
+            error={errors.end_date?.message}
+            {...register('end_date', {
+              validate: (end) => !end || end >= getValues('visited_on') || '시작 날짜 이후로 입력해 주세요.',
+            })}
+          />
+        )}
       </div>
       {kind === 'fishing' && (
         <>

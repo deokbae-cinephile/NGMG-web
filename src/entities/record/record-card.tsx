@@ -15,7 +15,7 @@ const Rating = ({ record }: { record: PlaceRecord }) => {
     return (
       <dl>
         <dt className="mono-label">평점</dt>
-        <dd>{waiting.length ? `${waiting.join(', ')} 평점을 기다리는 중` : '메뉴 평점을 기다리는 중'}</dd>
+        <dd>{waiting.length ? `${waiting.join(', ')} 평점을 기다리는 중` : '음식 평점을 기다리는 중'}</dd>
         {waiting.length > 0 && <dd className="text-sm text-muted">{ratingDetail(record.angler_ratings)}</dd>}
       </dl>
     );
@@ -68,8 +68,8 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         </dl>
       )}
       {menu.length > 0 && (
-        <section aria-label={`${record.place.name} ${formatDateRange(record.visited_on, record.end_date)} 메뉴`} className="flex flex-col gap-1.5">
-          <p className="mono-label" aria-hidden="true">{`메뉴 ${menu.length}개`}</p>
+        <section aria-label={`${record.place.name} ${formatDateRange(record.visited_on, record.end_date)} 음식`} className="flex flex-col gap-1.5">
+          <p className="mono-label" aria-hidden="true">{`음식 ${menu.length}개`}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {menu.map((item) => (
               <li key={item.id} className="border border-soft p-2">
@@ -85,7 +85,8 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           <dd className="whitespace-pre-wrap break-words">{record.memo}</dd>
         </dl>
       )}
-      {/* 잡은 물고기는 메모 아래에 둡니다(사용자 요청). */}
+      {record.photos.length > 0 && <RecordPhotos record={record} />}
+      {/* 잡은 물고기는 사진 아래에 둡니다(사용자 요청). */}
       {record.fish.length > 0 && (
         <section aria-label={`${record.place.name} ${formatDateRange(record.visited_on, record.end_date)} 잡은 물고기`} className="flex flex-col gap-1.5">
           <p className="mono-label" aria-hidden="true">{`잡은 물고기 ${record.fish.length}마리`}</p>
@@ -98,7 +99,6 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           </ul>
         </section>
       )}
-      {record.photos.length > 0 && <RecordPhotos record={record} />}
     </article>
   );
 };

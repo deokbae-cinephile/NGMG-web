@@ -37,6 +37,7 @@ export const KAKAO_SDK = `
         o.map.el.appendChild(o.content);
       }
       setMap(map) { if (!map) this.o.content.remove(); }
+      setPosition(position) { this.o.position = position; this.o.content.style.left = ((position.getLng() - 125.5) / 4.5) * 100 + '%'; this.o.content.style.top = ((38.6 - position.getLat()) / 5.6) * 100 + '%'; }
     }
     class MarkerClusterer {
       constructor({ map, markers }) {

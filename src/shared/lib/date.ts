@@ -55,6 +55,3 @@ export const formatDateRange = (start: string, end: string) => {
   const { y, m, d, w } = parts(parseDateKey(end));
   return `${formatDate(start)} – ${start.slice(0, 4) === end.slice(0, 4) ? '' : `${y}년 `}${m}월 ${d}일 (${w})`;
 };
-export const formatTime = (time: string) => time.slice(0, 5);
-export const formatTimeRange = (start: string, end: string | null) =>
-  end ? `${formatTime(start)} – ${formatTime(end)}` : formatTime(start);

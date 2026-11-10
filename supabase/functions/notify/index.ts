@@ -57,7 +57,7 @@ const dailyMessages = async (): Promise<Message[]> => {
   if (events.length) {
     messages.push({
       title: '내일 출조',
-      body: events.map((event) => [event.title, event.place, event.start_time?.slice(0, 5)].filter(Boolean).join(' · ')).join('\n'),
+      body: events.map((event) => [event.title, event.place].filter(Boolean).join(' · ')).join('\n'), // 시작 시간은 쓰지 않습니다(사용자 요청).
       url: `/schedule?date=${tomorrow}`,
       tag: `trip-${tomorrow}`,
     });

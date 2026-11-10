@@ -18,6 +18,7 @@ export {
   usePlaceFishPhotos,
   type PlaceFishPhoto,
   usePendingRatings,
+  type PendingRating,
   type DexFish,
   type RecordFilters,
   type FishInput,

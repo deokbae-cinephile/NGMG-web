@@ -4,7 +4,7 @@ import { usePastEvents, useUpcomingEvents } from '@/entities/event';
 import { useRecordedEventIds } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent } from '@/shared/api';
-import { formatDate, formatDateRange, formatDday, formatStay, formatTime, toDateKey } from '@/shared/lib';
+import { formatDate, formatDateRange, formatDday, formatStay, toDateKey } from '@/shared/lib';
 import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
 
 /** 왼쪽 아래 칸: 다가오는 일정, 기록을 기다리는 지난 일정. selected는 고른 날짜입니다. */
@@ -35,7 +35,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
                     <span className="badge badge-solid">{event.date < toDateKey(new Date()) ? '진행 중' : formatDday(event.date)}</span>
                     <span>{event.title}</span>
                   </span>
-                  <span className="text-sm text-muted">{`${formatDateRange(event.date, event.end_date)} ${formatTime(event.start_time)} ${formatStay(event.date, event.end_date)}`.trim()}</span>
+                  <span className="text-sm text-muted">{`${formatDateRange(event.date, event.end_date)} ${formatStay(event.date, event.end_date)}`.trim()}</span>
                 </button>
               </li>
             ))}
