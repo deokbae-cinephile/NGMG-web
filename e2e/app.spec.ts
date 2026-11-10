@@ -181,6 +181,16 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('볼락 21.5cm')).toBeVisible();
   await expect(page.getByRole('region', { name: '잡은 물고기 사진' }).getByRole('img')).toHaveCount(1); // 사진 지도에도 모입니다.
+
+  // 지도 정보 창의 물고기 사진은 지도 바탕의 흑백 처리를 받지 않고 원래 색으로 보입니다(라이트·다크 모두).
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate((value) => localStorage.setItem('theme', value), theme);
+    await page.goto('./');
+    await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+    const photo = page.getByRole('group', { name: '거문도 방파제 정보' }).getByRole('img').first();
+    await expect(photo).toBeVisible();
+    expect(await photo.evaluate((img) => getComputedStyle(img).filter)).toBe('none');
+  }
   expect(db.records).toHaveLength(26);
   expect(db.record_photos).toHaveLength(2);
   expect(db.fish_catches).toHaveLength(1);

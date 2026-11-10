@@ -796,6 +796,10 @@ body::after {
   :root[data-theme='dark'] .map img {
     filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9);
   }
+  /* 위 흑백·반전은 지도 바탕만을 위한 것입니다. 지도 위 정보 창의 물고기 사진은 원래 색으로 보여 줍니다(다크 테마 규칙보다 우선). */
+  .map .map-popup img {
+    filter: none !important;
+  }
 
   /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 아이콘, 평균 평점은 핀 전체의 색으로 나타냅니다. */
   .pin {

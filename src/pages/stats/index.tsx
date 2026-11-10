@@ -20,7 +20,7 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
           <ol className="flex flex-col gap-3">
             {rows.map((row, index) => (
               <li key={`${row.name}-${index}`} className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
-                <span aria-hidden="true" className="mono-label">{String(index + 1).padStart(2, '0')}</span>
+                <span aria-hidden="true" className="mono-label">{index + 1}</span>
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate">{row.name}</span>
                   {detail(row)}
