@@ -538,11 +538,6 @@ test('장비 세트: 만들어 일정에 고르면 기록에 담기고, 한 사�
   await expect(page.getByRole('button', { name: '평점 대기 1건' })).toBeVisible();
   await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('김 조사 장비 세트 / 바다 워킹 루어 세트')).toBeVisible();
 
-  // 통계: 장비 세트별로 출조 횟수와 마릿수를 모읍니다.
-  await page.goto('./stats');
-  const sets = page.getByRole('region', { name: '장비 세트별 조과' });
-  await expect(sets.getByText('김 조사 바다 워킹 루어 세트')).toBeVisible();
-  await expect(sets.getByText('출조 1회')).toBeVisible();
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {

@@ -231,25 +231,6 @@ export const StatsPage = () => {
         )}
       </Block>
 
-      <Block id="sets-title" title="장비 세트별 조과">
-        {stats.gearSets.length === 0 ? (
-          <Empty>장비 세트를 쓴 낚시 기록이 아직 없습니다. 일정이나 기록에서 세트를 고르면 세트별로 모아 보여 드립니다.</Empty>
-        ) : (
-          <dl className="grid gap-x-6 lg:grid-cols-2">
-            {stats.gearSets.map(({ angler, name, trips, count, biggest }) => (
-              <div key={`${angler} ${name}`} className="panel grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
-                <dt className="break-words">{`${angler} ${name}`}</dt>
-                <dd className="col-start-1 text-sm text-muted">{`출조 ${trips}회${biggest ? ` / 최대어 ${fishLabel(biggest)}` : ''}`}</dd>
-                <dd className="col-start-2 row-span-2 row-start-1 flex items-center gap-1">
-                  <span className="display-number text-5xl!">{count}</span>
-                  <span>마리</span>
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </Block>
-
       <div className="panes border-t border-line lg:grid-cols-2 lg:h-auto!">
         <Ranking id="top-places" title="자주 간 장소" rows={stats.places} unit="번" />
         <section aria-labelledby="restaurant-title" className="pane">
