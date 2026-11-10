@@ -148,7 +148,7 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   // 평점은 조사마다 따로 주고, 두 사람이 다 주면 평균을 냅니다.
   await dialog.getByLabel('김 조사 평점').selectOption('5');
-  await dialog.getByLabel('류 조사 평점').selectOption('4');
+  await dialog.getByLabel('류 조사 평점').selectOption('3.5');
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 8;
@@ -178,7 +178,7 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.fish_catches).toHaveLength(1);
   expect(db.fish_catches![0]).toMatchObject({ angler: '류 조사', species: '볼락', length_cm: 21.5, position: 0 });
   expect(db.fish_catches![0]!.photo_path).toMatch(/fish-/);
-  expect(db.records!.at(-1)).toMatchObject({ rating: 4.5, angler_ratings: { '김 조사': 5, '류 조사': 4 } });
+  expect(db.records!.at(-1)).toMatchObject({ rating: 4.3, angler_ratings: { '김 조사': 5, '류 조사': 3.5 } });
 });
 
 test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {
