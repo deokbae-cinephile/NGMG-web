@@ -891,11 +891,13 @@ test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 �
       { id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 38, position: 0, photo_path: 'r00/fish-1.jpg' },
       { id: 'f2', record_id: 'r05', angler: '류 조사', species: '볼락', length_cm: 21, position: 0, photo_path: 'r05/fish-2.jpg' },
       { id: 'f3', record_id: 'r06', angler: '류 조사', species: '우럭', length_cm: 25, position: 0, photo_path: null },
+      { id: 'f4', record_id: 'r07', angler: '김 조사', species: '볼락', length_cm: 18, position: 0, photo_path: 'r07/fish-4.jpg' },
+      { id: 'f5', record_id: 'r08', angler: '김 조사', species: '볼락', length_cm: 19, position: 0, photo_path: 'r08/fish-5.jpg' },
     ],
   });
   await page.goto('./places/p1');
   const section = page.getByRole('region', { name: '잡은 물고기 사진' });
-  await expect(section.getByRole('img')).toHaveCount(2); // 사진이 없는 우럭은 빠집니다.
+  await expect(section.getByRole('img')).toHaveCount(4); // 사진이 없는 우럭은 빠집니다.
   await expect(section.getByRole('img').first()).toHaveAccessibleName(/감성돔 38cm 김 조사 2026년 10월 30일/); // 최근 순
   await expectFits(page);
   await expectAccessible(page);
@@ -903,5 +905,7 @@ test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 �
   await page.goto('./');
   await page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택/ }).click();
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
-  await expect(popup.getByRole('list', { name: '최근 잡은 물고기 사진' }).getByRole('img')).toHaveCount(2);
+  // 말풍선은 최근 3장만 보여 주고, 더 있으면 전체 개수를 알립니다.
+  await expect(popup.getByRole('list', { name: '최근 잡은 물고기 사진' }).getByRole('img')).toHaveCount(3);
+  await expect(popup.getByText('사진 4장 중 3장')).toBeVisible();
 });

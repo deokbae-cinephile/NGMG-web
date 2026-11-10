@@ -12,7 +12,7 @@ export const FishPhotoGrid = ({ placeId, limit, compact = false }: { placeId: st
   if (error) return <p className="text-sm text-muted">물고기 사진을 불러오지 못했습니다.</p>;
   if (!shown.length) return <p className="text-muted">이 장소에서 사진을 남긴 물고기가 아직 없습니다.</p>;
 
-  return (
+  const list = (
     <ul className={compact ? 'fish-photo-strip' : 'fish-photo-grid'} aria-label={compact ? '최근 잡은 물고기 사진' : undefined}>
       {shown.map((fish) => {
         const photo = urls.get(fish.photo_path);
@@ -36,5 +36,13 @@ export const FishPhotoGrid = ({ placeId, limit, compact = false }: { placeId: st
         );
       })}
     </ul>
+  );
+  // 말풍선은 최근 몇 장만 보여 주므로, 더 있으면 전체 개수를 알립니다. 모두 보기는 장소 상세에서 합니다.
+  if (!compact || data.length <= shown.length) return list;
+  return (
+    <>
+      {list}
+      <p className="text-xs text-muted">{`사진 ${data.length}장 중 ${shown.length}장`}</p>
+    </>
   );
 };
