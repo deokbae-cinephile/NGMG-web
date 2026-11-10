@@ -160,9 +160,10 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating' | 'gear_sets'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating' | 'gear_sets' | 'price' | 'angler_ratings'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
+  menu_items: Pick<MenuItem, 'name' | 'price' | 'angler_ratings'>[];
 };
 
 /** 통계용으로 모든 기록의 일부 항목만 받습니다. */
@@ -174,12 +175,14 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, gear, catches, rating, gear_sets, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
+          .select(
+            'id, visited_on, bait, gear, catches, rating, gear_sets, price, angler_ratings, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm), menu_items(name, price, angler_ratings)',
+          )
           .order('visited_on')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('통계를 불러오지 못했습니다.');
-        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })), gear_sets: row.gear_sets ?? [] })));
+        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })), gear_sets: row.gear_sets ?? [], angler_ratings: row.angler_ratings ?? {}, menu_items: row.menu_items ?? [], rating: row.rating === null ? null : Number(row.rating) })));
         if (data.length < 1000) return rows;
       }
     },

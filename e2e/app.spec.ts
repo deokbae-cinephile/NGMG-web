@@ -382,7 +382,7 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.getByRole('link', { name: '통계' }).click();
-  await expect(page.getByRole('heading', { name: '조사별 조과' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '김 조사 vs 류 조사' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
@@ -576,7 +576,7 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toHaveCount(0);
   await page.goto('./stats');
   await expect(page.locator('dl dt').first()).toBeVisible();
-  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '맛집 방문']);
+  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기', '맛집 방문', '맛집 지출']);
 });
 
 test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', async ({ page }) => {
@@ -781,4 +781,50 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평균 평점 5\.0$/ })).toHaveClass(/rate-5/);
   await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
+});
+
+test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점 성향, 작년 비교, 최대어 기록 변화', async ({ page }) => {
+  const year = new Date().getFullYear();
+  await fakeBackend(page, {
+    places: [place('p1', '거문도 방파제'), place('p4', '가거도 갯바위'), place('p2', '바다횟집', 'restaurant')],
+    records: [
+      { id: 'a', place_id: 'p1', visited_on: `${year}-01-05`, catches: '' },
+      { id: 'b', place_id: 'p1', visited_on: `${year}-01-20`, catches: '' },
+      { id: 'c', place_id: 'p4', visited_on: `${year}-02-03`, catches: '' },
+      { id: 'old', place_id: 'p1', visited_on: `${year - 1}-01-10`, catches: '' },
+      {
+        id: 'm', place_id: 'p2', visited_on: `${year}-01-06`, catches: '', rating: 4, angler_ratings: { '김 조사': 5, '류 조사': 3 },
+      },
+    ],
+    fish_catches: [
+      { id: 'f1', record_id: 'a', angler: '김 조사', species: '감성돔', length_cm: 30, position: 0 },
+      { id: 'f2', record_id: 'a', angler: '류 조사', species: '볼락', length_cm: 20, position: 1 },
+      { id: 'f3', record_id: 'c', angler: '김 조사', species: '감성돔', length_cm: 41, position: 0 },
+      { id: 'f4', record_id: 'old', angler: '김 조사', species: '볼락', length_cm: 25, position: 0 },
+    ],
+    menu_items: [{ id: 'x1', record_id: 'm', name: '모둠회', price: 50000, position: 0, angler_ratings: { '김 조사': 4, '류 조사': 4 } }],
+  });
+  await page.goto('./stats');
+  const tiles = page.locator('main dl').first();
+  await expect(tiles.getByText('작년 같은 기간 1회 (+2)')).toBeVisible();
+  await expect(tiles.getByText('작년 같은 기간 1마리 (+2)')).toBeVisible();
+
+  const duel = page.getByRole('region', { name: '김 조사 vs 류 조사' });
+  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('감성돔 41cm')).toBeVisible();
+  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('앞섬')).toHaveCount(2); // 마릿수, 최대어 (어종 수는 1종으로 같음)
+
+  const species = page.getByRole('table', { name: /어종별/ });
+  await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('2마리');
+  await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('새 어종');
+  await expect(species.getByRole('row', { name: /볼락/ })).not.toContainText('새 어종'); // 작년에 잡았습니다.
+
+  await expect(page.getByRole('region', { name: '월별 어종' }).getByText('감성돔 1마리 / 볼락 1마리')).toBeVisible();
+  const rates = page.getByRole('table', { name: /장소별/ });
+  await expect(rates.getByRole('row', { name: /거문도 방파제/ })).toContainText('50%');
+  await expect(page.getByRole('region', { name: '맛집' }).getByText('지출 합계 50,000원')).toBeVisible();
+  await expect(page.getByRole('region', { name: '평점 성향' }).getByText(/2점 차/)).toBeVisible();
+  const bests = page.getByRole('region', { name: '김 조사 최대어 기록 변화' });
+  await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
+  await expectFits(page);
+  await expectAccessible(page);
 });
