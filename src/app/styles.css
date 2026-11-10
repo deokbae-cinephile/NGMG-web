@@ -94,17 +94,37 @@ select {
   padding-right: 2.5rem !important;
 }
 
-/* 날짜·시간 입력칸도 셀렉트와 같은 꺾쇠를 같은 자리(오른쪽 0.75rem)에 둡니다. 누르면 브라우저의 날짜·시간 선택창이 열립니다. */
+/* 날짜·시간 입력칸도 셀렉트와 같은 꺾쇠를 같은 자리(오른쪽 0.75rem)에 그립니다.
+   브라우저의 선택창 단추는 글자 길이에 따라 자리가 바뀌므로 투명하게 칸 전체에 펼쳐, 칸 어디를 눌러도 날짜·시간 선택창이 열리게 합니다.
+   아이폰 사파리는 단추가 없고 글자를 가운데 놓으므로 왼쪽으로 붙입니다. */
+input[type='date'],
+input[type='time'] {
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--select-arrow);
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem !important;
+  text-align: left;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: left;
+}
 input[type='date']::-webkit-calendar-picker-indicator,
 input[type='time']::-webkit-calendar-picker-indicator {
-  width: 12px;
-  height: 8px;
-  margin: 0 0 0 0.5rem;
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
   padding: 0;
-  background: var(--select-arrow) center / 12px 8px no-repeat;
+  background: none;
   color: transparent;
   cursor: pointer;
-  opacity: 1;
+  opacity: 0;
 }
 
 /* 화면 전체를 본문의 선과 같은 색과 두께로 감쌉니다. */

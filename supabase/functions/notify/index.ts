@@ -1,6 +1,6 @@
 // 웹 푸시 알림 함수.
 // - GET: 구독에 쓰는 공개 키(VAPID)를 돌려줍니다.
-// - POST {kind: 'daily'} + x-cron-secret: 매일 오후 6시(한국 시간, pg_cron). 내일 일정이 있으면 출조 알림, 일요일에는 평점 대기 알림을 보냅니다.
+// - POST {kind: 'daily'} + x-cron-secret: 매일 오후 6시(한국 시간, pg_cron). 내일 일정이 있으면 출조 알림, 토요일에는 평점 대기 알림을 보냅니다.
 // - POST {test: endpoint} + 로그인 토큰: 방금 켠 기기로 테스트 알림을 보냅니다.
 // 필요한 비밀 값: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET (supabase secrets set)
 import webpush from 'npm:web-push@3.6.7';
@@ -62,8 +62,8 @@ const dailyMessages = async (): Promise<Message[]> => {
       tag: `trip-${tomorrow}`,
     });
   }
-  // 일요일 저녁에는 한 사람만 평점을 준 기록을 알려 줍니다.
-  if (kst().day === 0) {
+  // 토요일 저녁에는 한 사람만 평점을 준 기록을 알려 줍니다.
+  if (kst().day === 6) {
     const [{ count }] = await sql<{ count: number }[]>`
       select count(*)::int as count from public.records r
       where (select count(*) from jsonb_object_keys(r.angler_ratings)) = 1

@@ -53,7 +53,7 @@ export const PushToggle = () => {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p>
           {on ? '이 기기에서 받는 중' : '받지 않음'}
-          <span className="block text-sm text-muted">내일 일정이 있으면 전날 오후 6시, 평점 대기가 있으면 일요일 오후 6시에 알려 드립니다.</span>
+          <span className="block text-sm text-muted">내일 일정이 있으면 전날 오후 6시, 평점 대기가 있으면 토요일 오후 6시에 알려 드립니다.</span>
         </p>
         <button type="button" className="button" disabled={busy || on === undefined} onClick={() => void toggle()}>
           {on ? '알림 끄기' : '알림 켜기'}
