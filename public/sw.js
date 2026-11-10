@@ -105,6 +105,13 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/storage/v1/object/sign/')) {
     // 사진은 CORS로 받아 실제 크기만큼만 저장 공간을 씁니다.
     const key = `${url.origin}${url.pathname}`;
-    event.respondWith(cacheFirst(event, PHOTOS, key, new Request(url, { mode: 'cors', credentials: 'omit' }), 300));
+    event.respondWith(
+      cacheFirst(event, PHOTOS, key, new Request(url, { mode: 'cors', credentials: 'omit' }), 300).catch(async (error) => {
+        // 오프라인에서 썸네일이 없으면(예전 사진) 저장해 둔 원본을 대신 보여 줍니다.
+        const original = key.endsWith('.thumb.jpg') && (await caches.open(PHOTOS).then((cache) => cache.match(key.replace(/\.thumb\.jpg$/, '.jpg'))));
+        if (original) return original;
+        throw error;
+      }),
+    );
   }
 });
