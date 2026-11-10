@@ -30,7 +30,7 @@ export type FishCatch = {
   photo_url?: string;
 };
 
-/** 조사별 평점 (1~5점). 준 사람만 들어 있습니다. */
+/** 조사별 평점 (0.5점 단위, 0.5~5점). 준 사람만 들어 있습니다. */
 export type AnglerRatings = Partial<Record<string, number>>;
 
 /** 맛집 기록의 메뉴 한 개 */

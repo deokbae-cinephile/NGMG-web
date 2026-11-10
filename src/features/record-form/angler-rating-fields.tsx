@@ -2,6 +2,9 @@ import { ANGLERS } from '@/shared/api';
 
 export type RatingDraft = Partial<Record<string, string>>;
 
+/** 0.5점 단위로 5점부터 0.5점까지. 0점은 없습니다. */
+const SCORES = Array.from({ length: 10 }, (_, index) => (10 - index) / 2);
+
 type Props = { id: string; prefix?: string; value: RatingDraft; onChange: (next: RatingDraft) => void };
 
 /** 조사마다 따로 주는 평점. 두 사람이 모두 줘야 평균을 냅니다. */
@@ -20,7 +23,7 @@ export const AnglerRatingFields = ({ id, prefix = '', value, onChange }: Props) 
               onChange={(event) => onChange({ ...value, [angler]: event.target.value })}
             >
               <option value="">선택 안 함</option>
-              {[5, 4, 3, 2, 1].map((score) => (
+              {SCORES.map((score) => (
                 <option key={score} value={score}>{`${score}점`}</option>
               ))}
             </select>
