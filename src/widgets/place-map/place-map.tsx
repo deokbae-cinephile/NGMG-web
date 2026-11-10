@@ -104,6 +104,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
+  // 고른 장소로 지도를 옮기는 동안에는 말풍선 맞춤(panBy)을 미룹니다. 옮기는 도중에 panBy가 끼면 이동이 멈춰 핀이 가장자리에 남습니다.
+  const moving = useRef(false);
+  const fitPopup = useRef<() => void>(undefined);
   const selectFromPin = useCallback(
     (id: string) => {
       focusPopup.current = true;
@@ -233,9 +236,28 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
     const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
     const near = selected.latitude <= north && selected.latitude >= south && selected.longitude <= east && selected.longitude >= west;
+    // 옮기기가 끝나면(idle, 늦어도 1초 뒤) 말풍선이 지도 밖으로 나갔는지 확인합니다.
+    let settleTimer = 0;
+    const settle = () => {
+      map.kakao.maps.event.removeListener(map.instance, 'idle', settle);
+      window.clearTimeout(settleTimer);
+      if (!moving.current) return;
+      moving.current = false;
+      fitPopup.current?.();
+    };
+    const startMoving = () => {
+      moving.current = true;
+      map.kakao.maps.event.addListener(map.instance, 'idle', settle);
+      settleTimer = window.setTimeout(settle, 1000);
+    };
     if (near) {
+      startMoving();
       map.instance.panTo(target); // 화면 안이면 부드럽게 옮깁니다.
-      return;
+      return () => {
+        map.kakao.maps.event.removeListener(map.instance, 'idle', settle);
+        window.clearTimeout(settleTimer);
+        moving.current = false;
+      };
     }
     // 화면 밖 먼 곳은 지도가 한 번에 넘어가고, 새 지역의 지도 그림이 오기 전까지 빈 화면이 보여 번쩍입니다.
     // 지도를 잠깐 감췄다가 옮기고, 새 그림을 다 받은 뒤(늦어도 1.2초 뒤) 다시 보여 줍니다.
@@ -248,14 +270,19 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       node?.classList.remove('map-moving');
     };
     node?.classList.add('map-moving');
+    moving.current = true; // 감춘 동안의 말풍선 맞춤도 옮긴 뒤로 미룹니다.
     const timer = window.setTimeout(() => {
       kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
+      startMoving();
       instance.setCenter(target);
       fallback = window.setTimeout(reveal, 1200);
     }, 220); // styles.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
     return () => {
       window.clearTimeout(timer);
       reveal();
+      kakao.maps.event.removeListener(instance, 'idle', settle);
+      window.clearTimeout(settleTimer);
+      moving.current = false;
     };
   }, [map, selected, offsets]);
 
@@ -302,13 +329,18 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     if (!map || !selected || !node || !area || typeof ResizeObserver === 'undefined') return;
     const MARGIN = 8;
     const fit = () => {
+      if (moving.current) return; // 옮기기가 끝난 뒤 다시 부릅니다.
       const top = node.getBoundingClientRect().top - area.getBoundingClientRect().top;
       if (top < MARGIN) map.instance.panBy(0, top - MARGIN); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
     };
+    fitPopup.current = fit;
     const observer = new ResizeObserver(fit);
     observer.observe(node);
     observer.observe(area); // 지도 칸이 줄어도 다시 확인합니다.
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (fitPopup.current === fit) fitPopup.current = undefined;
+    };
   }, [map, selected]);
 
   // Esc로 팝업을 닫습니다.

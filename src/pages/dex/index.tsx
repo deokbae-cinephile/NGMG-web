@@ -30,7 +30,7 @@ const DexCard = ({ number, title, icon, photo, to, children }: { number?: number
         </span>
       )}
       <span className="flex flex-col gap-2 p-5">
-        {number !== undefined && <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>}
+        {number !== undefined && <span className="mono-label">{`No.${number}`}</span>}
         <h3 className="title text-lg break-words">{title}</h3>
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
       </span>

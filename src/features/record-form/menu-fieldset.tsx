@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { MenuItem } from '@/shared/api';
-import { Field, RemovablePhoto } from '@/shared/ui';
+import { Field, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, type RatingDraft } from './angler-rating-fields';
 
 export type MenuRow = {
@@ -36,6 +36,12 @@ export const menuRowError = (row: MenuRow) => nameError(row) ?? priceError(row);
 
 type Props = { value: MenuRow[]; showErrors: boolean; onChange: (rows: MenuRow[]) => void };
 
+/** 메뉴 이름 칸을 글 길이만큼 늘립니다. 긴 이름도 잘리지 않고 여러 줄로 다 보입니다. */
+const fitHeight = (input: HTMLTextAreaElement) => {
+  input.style.height = 'auto';
+  input.style.height = `${input.scrollHeight + 2}px`; // 위아래 테두리 1px씩
+};
+
 /** 맛집 기록의 메뉴. 메뉴마다 가격, 평점, 사진 한 장을 적고, 버튼으로 줄을 늘립니다. */
 export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
   const add = useRef<HTMLButtonElement>(null);
@@ -50,21 +56,32 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
           const label = `메뉴 ${index + 1}`;
           return (
             <li key={row.id} className="flex flex-col gap-3 border border-soft p-3">
-              <div className="grid grid-cols-[minmax(0,1fr)_7rem] items-start gap-2">
-                <Field
-                  ref={(input) => {
-                    if (input && focusId.current === row.id) {
-                      focusId.current = undefined;
-                      input.focus();
-                    }
-                  }}
-                  label={label}
-                  placeholder="예: 모둠회 중"
-                  maxLength={60}
-                  value={row.name}
-                  error={showErrors ? nameError(row) : undefined}
-                  onChange={(event) => set(row.id, { name: event.target.value })}
-                />
+              {/* 이름은 한 줄을 다 쓰고, 길면 칸이 아래로 늘어납니다. 줄바꿈은 넣지 않습니다. */}
+              <TextareaField
+                ref={(input) => {
+                  if (!input) return;
+                  fitHeight(input);
+                  if (focusId.current === row.id) {
+                    focusId.current = undefined;
+                    input.focus();
+                  }
+                }}
+                label={label}
+                rows={1}
+                className="menu-name min-h-11 w-full resize-none rounded-none border border-field bg-surface px-3 py-2 text-ink placeholder:text-muted aria-invalid:border-danger"
+                placeholder="예: 모둠회 중"
+                maxLength={60}
+                value={row.name}
+                error={showErrors ? nameError(row) : undefined}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.preventDefault();
+                }}
+                onChange={(event) => {
+                  fitHeight(event.target);
+                  set(row.id, { name: event.target.value.replace(/\s*\n\s*/g, ' ') });
+                }}
+              />
+              <div className="grid grid-cols-2 gap-3">
                 <Field
                   label={`${label} 가격 (원)`}
                   type="number"
