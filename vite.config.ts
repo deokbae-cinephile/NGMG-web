@@ -35,9 +35,8 @@ export default defineConfig(({ mode }) => ({
   base: '/', // GitHub Pages 사용자 도메인(ngmg.kr)의 루트
   plugins: [woff2Only(), react(), tailwindcss(), mode === 'demo' && demo()],
   define: {
-    // 설정의 앱 정보: 버전과 빌드한 날짜(한국 시간)
+    // 설정의 앱 정보: 버전
     __APP_VERSION__: JSON.stringify(pkg.version),
-    __APP_BUILT__: JSON.stringify(new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10)),
     ...(mode === 'demo'
       ? {
           'import.meta.env.VITE_SUPABASE_URL': 'globalThis.__DEMO_API__',

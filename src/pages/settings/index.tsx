@@ -3,7 +3,7 @@ import { usePendingRatings } from '@/entities/record';
 import { InstallSection } from '@/features/install-app';
 import { PushToggle } from '@/features/push-toggle';
 import { ThemeChoices } from '@/features/theme-toggle';
-import { APP_BUILT, APP_VERSION } from '@/shared/config';
+import { APP_VERSION } from '@/shared/config';
 import { formatDate, Link } from '@/shared/lib';
 import { ErrorText, SkeletonRows } from '@/shared/ui';
 
@@ -58,14 +58,6 @@ export const SettingsPage = () => (
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2">
         <dt className="mono-label">버전</dt>
         <dd>{`v${APP_VERSION}`}</dd>
-        <dt className="mono-label">배포</dt>
-        <dd>{formatDate(APP_BUILT)}</dd>
-        <dt className="mono-label">변경 기록</dt>
-        <dd>
-          <a href="https://github.com/deokbae-cinephile/NGMG-web/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer" className="underline underline-offset-4">
-            CHANGELOG 보기 (새 창)
-          </a>
-        </dd>
       </dl>
     </Section>
   </div>
