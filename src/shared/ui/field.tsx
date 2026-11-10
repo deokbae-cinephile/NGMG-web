@@ -3,11 +3,12 @@ import { useId, type ComponentProps, type ReactNode } from 'react';
 const control =
   'min-h-11 w-full rounded-none border border-field bg-surface px-3 py-2 text-ink placeholder:text-muted aria-invalid:border-danger';
 
-type Props = { label: string; error?: string; hint?: ReactNode };
+/** hideLabel: 이름은 화면 읽기 프로그램에만 알리고 화면에는 보이지 않습니다. */
+type Props = { label: string; error?: string; hint?: ReactNode; hideLabel?: boolean };
 
-const Wrapper = ({ id, label, error, hint, children }: Props & { id: string; children: ReactNode }) => (
+const Wrapper = ({ id, label, error, hint, hideLabel, children }: Props & { id: string; children: ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label htmlFor={id} className="mono-label">
+    <label htmlFor={id} className={hideLabel ? 'sr-only' : 'mono-label'}>
       {label}
     </label>
     {children}
@@ -20,10 +21,10 @@ const Wrapper = ({ id, label, error, hint, children }: Props & { id: string; chi
   </div>
 );
 
-export const Field = ({ label, error, hint, ...props }: Props & ComponentProps<'input'>) => {
+export const Field = ({ label, error, hint, hideLabel, ...props }: Props & ComponentProps<'input'>) => {
   const id = useId();
   return (
-    <Wrapper id={id} label={label} error={error} hint={hint}>
+    <Wrapper id={id} label={label} error={error} hint={hint} hideLabel={hideLabel}>
       <input
         id={id}
         className={control}

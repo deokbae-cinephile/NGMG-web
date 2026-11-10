@@ -1,6 +1,6 @@
 @import 'tailwindcss';
-@import '@fontsource/noto-sans-kr/400.css'; /* 한글은 글자 조각(unicode-range)으로 나뉘어 화면에 쓰인 조각만 받습니다. */
-@import '@fontsource/noto-sans-kr/latin-700.css'; /* 큰 숫자·영문만 실제 굵은 글꼴. 한글 굵은 조각까지 받으면 CSS가 크게 늘어 한글 제목은 브라우저가 굵게 그립니다. */
+@import '@fontsource/nanum-gothic/400.css'; /* 한글은 글자 조각(unicode-range)으로 나뉘어 화면에 쓰인 조각만 받습니다. */
+@import '@fontsource/nanum-gothic/latin-700.css'; /* 큰 숫자·영문만 실제 굵은 글꼴. 한글 굵은 조각까지 받으면 CSS가 크게 늘어 한글 제목은 브라우저가 굵게 그립니다. */
 
 /*
  * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 주황 포인트 하나.
@@ -20,7 +20,7 @@
   --color-sun: #d4271b;
   --color-sat: #1f5fb4;
   --color-danger: #b3221e;
-  --font-sans: 'Noto Sans KR', system-ui, sans-serif;
+  --font-sans: 'Nanum Gothic', system-ui, sans-serif;
   --spacing-topbar: 4rem;
 }
 
@@ -375,7 +375,7 @@ body::after {
     min-height: 2.75rem;
     width: 100%;
     flex-direction: column;
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.25rem;
     text-align: left;
     cursor: pointer;
   }
@@ -1248,18 +1248,6 @@ body::after {
   color: var(--color-paper);
 }
 
-
-/* 전체 기록의 추가 조건. 누르는 영역을 44px 이상으로 둡니다. */
-.record-filters > summary {
-  display: flex;
-  min-height: 2.75rem;
-  align-items: center;
-  gap: 0.25rem;
-  cursor: pointer;
-}
-.record-filters[open] > summary svg {
-  rotate: 180deg;
-}
 
 /* 기록 사진 넘기기 */
 .photo-slider {

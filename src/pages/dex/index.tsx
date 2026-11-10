@@ -29,7 +29,7 @@ const DexCard = ({ number, title, icon, photo, to, children }: { number?: number
           <Icon name={icon} size={56} />
         </span>
       )}
-      <span className="flex flex-col gap-2 p-4">
+      <span className="flex flex-col gap-2 p-5">
         {number !== undefined && <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>}
         <h3 className="title text-lg break-words">{title}</h3>
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
@@ -98,8 +98,10 @@ const FishDex = () => {
               <dd>{`${big.length_cm}cm`}</dd>
               <dt className="mono-label">조사</dt>
               <dd>{big.angler}</dd>
-              <dt className="mono-label">시간 및 장소</dt>
-              <dd className="break-words">{`${formatDate(big.record.visited_on)} / ${big.record.place.name}`}</dd>
+              <dt className="mono-label">시간</dt>
+              <dd>{formatDate(big.record.visited_on)}</dd>
+              <dt className="mono-label">장소</dt>
+              <dd className="break-words">{big.record.place.name}</dd>
               <dt className="mono-label">마릿수</dt>
               <dd>{`${count}마리`}</dd>
             </DexCard>
@@ -139,8 +141,10 @@ const MenuDex = () => {
               <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending ? `${pending} (평점 대기)` : '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
               <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
-              <dt className="mono-label">시간 및 장소</dt>
-              <dd className="break-words">{`${formatDate(latest.record.visited_on)} / ${latest.record.place.name}`}</dd>
+              <dt className="mono-label">시간</dt>
+              <dd>{formatDate(latest.record.visited_on)}</dd>
+              <dt className="mono-label">장소</dt>
+              <dd className="break-words">{latest.record.place.name}</dd>
               <dt className="mono-label">먹은 횟수</dt>
               <dd>{`${count}번`}</dd>
             </DexCard>

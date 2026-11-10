@@ -49,7 +49,7 @@ export const SettingsPage = () => {
         <p className="mb-3 text-sm text-muted">한 사람만 평점을 준 기록입니다. 나머지 사람이 평점을 주면 평균을 냅니다.</p>
         <PendingRatingList />
       </Section>
-      <Section id="settings-push" title="출조 알림">
+      <Section id="settings-push" title="알림">
         {canWrite ? <PushToggle /> : <p className="text-sm text-muted">{role === 'guest' ? '게스트 계정은 알림을 켤 수 없습니다.' : '계정 권한을 확인한 뒤 알림을 켤 수 있습니다.'}</p>}
       </Section>
       <Section id="settings-theme" title="화면 테마">

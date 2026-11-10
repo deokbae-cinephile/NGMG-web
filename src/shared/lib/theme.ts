@@ -46,15 +46,3 @@ const subscribe = (listener: () => void) => {
 };
 
 export const useTheme = () => useSyncExternalStore(subscribe, currentTheme, (): Theme => 'light');
-
-/** 설정에서 고르는 테마. 'system'이면 기기의 화면 모드를 따릅니다. */
-export type ThemeChoice = Theme | 'system';
-
-export const useThemeChoice = () => useSyncExternalStore(subscribe, (): ThemeChoice => chosen() ?? 'system', (): ThemeChoice => 'system');
-
-export const setThemeChoice = (choice: ThemeChoice) => {
-  if (choice !== 'system') return setTheme(choice);
-  inMemory = undefined;
-  setPreference(KEY, null);
-  sync();
-};

@@ -6,7 +6,6 @@ export {
   usePlaceRecords,
   useRecordedEventIds,
   usePlaceRatings,
-  useRecentFish,
   useRecordPages,
   useSaveRecord,
   useRecordOutbox,
