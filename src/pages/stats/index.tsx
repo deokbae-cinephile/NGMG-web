@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { useStatRecords } from '@/entities/record';
+import { useState, type ReactNode } from 'react';
+import { RatingChip, useStatRecords } from '@/entities/record';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
-import { summarize, yearsOf } from './model';
+import { summarize, yearsOf, type PlaceRank } from './model';
 
-const Ranking = ({ id, title, rows, unit }: { id: string; title: string; rows: [string, number][]; unit: string }) => {
-  const max = Math.max(1, ...rows.map(([, count]) => count));
+/** 자주 간 장소 순위. 낚시 포인트는 잡은 마릿수, 맛집은 평균 평점을 이름 옆에 함께 보여 줍니다. */
+const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows: PlaceRank[]; detail: (row: PlaceRank) => ReactNode }) => {
+  const max = Math.max(1, ...rows.map(({ count }) => count));
   return (
     <section aria-labelledby={id} className="pane">
       <div className="cell-head">
@@ -17,12 +18,15 @@ const Ranking = ({ id, title, rows, unit }: { id: string; title: string; rows: [
           <p className="text-muted">아직 기록이 없습니다.</p>
         ) : (
           <ol className="flex flex-col gap-3">
-            {rows.map(([name, count], index) => (
-              <li key={name} className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+            {rows.map((row, index) => (
+              <li key={`${row.name}-${index}`} className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
                 <span aria-hidden="true" className="mono-label">{String(index + 1).padStart(2, '0')}</span>
-                <span className="truncate">{name}</span>
-                <span className="mono-label">{`${count}${unit}`}</span>
-                <span aria-hidden="true" className={`bar col-start-2 col-end-4 ${index === 0 ? 'bar-top' : ''}`} style={{ width: `${(count / max) * 100}%` }} />
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{row.name}</span>
+                  {detail(row)}
+                </span>
+                <span className="mono-label">{`${row.count}번`}</span>
+                <span aria-hidden="true" className={`bar col-start-2 col-end-4 ${index === 0 ? 'bar-top' : ''}`} style={{ width: `${(row.count / max) * 100}%` }} />
               </li>
             ))}
           </ol>
@@ -100,13 +104,15 @@ export const StatsPage = () => {
         </ol>
       </section>
 
-
-
-
-      <div className="border-t border-line">
-        <Ranking id="top-places" title="자주 간 장소" rows={stats.places} unit="번" />
+      {/* 넓은 화면은 왼쪽 낚시 포인트, 오른쪽 맛집. 좁은 화면은 위아래로 놓습니다. 1px 틈으로 바탕이 보여 선이 됩니다. */}
+      <div className="grid gap-px border-t border-line bg-line md:grid-cols-2">
+        <div className="bg-paper">
+          <Ranking id="top-spots" title="자주 간 낚시 포인트" rows={stats.spots} detail={({ fish }) => <span className="shrink-0 text-sm text-muted">{`${fish}마리`}</span>} />
+        </div>
+        <div className="bg-paper">
+          <Ranking id="top-restaurants" title="자주 간 맛집" rows={stats.restaurants} detail={({ rating }) => <RatingChip rating={rating} />} />
+        </div>
       </div>
-
     </div>
   );
 };
