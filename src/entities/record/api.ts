@@ -224,13 +224,17 @@ export const useSpeciesOptions = () =>
   useQuery({
     queryKey: ['records', 'species'],
     queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase.from('fish_catches').select('species').neq('species', '').limit(5000);
-      if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
+      // 서버는 한 번에 1,000행까지 주므로 도감처럼 나눠 받아 모두 센 뒤 순서를 정합니다.
       const counts = new Map<string, number>();
-      (data as { species: string }[]).forEach(({ species }) => {
-        const name = species.trim();
-        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-      });
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('fish_catches').select('species').neq('species', '').order('id').range(from, from + 999);
+        if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
+        (data as { species: string }[]).forEach(({ species }) => {
+          const name = species.trim();
+          if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+        });
+        if (data.length < 1000) break;
+      }
       return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([name]) => name);
     },
     staleTime: 300_000,
