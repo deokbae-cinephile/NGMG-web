@@ -14,8 +14,13 @@ export const ScrollTopButton = () => {
   const [shownOn, setShownOn] = useState<string>();
   const path = useRef(pathname);
 
+  // 화면을 옮기면 이전 화면에서 기억한 스크롤 칸과 버튼을 지웁니다. (돌아왔을 때 사라진 칸을 기준으로 다시 보이지 않게)
   useEffect(() => {
     path.current = pathname;
+    return () => {
+      target.current = null;
+      setShownOn(undefined);
+    };
   }, [pathname]);
 
   useEffect(() => {
