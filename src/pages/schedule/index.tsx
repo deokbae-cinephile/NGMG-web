@@ -99,10 +99,11 @@ export const SchedulePage = () => {
       </section>
 
       <section aria-labelledby="day-title" className="pane pane-day">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 pt-6 pb-3">
+        {/* 위아래 여백을 같게 두고, 일정 추가 버튼은 날짜 줄의 세로 가운데에 맞춥니다. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-4 border-b border-line px-5 py-5">
           <div className="flex items-end gap-4">
             {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
-            <p aria-hidden="true" className={`display-number ${holiday || selected.getDay() === 0 ? 'text-sun' : selected.getDay() === 6 ? 'text-sat' : ''}`}>
+            <p aria-hidden="true" className={`display-number leading-none! ${holiday || selected.getDay() === 0 ? 'text-sun' : selected.getDay() === 6 ? 'text-sat' : ''}`}>
               {date.slice(8)}
             </p>
             <div className="pb-1">
