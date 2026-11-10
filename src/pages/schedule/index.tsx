@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Writable } from '@/entities/session';
 import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
@@ -99,10 +100,11 @@ export const SchedulePage = () => {
       </section>
 
       <section aria-labelledby="day-title" className="pane pane-day">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 pt-6 pb-3">
+        {/* 위아래 여백을 같게 두고, 일정 추가 버튼은 날짜 줄의 세로 가운데에 맞춥니다. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-4 border-b border-line px-5 py-5">
           <div className="flex items-end gap-4">
             {/* 고른 날짜를 크게 보여 주는 장식입니다. 읽을 내용은 옆의 제목에 있습니다. */}
-            <p aria-hidden="true" className={`display-number ${holiday || selected.getDay() === 0 ? 'text-sun' : selected.getDay() === 6 ? 'text-sat' : ''}`}>
+            <p aria-hidden="true" className={`display-number leading-none! ${holiday || selected.getDay() === 0 ? 'text-sun' : selected.getDay() === 6 ? 'text-sat' : ''}`}>
               {date.slice(8)}
             </p>
             <div className="pb-1">
@@ -113,9 +115,11 @@ export const SchedulePage = () => {
               </h2>
             </div>
           </div>
-          <button type="button" className="button button-primary" onClick={() => setForm({})}>
-            일정 추가
-          </button>
+          <Writable>
+            <button type="button" className="button button-primary" onClick={() => setForm({})}>
+              일정 추가
+            </button>
+          </Writable>
         </div>
         <div className="cell-body flex flex-col gap-10">
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
@@ -139,20 +143,22 @@ export const SchedulePage = () => {
                     )}
                     {event.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{event.memo}</p>}
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center">
-                    <button type="button" className="text-action" aria-label={`${event.title} 일정 수정`} onClick={() => setForm({ event })}>
-                      수정
-                    </button>
-                    <button
-                      type="button"
-                      className="text-action text-action-accent"
-                      aria-label={`${event.title} 일정 삭제`}
-                      disabled={remove.isPending}
-                      onClick={() => onDelete(event)}
-                    >
-                      삭제
-                    </button>
-                  </div>
+                  <Writable>
+                    <div className="flex shrink-0 flex-wrap items-center">
+                      <button type="button" className="text-action" aria-label={`${event.title} 일정 수정`} onClick={() => setForm({ event })}>
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className="text-action text-action-accent"
+                        aria-label={`${event.title} 일정 삭제`}
+                        disabled={remove.isPending}
+                        onClick={() => onDelete(event)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </Writable>
                 </li>
               ))}
             </ol>
@@ -168,9 +174,11 @@ export const SchedulePage = () => {
                       <span>{event.title}</span>
                       <span className="text-sm text-muted">{event.place?.name}</span>
                     </span>
-                    <button type="button" className="button" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })}>
-                      기록 남기기
-                    </button>
+                    <Writable>
+                      <button type="button" className="button" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })}>
+                        기록 남기기
+                      </button>
+                    </Writable>
                   </li>
                 ))}
               </ul>
@@ -196,9 +204,11 @@ export const SchedulePage = () => {
                     </p>
                   }
                   actions={
-                    <button type="button" className="text-action" aria-label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })}>
-                      수정
-                    </button>
+                    <Writable>
+                      <button type="button" className="text-action" aria-label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })}>
+                        수정
+                      </button>
+                    </Writable>
                   }
                 />
               ))}

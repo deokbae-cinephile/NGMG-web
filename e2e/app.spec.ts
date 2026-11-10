@@ -816,3 +816,20 @@ test('장비를 뺀 뒤에도 기록·일정을 고쳐 저장하면 예전 장�
   await expect(event).toBeHidden();
   expect(db.events!.find((row) => row.id === 'e1')).toMatchObject({ memo: '고친 일정', gear_set_ids: ['set-1'] });
 });
+
+test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기가 보이지 않는다', async ({ page }) => {
+  await fakeBackend(page, { ...seed(), members: [{ id: 'm-u1', user_id: 'u1', role: 'guest' }] });
+  await page.goto('./schedule?date=2026-11-07');
+  await expect(page.getByText('게스트로 보는 중입니다. 보기만 할 수 있습니다.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '일정 추가' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /일정 수정|일정 삭제|기록 남기기|기록 수정/ })).toHaveCount(0);
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: '장소 추가' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '무악재역', exact: true })).toBeVisible();
+  await page.goto('./places/p1');
+  await expect(page.getByRole('button', { name: /장소 수정|장소 삭제|기록 추가|기록 수정/ })).toHaveCount(0);
+  await page.goto('./settings');
+  await expect(page.getByText('게스트 계정은 알림을 켤 수 없습니다.')).toBeVisible();
+  await expectAccessible(page);
+});

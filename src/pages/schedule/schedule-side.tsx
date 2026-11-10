@@ -1,3 +1,4 @@
+import { Writable } from '@/entities/session';
 import { useState } from 'react';
 import { usePastEvents, useUpcomingEvents } from '@/entities/event';
 import { FishRow, useRecentFish, useRecordedEventIds } from '@/entities/record';
@@ -54,9 +55,11 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
                   <span>{event.title}</span>
                   <span className="text-sm text-muted">{event.place?.name}</span>
                 </span>
-                <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
-                  기록 남기기
-                </button>
+                <Writable>
+                  <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
+                    기록 남기기
+                  </button>
+                </Writable>
               </li>
             ))}
           </ul>

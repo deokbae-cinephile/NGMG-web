@@ -1,3 +1,4 @@
+import { Writable } from '@/entities/session';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
@@ -70,12 +71,16 @@ export const MapPage = () => {
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
-            <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
-              {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
-            </button>
-            <button type="button" className="button button-primary" onClick={() => setDraft({})}>
-              장소 추가
-            </button>
+            <Writable>
+              <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+                {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+              </button>
+            </Writable>
+            <Writable>
+              <button type="button" className="button button-primary" onClick={() => setDraft({})}>
+                장소 추가
+              </button>
+            </Writable>
             <button type="button" className="button" aria-pressed={selectedId === BASE_PLACE.id} onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}>
               {BASE_PLACE.name}
             </button>

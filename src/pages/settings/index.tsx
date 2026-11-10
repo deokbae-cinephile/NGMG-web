@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { usePendingRatings } from '@/entities/record';
+import { useCanWrite, useRole } from '@/entities/session';
 import { InstallSection } from '@/features/install-app';
 import { PushToggle } from '@/features/push-toggle';
 import { ThemeChoices } from '@/features/theme-toggle';
@@ -37,28 +38,32 @@ const PendingRatingList = () => {
 };
 
 /** 설정: 평점 대기, 출조 알림, 화면 테마, 앱 설치, 앱 정보 */
-export const SettingsPage = () => (
-  <div>
-    <title>설정 | 낚고먹고</title>
-    <h1 className="sr-only">설정</h1>
-    <Section id="settings-pending" title="평점 대기">
-      <p className="mb-3 text-sm text-muted">한 사람만 평점을 준 기록입니다. 나머지 사람이 평점을 주면 평균을 냅니다.</p>
-      <PendingRatingList />
-    </Section>
-    <Section id="settings-push" title="출조 알림">
-      <PushToggle />
-    </Section>
-    <Section id="settings-theme" title="화면 테마">
-      <ThemeChoices />
-    </Section>
-    <Section id="settings-install" title="앱 설치">
-      <InstallSection />
-    </Section>
-    <Section id="settings-about" title="앱 정보">
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2">
-        <dt className="mono-label">버전</dt>
-        <dd>{`v${APP_VERSION}`}</dd>
-      </dl>
-    </Section>
-  </div>
-);
+export const SettingsPage = () => {
+  const canWrite = useCanWrite();
+  const { role } = useRole();
+  return (
+    <div>
+      <title>설정 | 낚고먹고</title>
+      <h1 className="sr-only">설정</h1>
+      <Section id="settings-pending" title="평점 대기">
+        <p className="mb-3 text-sm text-muted">한 사람만 평점을 준 기록입니다. 나머지 사람이 평점을 주면 평균을 냅니다.</p>
+        <PendingRatingList />
+      </Section>
+      <Section id="settings-push" title="출조 알림">
+        {canWrite ? <PushToggle /> : <p className="text-sm text-muted">{role === 'guest' ? '게스트 계정은 알림을 켤 수 없습니다.' : '계정 권한을 확인한 뒤 알림을 켤 수 있습니다.'}</p>}
+      </Section>
+      <Section id="settings-theme" title="화면 테마">
+        <ThemeChoices />
+      </Section>
+      <Section id="settings-install" title="앱 설치">
+        <InstallSection />
+      </Section>
+      <Section id="settings-about" title="앱 정보">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2">
+          <dt className="mono-label">버전</dt>
+          <dd>{`v${APP_VERSION}`}</dd>
+        </dl>
+      </Section>
+    </div>
+  );
+};

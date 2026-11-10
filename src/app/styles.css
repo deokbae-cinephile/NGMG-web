@@ -594,6 +594,14 @@ body::after {
   .choice input {
     accent-color: var(--color-ink);
   }
+  /* 게스트(읽기 전용) 안내 줄 */
+  .guest-banner {
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.5rem 1.25rem;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+  }
   /* 메뉴 아이콘의 건수 표시(설정: 평점 대기) */
   .nav-badge {
     position: absolute;
@@ -807,7 +815,9 @@ body::after {
   .map-view {
     transition: opacity 0.2s ease-out;
   }
-  .map-moving {
+  /* map-loading: 처음 들어와 첫 그림을 받는 동안, map-moving: 먼 곳으로 옮기는 동안. 서로 따로 풀립니다. */
+  .map-moving,
+  .map-loading {
     opacity: 0;
   }
   @media (prefers-color-scheme: dark) {

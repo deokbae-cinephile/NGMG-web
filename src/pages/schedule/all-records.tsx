@@ -1,3 +1,4 @@
+import { Writable } from '@/entities/session';
 import { useEffect, useRef, useState } from 'react';
 import { KIND_LABEL, KINDS, KindBadge, usePlaces } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
@@ -140,9 +141,11 @@ export const AllRecords = () => {
             key={record.id}
             record={record}
             actions={
-              <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
-                수정
-              </button>
+              <Writable>
+                <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
+                  수정
+                </button>
+              </Writable>
             }
             heading={
               <h3 className="flex flex-wrap items-center gap-2">

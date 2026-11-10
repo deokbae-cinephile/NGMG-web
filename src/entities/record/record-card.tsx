@@ -41,7 +41,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
   return (
     <article className="panel panel-roomy flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <p className="mono-label">
             {[formatDateRange(record.visited_on, record.end_date), formatStay(record.visited_on, record.end_date)].filter(Boolean).join(' ')}
             {record.weather && ` / ${record.weather}`}

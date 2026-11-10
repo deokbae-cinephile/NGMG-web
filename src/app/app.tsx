@@ -81,9 +81,11 @@ export const App = () => {
     return () => window.clearTimeout(timer);
   }, [session]);
 
+  const userId = session?.user.id;
   useEffect(() => {
     if (session === null) client.clear(); // 로그아웃되면 화면에 남은 데이터를 지웁니다.
-  }, [session]);
+    else client.removeQueries({ queryKey: ['session', 'role'] }); // 다른 계정(예: 게스트)으로 들어오면 역할을 다시 읽습니다.
+  }, [session, userId]);
 
   return (
     <ErrorBoundary>
