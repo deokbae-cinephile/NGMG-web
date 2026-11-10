@@ -22,20 +22,19 @@ export const buildDex = (fish: DexFish[]): DexEntry[] => {
   }));
 };
 
-export type MenuDexEntry = { number: number; name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photoPath?: string; pending: string };
+export type MenuDexEntry = { name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photoPath?: string; pending: string };
 
-/** 맛집 메뉴를 이름별로 묶습니다. 번호는 처음 먹은 순서, 가격·장소·사진은 가장 최근 기록 기준이고 평점은 평균입니다. */
+/** 맛집 메뉴를 이름별로 묶습니다. 평균 평점이 높은 순(평점이 없으면 뒤, 같으면 이름순)이고, 가격·장소·사진은 가장 최근 기록 기준입니다. */
 export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
   const groups = new Map<string, DexMenu[]>();
   [...items].sort((a, b) => a.record.visited_on.localeCompare(b.record.visited_on)).forEach((item) => {
     const name = speciesName(item.name);
     if (name) groups.set(name, [...(groups.get(name) ?? []), item]);
   });
-  return [...groups].map(([name, list], index) => {
+  const entries = [...groups].map(([name, list]) => {
     const ratings = list.flatMap((item) => item.rating ?? []);
     const newest = [...list].reverse();
     return {
-      number: index + 1,
       name,
       count: list.length,
       price: newest.find((item) => item.price !== null)?.price ?? null,
@@ -46,4 +45,5 @@ export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
       photoPath: newest.find((item) => item.photo_path)?.photo_path ?? undefined,
     };
   });
+  return entries.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1) || a.name.localeCompare(b.name, 'ko'));
 };

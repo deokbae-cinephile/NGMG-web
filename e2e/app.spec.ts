@@ -34,7 +34,8 @@ const expectFits = async (page: Page) => {
 };
 
 const expectAccessible = async (page: Page) => {
-  const { violations } = await new AxeBuilder({ page }).analyze();
+  // 화면 확대 막기(meta-viewport)는 사용자 결정이라 검사에서 뺍니다(WCAG 1.4.4 위반임을 알고 정함, 2026-11-10).
+  const { violations } = await new AxeBuilder({ page }).disableRules(['meta-viewport']).analyze();
   // 개별 삭제 버튼의 포인트 색 글자는 사용자 결정이라 명도 대비 위반에서만 뺍니다.
   const found = violations.flatMap((item) => {
     const nodes = item.id === 'color-contrast' ? item.nodes.filter((node) => !node.html.includes('text-action-accent')) : item.nodes;
@@ -75,7 +76,7 @@ test('첫 로딩: 스플래시 로고가 보인 뒤 앱이 열리고, 새로고�
   await expect(page.locator('.splash .logo')).toHaveCount(0);
 });
 
-test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async ({ page }) => {
+test('지도: 검색으로 장소를 추가하고, 분류 필터는 다른 메뉴에 다녀오면 전체로 돌아간다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
@@ -102,8 +103,14 @@ test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async
 
   await page.getByRole('button', { name: '맛집', exact: true }).click();
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeHidden();
-  await page.reload();
-  await expect(page.getByRole('button', { name: '맛집', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  // 다른 메뉴에 다녀오면 다시 '전체'에서 시작합니다.
+  await page.getByRole('link', { name: '통계' }).first().click();
+  await expect(page).toHaveURL(/\/stats$/);
+  await expect(page.getByRole('heading', { name: /년 통계$/ })).toBeVisible(); // 통계 화면이 다 뜬 뒤 지도로 돌아갑니다.
+  await page.getByRole('link', { name: '지도' }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('button', { name: '전체', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
 });
 
 test('장소: 수정하고 삭제한다', async ({ page }) => {
@@ -383,7 +390,7 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.getByRole('link', { name: '통계' }).click();
-  await expect(page.getByRole('heading', { name: '김 조사 vs 류 조사' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '어종별 조과' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
@@ -572,7 +579,7 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toHaveCount(0);
   await page.goto('./stats');
   await expect(page.locator('dl dt').first()).toBeVisible();
-  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기', '맛집 방문', '맛집 지출']);
+  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기']);
 });
 
 test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', async ({ page }) => {
@@ -678,6 +685,10 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('status').filter({ hasText: '2종 수집' })).toHaveText('2종 수집 / 총 2개');
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
+  // 메뉴 도감은 번호 없이 평점 높은 순입니다.
+  await expect(page.getByText(/^No\./)).toHaveCount(0);
+  const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
+  expect(menus).toEqual(['모둠회', '매운탕']);
   // 한 사람만 준 평점도 보여 줍니다.
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('류 조사 3.5점 (평점 대기)')).toBeVisible();
 
@@ -706,6 +717,13 @@ test('지도: 평균 평점에 따라 핀 색이 바뀌고 숫자로도 보여 �
   await expect(none).not.toHaveClass(/rate-/);
   await pin.click();
   await expect(page.getByRole('group', { name: '거문도 방파제 정보' }).getByText('4.5')).toBeVisible();
+  // 장소 목록은 늘 평점 높은 순이고, 평점이 없는 장소는 뒤에 옵니다.
+  const items = page.getByRole('list', { name: '장소 목록' }).getByRole('listitem');
+  await expect(items).toHaveCount(3);
+  await expect(items.nth(0)).toContainText('거문도 방파제');
+  await expect(items.nth(1)).toContainText('바다횟집');
+  await expect(items.nth(2)).toContainText(LONG_NAME);
+  await expect(page.getByLabel('정렬')).toHaveCount(0);
   await expectAccessible(page);
 });
 
@@ -779,8 +797,8 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
 });
 
-test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점 성향, 작년 비교, 최대어 기록 변화', async ({ page }) => {
-  // 작년 비교는 오늘 날짜까지 세므로 시계를 고정합니다.
+test('통계: 출조·마릿수, 어종, 월별 어종, 장소별 조과율, 최대어 기록 변화', async ({ page }) => {
+  // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
   await fakeBackend(page, {
@@ -804,12 +822,9 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   });
   await page.goto('./stats');
   const tiles = page.locator('main dl').first();
-  await expect(tiles.getByText('작년 같은 기간 1회 (+2)')).toBeVisible();
-  await expect(tiles.getByText('작년 같은 기간 1마리 (+2)')).toBeVisible();
-
-  const duel = page.getByRole('region', { name: '김 조사 vs 류 조사' });
-  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('감성돔 41cm')).toBeVisible();
-  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('앞섬')).toHaveCount(2); // 마릿수, 최대어 (어종 수는 1종으로 같음)
+  await expect(tiles).toContainText('출조 횟수3회');
+  await expect(tiles).toContainText('잡은 물고기3마리');
+  await expect(tiles.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
   const species = page.getByRole('table', { name: /어종별/ });
   await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('2마리');
@@ -819,8 +834,8 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   await expect(page.getByRole('region', { name: '월별 어종' }).getByText('감성돔 1마리 / 볼락 1마리')).toBeVisible();
   const rates = page.getByRole('table', { name: /장소별/ });
   await expect(rates.getByRole('row', { name: /거문도 방파제/ })).toContainText('50%');
-  await expect(page.getByRole('region', { name: '맛집' }).getByText('지출 합계 50,000원')).toBeVisible();
-  await expect(page.getByRole('region', { name: '평점 성향' }).getByText(/2점 차/)).toBeVisible();
+  // 사용자 요청으로 뺀 통계
+  for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
   const bests = page.getByRole('region', { name: '김 조사 최대어 기록 변화' });
   await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
   await expectFits(page);
@@ -912,4 +927,12 @@ test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 �
   // 말풍선은 최근 3장만 보여 주고, 더 있으면 전체 개수를 알립니다.
   await expect(popup.getByRole('list', { name: '최근 잡은 물고기 사진' }).getByRole('img')).toHaveCount(3);
   await expect(popup.getByText('사진 4장 중 3장')).toBeVisible();
+});
+
+test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.route(/\/rest\/v1\/records\?select=place_id%2C\+?rating/, () => undefined); // 평점 응답이 오지 않음
+  await page.goto('./');
+  await expect(page.getByText('평점을 불러오는 중이라 이름순으로 보여 줍니다.')).toBeVisible({ timeout: 6000 });
+  await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);
 });

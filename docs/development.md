@@ -100,13 +100,9 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
-## 현재 위치
-
-지도의 "현재 위치에서 가까운 순"을 누를 때만 브라우저에 위치를 묻습니다. 위치는 화면의 정렬과 직선거리 표시에만 쓰고, 저장하거나 서버로 보내지 않습니다.
-
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 위성 지도 여부(`map-satellite`), 분류 필터(`map-filter`, `records-filter`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 위성 지도 여부(`map-satellite`), 기록 분류 필터(`records-filter`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 
@@ -123,7 +119,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 연회색).
 
-글꼴은 도현(Do Hyeon) 하나를 `@fontsource/do-hyeon`으로 포함합니다. 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
+글꼴은 Noto Sans KR을 `@fontsource/noto-sans-kr`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
 
 ## 첫 로딩과 화면 전환
 
@@ -139,4 +135,4 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
 - 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘기고, 이 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
 - 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답(DB는 요청 토큰의 사용자별로 따로 저장)을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받고, 저장은 `always`라 오프라인이면 바로 실패를 알립니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
-- 글꼴은 도현의 글자 조각(unicode-range)을 그대로 씁니다. 화면마다 8~9조각(20~50KB)만 받아, 한 파일(한글 전체 180KB)로 합치는 것보다 가볍습니다.
+- 글꼴은 글자 조각(unicode-range)을 그대로 씁니다. 화면마다 10~13조각(약 27~52KB)만 받습니다.
