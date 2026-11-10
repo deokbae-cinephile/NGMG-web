@@ -339,7 +339,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     // 지도를 감춘 동안에는 바탕색이 보입니다.
     <div className="relative h-full w-full bg-surface">
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-moving'}`} />
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-loading'}`} />
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
         <strong className="font-normal">평점</strong>
         {[1, 2, 3, 4, 5].map((score) => (

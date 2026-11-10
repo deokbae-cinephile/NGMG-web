@@ -102,6 +102,8 @@ export const createFakeServer = (seed: Seed = {}) => {
   const db: Record<string, Row[]> = Object.fromEntries(
     ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'gear_sets', 'gear_set_items', 'angler_gear', 'events', 'checklist_items', 'members'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
   );
+  // 로그인한 가짜 계정(u1)은 따로 정하지 않으면 멤버입니다(게스트 시험은 members를 넘깁니다).
+  if (!seed.members) db.members = [{ id: 'm-u1', user_id: 'u1', role: 'member' }];
   const removedFiles: string[] = [];
   let nextId = 1;
 

@@ -815,7 +815,9 @@ body::after {
   .map-view {
     transition: opacity 0.2s ease-out;
   }
-  .map-moving {
+  /* map-loading: 처음 들어와 첫 그림을 받는 동안, map-moving: 먼 곳으로 옮기는 동안. 서로 따로 풀립니다. */
+  .map-moving,
+  .map-loading {
     opacity: 0;
   }
   @media (prefers-color-scheme: dark) {

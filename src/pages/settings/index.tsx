@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { usePendingRatings } from '@/entities/record';
-import { useCanWrite } from '@/entities/session';
+import { useCanWrite, useRole } from '@/entities/session';
 import { InstallSection } from '@/features/install-app';
 import { PushToggle } from '@/features/push-toggle';
 import { ThemeChoices } from '@/features/theme-toggle';
@@ -40,6 +40,7 @@ const PendingRatingList = () => {
 /** 설정: 평점 대기, 출조 알림, 화면 테마, 앱 설치, 앱 정보 */
 export const SettingsPage = () => {
   const canWrite = useCanWrite();
+  const { role } = useRole();
   return (
     <div>
       <title>설정 | 낚고먹고</title>
@@ -49,7 +50,7 @@ export const SettingsPage = () => {
         <PendingRatingList />
       </Section>
       <Section id="settings-push" title="출조 알림">
-        {canWrite ? <PushToggle /> : <p className="text-sm text-muted">게스트 계정은 알림을 켤 수 없습니다.</p>}
+        {canWrite ? <PushToggle /> : <p className="text-sm text-muted">{role === 'guest' ? '게스트 계정은 알림을 켤 수 없습니다.' : '계정 권한을 확인한 뒤 알림을 켤 수 있습니다.'}</p>}
       </Section>
       <Section id="settings-theme" title="화면 테마">
         <ThemeChoices />

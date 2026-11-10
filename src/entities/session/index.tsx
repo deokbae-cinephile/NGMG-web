@@ -22,21 +22,28 @@ export const signIn = async ({ email, password }: { email: string; password: str
   }
 };
 
+export type Role = 'member' | 'guest' | 'none';
+
 /**
- * 로그인한 계정의 역할. 'guest'는 보기만 할 수 있습니다(DB의 RLS가 쓰기를 막고, 화면은 쓰기 버튼을 감춥니다).
- * 멤버 행을 읽지 못하거나 없으면(데모·테스트) 'member'로 봅니다.
+ * 로그인한 계정의 역할. 'guest'는 보기만 할 수 있고, 멤버 행이 없으면 'none'입니다(DB의 RLS가 쓰기를 막습니다).
+ * 확인하는 동안(undefined)과 확인하지 못한 동안(error)에는 쓰기 버튼을 보이지 않습니다.
  */
-export const useRole = () =>
-  useQuery({
+export const useRole = () => {
+  const query = useQuery({
     queryKey: ['session', 'role'],
     staleTime: Infinity,
-    queryFn: async (): Promise<'member' | 'guest'> => {
-      const { data } = await supabase.from('members').select('role').limit(1);
-      return (data as { role?: string }[] | null)?.[0]?.role === 'guest' ? 'guest' : 'member';
+    queryFn: async (): Promise<Role> => {
+      const { data, error } = await supabase.from('members').select('role').limit(1);
+      if (error) throw new Error('계정 권한을 확인하지 못했습니다.');
+      const role = (data as { role?: string }[])[0]?.role;
+      return role === 'member' || role === 'guest' ? role : 'none';
     },
-  }).data ?? 'member';
+  });
+  return { role: query.data, error: query.error };
+};
 
-export const useCanWrite = () => useRole() !== 'guest';
+/** 멤버로 확인된 계정만 추가·수정·삭제할 수 있습니다. */
+export const useCanWrite = () => useRole().role === 'member';
 
 /** 게스트에게는 보이지 않는 쓰기 버튼(추가·수정·삭제)을 감쌉니다. */
 export const Writable = ({ children }: { children: ReactNode }) => (useCanWrite() ? children : null);

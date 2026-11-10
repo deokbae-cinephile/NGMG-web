@@ -78,6 +78,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 - 예약: pg_cron `ngmg-weekly-backup`이 Vault의 `backup_url`로 `notify_cron_secret`을 붙여 부릅니다.
 - 받기: 대시보드 **Storage > backups**에서 내려받습니다. 버킷에 정책이 없어 앱에서는 읽을 수 없습니다.
 - 되살리기: 표마다 `insert into public.<표> select * from json_populate_recordset(null::public.<표>, '<행 JSON>')`로 넣습니다. 외래 키 순서(places → events → records → 나머지)를 지킵니다.
+- `members`는 2026-11-10 이전 백업에 `role`이 없습니다. 그때는 `insert into public.members (user_id, role) select user_id, coalesce(role, 'member') from json_populate_recordset(null::public.members, '<행 JSON>')`로 넣습니다.
 - 새 프로젝트: `supabase functions deploy backup --use-api` 뒤 `select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/backup', 'backup_url')`.
 
 ## Kakao 지도 준비
