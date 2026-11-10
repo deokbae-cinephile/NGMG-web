@@ -102,6 +102,9 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 ## 경량화 원칙
 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
-- Supabase는 `supabase-js` 대신 쓰는 클라이언트(`auth-js`, `postgrest-js`, `storage-js`)만 묶어 실시간 기능을 뺐습니다(`src/shared/api/supabase.ts`).
+- Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.
+- 사진은 올릴 때 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
-- 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘깁니다.
+- 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘기고, 이 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
+- 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받습니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
+- 글꼴은 도현의 글자 조각(unicode-range)을 그대로 씁니다. 화면마다 8~9조각(20~50KB)만 받아, 한 파일(한글 전체 180KB)로 합치는 것보다 가볍습니다.

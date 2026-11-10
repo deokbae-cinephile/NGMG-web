@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Gear, type GearSet } from '@/shared/api';
-import { compressImage } from '@/shared/lib';
+import { removePhotos, signPhotos, supabase, uploadPhoto, type Gear, type GearSet } from '@/shared/api';
 import { SAVE_KEY } from '@/shared/ui';
 
 export const useGear = () =>
@@ -12,9 +11,11 @@ export const useGear = () =>
       const rows = data as Gear[];
       const paths = rows.flatMap((item) => item.photo_path ?? []);
       if (!paths.length) return rows;
-      const { data: signed } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
-      const urls = new Map(signed?.map((item) => [item.path, item.signedUrl]));
-      return rows.map((item) => ({ ...item, photo_url: (item.photo_path && urls.get(item.photo_path)) || undefined }));
+      const urls = await signPhotos(paths);
+      return rows.map((item) => {
+        const photo = item.photo_path ? urls.get(item.photo_path) : undefined;
+        return { ...item, photo_url: photo?.url, photo_thumb_url: photo?.thumb };
+      });
     },
   });
 
@@ -26,12 +27,12 @@ const saveGear = async ({ file, removePhoto, ...values }: GearInput) => {
   let photo_path = removePhoto ? null : previous;
   if (file) {
     photo_path = `gear/${values.id}-${file.lastModified}-${file.size}.jpg`;
-    const upload = await supabase.storage.from(PHOTO_BUCKET).upload(photo_path, await compressImage(file), { upsert: true, contentType: 'image/jpeg' });
+    const upload = await uploadPhoto(photo_path, file);
     if (upload.error) throw new Error(`장비 사진을 올리지 못했습니다: ${file.name}`);
   }
   const { error } = await supabase.from('angler_gear').upsert({ ...values, photo_path });
   if (error) throw new Error('장비를 저장하지 못했습니다.');
-  if (previous && previous !== photo_path) await supabase.storage.from(PHOTO_BUCKET).remove([previous]);
+  if (previous && previous !== photo_path) await removePhotos([previous]);
 };
 
 export const useSaveGear = () => {
@@ -66,7 +67,7 @@ export const useReorderGear = () => {
 const deleteGear = async (item: Pick<Gear, 'id' | 'photo_path'>) => {
   const { error } = await supabase.from('angler_gear').delete().eq('id', item.id);
   if (error) throw new Error('장비를 삭제하지 못했습니다.');
-  if (item.photo_path) await supabase.storage.from(PHOTO_BUCKET).remove([item.photo_path]);
+  await removePhotos([item.photo_path]);
 };
 
 export const useDeleteGear = () => {

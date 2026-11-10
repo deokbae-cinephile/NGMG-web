@@ -240,7 +240,7 @@ export const GearPage = () => {
                               </span>
                               {item.photo_url ? (
                                 <a href={item.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-                                  <img src={item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line bg-surface object-cover" />
+                                  <img src={item.photo_thumb_url ?? item.photo_url} alt={`${gearLabel(item)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line bg-surface object-cover" />
                                 </a>
                               ) : (
                                 <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">

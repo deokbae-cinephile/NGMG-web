@@ -22,7 +22,7 @@ export const buildDex = (fish: DexFish[]): DexEntry[] => {
   }));
 };
 
-export type MenuDexEntry = { number: number; name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photo?: string };
+export type MenuDexEntry = { number: number; name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photoPath?: string };
 
 /** 맛집 메뉴를 이름별로 묶습니다. 번호는 처음 먹은 순서, 가격·장소·사진은 가장 최근 기록 기준이고 평점은 평균입니다. */
 export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
@@ -41,7 +41,7 @@ export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
       price: newest.find((item) => item.price !== null)?.price ?? null,
       rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null,
       latest: list.at(-1)!,
-      photo: newest.find((item) => item.photo_url)?.photo_url,
+      photoPath: newest.find((item) => item.photo_path)?.photo_path ?? undefined,
     };
   });
 };

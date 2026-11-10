@@ -22,7 +22,8 @@ const PlacePage = lazy(pages.place);
 const GearPage = lazy(pages.gear);
 const DexPage = lazy(pages.dex);
 
-const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
+// offlineFirst: 오프라인이어도 한 번은 요청해 서비스 워커(public/sw.js)에 저장된 마지막 응답을 받습니다.
+const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000, networkMode: 'offlineFirst' } } });
 
 const NotFound = () => (
   <div className="cell-body">

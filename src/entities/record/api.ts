@@ -1,6 +1,5 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto } from '@/shared/api';
-import { compressImage } from '@/shared/lib';
+import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { removePhotos, signPhotos, supabase, uploadPhoto, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto, type PhotoUrls } from '@/shared/api';
 import { cleanKeyword, pendingRating, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
 
@@ -12,16 +11,11 @@ const SELECT =
 
 type Row = Omit<PlaceRecord, 'photos' | 'fish' | 'menu_items'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[]; menu_items?: MenuItem[] };
 
-// 사진 버킷은 비공개라 서명 주소를 받아 표시합니다.
-const signPhotos = async (paths: string[]) => {
-  const urls = new Map<string, string>();
-  if (paths.length) {
-    const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
-    data?.forEach((item) => {
-      if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
-    });
-  }
-  return urls;
+
+/** 원본과 썸네일 주소 */
+const photoFields = (urls: Map<string, PhotoUrls>, path: string | null) => {
+  const photo = path ? urls.get(path) : undefined;
+  return { photo_url: photo?.url, photo_thumb_url: photo?.thumb };
 };
 
 const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
@@ -32,13 +26,13 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
     ...row,
     photos: [...row.photos]
       .sort((a, b) => a.position - b.position)
-      .map((photo) => ({ ...photo, url: urls.get(photo.storage_path) ?? '' })),
+      .map((photo) => ({ ...photo, url: urls.get(photo.storage_path)?.url ?? '' })),
     fish: [...(row.fish ?? [])]
       .sort((a, b) => a.position - b.position)
-      .map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined })),
+      .map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), ...photoFields(urls, fish.photo_path) })),
     menu_items: [...(row.menu_items ?? [])]
       .sort((a, b) => a.position - b.position)
-      .map((item) => ({ ...item, photo_url: item.photo_path ? urls.get(item.photo_path) : undefined })),
+      .map((item) => ({ ...item, ...photoFields(urls, item.photo_path) })),
   }));
 };
 
@@ -174,7 +168,7 @@ export const useRecentFish = (limit = 8) =>
       if (error) throw new Error('잡은 물고기를 불러오지 못했습니다.');
       const rows = data as unknown as RecentFish[];
       const urls = await signPhotos(rows.flatMap((fish) => fish.photo_path ?? []));
-      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined }));
+      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), ...photoFields(urls, fish.photo_path) }));
     },
   });
 
@@ -196,8 +190,8 @@ export const useFishDex = () =>
         rows.push(...(data as unknown as DexFish[]));
         if (data.length < 1000) break;
       }
-      const urls = await signPhotos(rows.flatMap((fish) => fish.photo_path ?? []));
-      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), photo_url: fish.photo_path ? urls.get(fish.photo_path) : undefined }));
+      // 사진 주소는 화면에 보이는 대표 사진만 받습니다(useSignedPhotos).
+      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) }));
     },
   });
 
@@ -219,9 +213,23 @@ export const useMenuDex = () =>
         rows.push(...(data as unknown as DexMenu[]));
         if (data.length < 1000) break;
       }
-      const urls = await signPhotos(rows.flatMap((item) => item.photo_path ?? []));
-      return rows.map((item) => ({ ...item, photo_url: item.photo_path ? urls.get(item.photo_path) : undefined }));
+      return rows;
     },
+  });
+
+const SIGN_BATCH = 10;
+
+/**
+ * 화면에 보이는 사진만 서명 주소를 받습니다. 10장씩 나눠 받아 두어, 목록이 늘어나도 이미 받은 사진의 주소는 바뀌지 않습니다.
+ * 서명 주소는 24시간 유효하므로 1시간 동안은 다시 받지 않습니다.
+ */
+export const useSignedPhotos = (paths: string[]) =>
+  useQueries({
+    queries: Array.from({ length: Math.ceil(paths.length / SIGN_BATCH) }, (_, index) => {
+      const batch = paths.slice(index * SIGN_BATCH, (index + 1) * SIGN_BATCH);
+      return { queryKey: ['photo-urls', ...batch], queryFn: () => signPhotos(batch), staleTime: 3_600_000 };
+    }),
+    combine: (results) => new Map(results.flatMap((result) => [...(result.data ?? [])])),
   });
 
 export type PendingRating = { id: string; visited_on: string; place: { name: string } };
@@ -266,30 +274,23 @@ export type FishInput = Omit<FishCatch, 'photo_url'> & { file: File | null; remo
 /** 저장할 메뉴. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
 export type MenuInput = Omit<MenuItem, 'photo_url'> & { file: File | null; removePhoto: boolean };
 
-const removeFiles = async (paths: (string | null)[]) => {
-  const list = paths.filter((path): path is string => Boolean(path));
-  if (list.length) await supabase.storage.from(PHOTO_BUCKET).remove(list);
-};
-
 const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInput['removedFish']) => {
   if (removed.length) {
     const removal = await supabase.from('fish_catches').delete().in('id', removed.map((item) => item.id));
     if (removal.error) throw new Error('물고기 기록을 삭제하지 못했습니다.');
-    await removeFiles(removed.map((item) => item.photo_path));
+    await removePhotos(removed.map((item) => item.photo_path));
   }
   for (const [position, { file, removePhoto, ...item }] of fish.entries()) {
     let photo_path = removePhoto ? null : item.photo_path;
     if (file) {
       // 같은 파일은 같은 경로가 되어 다시 저장해도 중복되지 않습니다.
       photo_path = `${recordId}/fish-${item.id}-${file.lastModified}-${file.size}.jpg`;
-      const upload = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(photo_path, await compressImage(file), { upsert: true, contentType: 'image/jpeg' });
+      const upload = await uploadPhoto(photo_path, file);
       if (upload.error) throw new Error(`물고기 사진을 올리지 못했습니다: ${file.name}`);
     }
     const row = await supabase.from('fish_catches').upsert({ ...item, record_id: recordId, photo_path, position });
     if (row.error) throw new Error('물고기 기록을 저장하지 못했습니다.');
-    if (item.photo_path && item.photo_path !== photo_path) await removeFiles([item.photo_path]); // 바꾸거나 지운 옛 사진
+    if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
   }
 };
 
@@ -297,20 +298,18 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
   if (removed.length) {
     const removal = await supabase.from('menu_items').delete().in('id', removed.map((item) => item.id));
     if (removal.error) throw new Error('메뉴를 삭제하지 못했습니다.');
-    await removeFiles(removed.map((item) => item.photo_path));
+    await removePhotos(removed.map((item) => item.photo_path));
   }
   for (const { file, removePhoto, ...item } of items) {
     let photo_path = removePhoto ? null : item.photo_path;
     if (file) {
       photo_path = `${recordId}/menu-${item.id}-${file.lastModified}-${file.size}.jpg`;
-      const upload = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(photo_path, await compressImage(file), { upsert: true, contentType: 'image/jpeg' });
+      const upload = await uploadPhoto(photo_path, file);
       if (upload.error) throw new Error(`메뉴 사진을 올리지 못했습니다: ${file.name}`);
     }
     const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path });
     if (row.error) throw new Error('메뉴를 저장하지 못했습니다.');
-    if (item.photo_path && item.photo_path !== photo_path) await removeFiles([item.photo_path]); // 바꾸거나 지운 옛 사진
+    if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
   }
 };
 
@@ -321,14 +320,13 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
   if (removedPhotos.length) {
     const removal = await supabase.from('record_photos').delete().in('id', removedPhotos.map((photo) => photo.id));
     if (removal.error) throw new Error('사진을 삭제하지 못했습니다.');
-    await supabase.storage.from(PHOTO_BUCKET).remove(removedPhotos.map((photo) => photo.storage_path));
+    await removePhotos(removedPhotos.map((photo) => photo.storage_path));
   }
 
   for (const [index, file] of files.entries()) {
     // 같은 파일은 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
     const path = `${values.id}/${file.lastModified}-${file.size}.jpg`;
-    const blob = await compressImage(file);
-    const upload = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    const upload = await uploadPhoto(path, file);
     if (upload.error) throw new Error(`사진을 올리지 못했습니다: ${file.name}`);
     const row = await supabase
       .from('record_photos')
@@ -353,7 +351,7 @@ const deleteRecord = async (record: PlaceRecord) => {
   // 기록을 먼저 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
   const { error } = await supabase.from('records').delete().eq('id', record.id);
   if (error) throw new Error('기록을 삭제하지 못했습니다.');
-  await removeFiles([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path), ...record.menu_items.map((item) => item.photo_path)]);
+  await removePhotos([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path), ...record.menu_items.map((item) => item.photo_path)]);
 };
 
 export const useDeleteRecord = () => {

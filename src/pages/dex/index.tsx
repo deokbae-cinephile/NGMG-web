@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { useFishDex, useMenuDex, type DexFish, type DexMenu } from '@/entities/record';
+import { useFishDex, useMenuDex, useSignedPhotos, type DexFish, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
 import { CardGridSkeleton, ErrorText, Icon, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
@@ -70,6 +70,7 @@ const FishDex = () => {
   const { data = NO_FISH, isPending, error } = useFishDex();
   const entries = useMemo(() => buildDex(data), [data]);
   const { visible, more, end } = useBatches(isPending ? undefined : entries);
+  const urls = useSignedPhotos(visible.flatMap(({ big }) => big.photo_path ?? []));
   if (isPending) return <DexSkeleton />;
 
   return (
@@ -77,30 +78,33 @@ const FishDex = () => {
       <Summary title="어종 도감" status={`${entries.length}종 발견 / 총 ${data.length}마리`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 낚시 기록에 잡은 물고기를 추가하면 어종이 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {visible.map(({ number, species, count, big }) => (
-          <DexCard
-            key={species}
-            number={number}
-            title={species}
-            icon="fish"
-            photo={
-              big.photo_url ? (
-                <a href={big.photo_url} target="_blank" rel="noreferrer">
-                  <img src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
-                </a>
-              ) : undefined
-            }
-          >
-            <dt className="mono-label">빅원</dt>
-            <dd>{`${big.length_cm}cm`}</dd>
-            <dt className="mono-label">조사</dt>
-            <dd>{big.angler}</dd>
-            <dt className="mono-label">시간 및 장소</dt>
-            <dd className="break-words">{`${formatDate(big.record.visited_on)} / ${big.record.place.name}`}</dd>
-            <dt className="mono-label">마릿수</dt>
-            <dd>{`${count}마리`}</dd>
-          </DexCard>
-        ))}
+        {visible.map(({ number, species, count, big }) => {
+          const photo = big.photo_path ? urls.get(big.photo_path) : undefined;
+          return (
+            <DexCard
+              key={species}
+              number={number}
+              title={species}
+              icon="fish"
+              photo={
+                photo ? (
+                  <a href={photo.url} target="_blank" rel="noreferrer">
+                    <img src={photo.thumb} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
+                  </a>
+                ) : undefined
+              }
+            >
+              <dt className="mono-label">빅원</dt>
+              <dd>{`${big.length_cm}cm`}</dd>
+              <dt className="mono-label">조사</dt>
+              <dd>{big.angler}</dd>
+              <dt className="mono-label">시간 및 장소</dt>
+              <dd className="break-words">{`${formatDate(big.record.visited_on)} / ${big.record.place.name}`}</dd>
+              <dt className="mono-label">마릿수</dt>
+              <dd>{`${count}마리`}</dd>
+            </DexCard>
+          );
+        })}
       </ol>
       {more && <DexEnd end={end} />}
     </>
@@ -112,6 +116,7 @@ const MenuDex = () => {
   const { data = NO_MENU, isPending, error } = useMenuDex();
   const entries = useMemo(() => buildMenuDex(data), [data]);
   const { visible, more, end } = useBatches(isPending ? undefined : entries);
+  const urls = useSignedPhotos(visible.flatMap(({ photoPath }) => photoPath ?? []));
   if (isPending) return <DexSkeleton />;
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
@@ -120,25 +125,28 @@ const MenuDex = () => {
       <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {visible.map(({ number, name, count, price, rating, latest, photo }) => (
-          <DexCard
-            key={name}
-            number={number}
-            title={name}
-            icon="food"
-            to={`/schedule?date=${latest.record.visited_on}`}
-            photo={photo ? <img src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
-          >
-            <dt className="mono-label">평점</dt>
-            <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
-            <dt className="mono-label">최근 가격</dt>
-            <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
-            <dt className="mono-label">시간 및 장소</dt>
-            <dd className="break-words">{`${formatDate(latest.record.visited_on)} / ${latest.record.place.name}`}</dd>
-            <dt className="mono-label">먹은 횟수</dt>
-            <dd>{`${count}번`}</dd>
-          </DexCard>
-        ))}
+        {visible.map(({ number, name, count, price, rating, latest, photoPath }) => {
+          const photo = photoPath ? urls.get(photoPath) : undefined;
+          return (
+            <DexCard
+              key={name}
+              number={number}
+              title={name}
+              icon="food"
+              to={`/schedule?date=${latest.record.visited_on}`}
+              photo={photo ? <img src={photo.thumb} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
+            >
+              <dt className="mono-label">평점</dt>
+              <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
+              <dt className="mono-label">최근 가격</dt>
+              <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
+              <dt className="mono-label">시간 및 장소</dt>
+              <dd className="break-words">{`${formatDate(latest.record.visited_on)} / ${latest.record.place.name}`}</dd>
+              <dt className="mono-label">먹은 횟수</dt>
+              <dd>{`${count}번`}</dd>
+            </DexCard>
+          );
+        })}
       </ol>
       {more && <DexEnd end={end} />}
     </>

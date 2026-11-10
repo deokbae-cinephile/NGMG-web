@@ -1,15 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Place, type PlaceDraft } from '@/shared/api';
-import { compressImage } from '@/shared/lib';
+import { removePhotos, signPhotos, supabase, uploadPhoto, type Place, type PlaceDraft } from '@/shared/api';
 import { SAVE_KEY } from '@/shared/ui';
 
-// 사진 버킷은 비공개라 1시간짜리 서명 주소를 받아 표시합니다.
 const withPhotoUrls = async (places: Place[]) => {
-  const paths = places.flatMap((place) => place.photo_path ?? []);
-  if (!paths.length) return places;
-  const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
-  const urls = new Map(data?.flatMap((item) => (item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : [])));
-  return places.map((place) => (place.photo_path ? { ...place, photo_url: urls.get(place.photo_path) } : place));
+  const urls = await signPhotos(places.flatMap((place) => place.photo_path ?? []));
+  return places.map((place) => {
+    const photo = place.photo_path ? urls.get(place.photo_path) : undefined;
+    return photo ? { ...place, photo_url: photo.url, photo_thumb_url: photo.thumb } : place;
+  });
 };
 
 const fetchPlaces = async () => {
@@ -37,15 +35,13 @@ export const savePlace = async ({ id, isNew, photo, removePhoto, ...values }: Sa
     let path: string | null = null;
     if (photo) {
       path = `places/${saved.id}/${photo.lastModified}-${photo.size}.jpg`;
-      const upload = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(path, await compressImage(photo), { upsert: true, contentType: 'image/jpeg' });
+      const upload = await uploadPhoto(path, photo);
       if (upload.error) throw new Error('장소 사진을 올리지 못했습니다.');
     }
     const update = await supabase.from('places').update({ photo_path: path }).eq('id', saved.id).select().single();
     if (update.error) throw new Error('장소 사진을 저장하지 못했습니다.');
     saved = update.data as Place;
-    if (previous && previous !== path) await supabase.storage.from(PHOTO_BUCKET).remove([previous]);
+    if (previous && previous !== path) await removePhotos([previous]);
   }
   return saved;
 };
@@ -83,7 +79,7 @@ const deletePlace = async (place: Pick<Place, 'id' | 'photo_path'>) => {
     ...menu.flatMap((item) => (item.photo_path as string | null) ?? []),
     ...(place.photo_path ? [place.photo_path] : []),
   ];
-  if (paths.length) await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+  await removePhotos(paths);
 };
 
 export const useDeletePlace = () => {

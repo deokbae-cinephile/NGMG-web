@@ -9,7 +9,8 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   reporter: 'list',
-  use: { baseURL: `http://localhost:${PORT}/`, trace: 'retain-on-failure' },
+  // 서비스 워커가 요청을 가로채면 가짜 서버(page.route)를 지나치므로 막습니다.
+  use: { baseURL: `http://localhost:${PORT}/`, trace: 'retain-on-failure', serviceWorkers: 'block' },
   projects: [
     { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } } },
     { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 } } },
