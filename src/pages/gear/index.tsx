@@ -184,26 +184,29 @@ export const GearPage = () => {
                         return found ? [gearLabel(found)] : [];
                       });
                       return (
-                        <li key={set.id} className="panel flex flex-wrap items-start justify-between gap-2">
+                        <li key={set.id} className="panel flex items-start gap-2">
+                          <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">
+                            <Icon name="tackleBox" size={30} />
+                          </span>
                           <div className="min-w-0 flex-1">
                             <h4 className="break-words">{set.name}</h4>
                             <p className="mt-1 break-words text-sm text-muted">{labels.length ? labels.join(' / ') : '넣은 장비 없음'}</p>
-                          </div>
-                          <div className="flex shrink-0 items-center">
-                            <button type="button" className="text-action" aria-label={`${set.name} 세트 수정`} onClick={() => setSetEditor({ angler, set })}>
-                              수정
-                            </button>
-                            <button
-                              type="button"
-                              className="text-action text-action-accent"
-                              aria-label={`${set.name} 세트 삭제`}
-                              disabled={removeSet.isPending}
-                              onClick={() => {
-                                if (window.confirm(`${set.name} 세트를 삭제할까요? 장비는 지워지지 않습니다.`)) removeSet.mutate(set.id);
-                              }}
-                            >
-                              삭제
-                            </button>
+                            <div className="mt-1 flex flex-wrap items-center">
+                              <button type="button" className="text-action" aria-label={`${set.name} 세트 수정`} onClick={() => setSetEditor({ angler, set })}>
+                                수정
+                              </button>
+                              <button
+                                type="button"
+                                className="text-action text-action-accent"
+                                aria-label={`${set.name} 세트 삭제`}
+                                disabled={removeSet.isPending}
+                                onClick={() => {
+                                  if (window.confirm(`${set.name} 세트를 삭제할까요? 장비는 지워지지 않습니다.`)) removeSet.mutate(set.id);
+                                }}
+                              >
+                                삭제
+                              </button>
+                            </div>
                           </div>
                         </li>
                       );
