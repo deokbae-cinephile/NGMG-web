@@ -60,7 +60,7 @@ export const KAKAO_SDK = `
     }
     class Geocoder { coord2Address(_x, _y, cb) { cb([{ address: { address_name: '전남 고흥군' } }], Status.OK); } }
     window.kakao = { maps: { load: (cb) => cb(), LatLng, Map, CustomOverlay, MarkerClusterer, MapTypeId: { ROADMAP: 1, HYBRID: 3 },
-      event: { addListener: (_t, name, cb) => { listeners[name] = cb; } },
+      event: { addListener: (_t, name, cb) => { listeners[name] = cb; }, removeListener: () => {} },
       services: { Places, Geocoder, Status } } };
   })();
 `;
