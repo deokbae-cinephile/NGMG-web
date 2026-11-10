@@ -122,7 +122,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds =
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : name === 'bait' ? formatBait(values.bait) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
         // 세트의 장비 이름을 장비 칸에도 남겨 검색과 장비 사용 횟수에 씁니다. 세트가 없으면 예전 글을 그대로 둡니다.
-        ...(kind === 'fishing' && setsToSave.length ? { gear: setsToSave.flatMap((set) => set.items.map((item) => item.label)).join(' / ') } : {}),
+        // 세트가 있던 기록에서 세트를 모두 비우면 장비 칸도 비웁니다.
+        ...(kind === 'fishing' && (setsToSave.length || record?.gear_sets?.length) ? { gear: setsToSave.flatMap((set) => set.items.map((item) => item.label)).join(' / ') } : {}),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
