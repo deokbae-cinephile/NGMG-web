@@ -79,7 +79,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
       </section>
       {recordEvent?.place && (
         <Modal title={`${recordEvent.place.name} 기록`} onClose={() => setRecordEvent(undefined)}>
-          <RecordForm place={recordEvent.place} date={recordEvent.date} endDate={recordEvent.end_date} eventId={recordEvent.id} gearSetIds={recordEvent.gear_set_ids} onDone={() => setRecordEvent(undefined)} />
+          <RecordForm place={recordEvent.place} date={recordEvent.date} endDate={recordEvent.end_date} eventId={recordEvent.id} onDone={() => setRecordEvent(undefined)} />
         </Modal>
       )}
     </section>

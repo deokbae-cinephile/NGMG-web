@@ -1,1 +1,1 @@
-export { InstallButton } from './install-button';
+export { InstallSection } from './install-section';

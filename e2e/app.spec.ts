@@ -194,8 +194,6 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
   await expect(page.getByRole('button', { name: '7 일 (토), 2026년 11월, 일정 1건' })).toBeVisible();
-  // 출조 알림 줄: 서비스 워커가 없어도 버튼이 멈춰 있지 않습니다.
-  await expect(page.getByRole('button', { name: '알림 켜기' })).toBeEnabled();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -265,36 +263,38 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await expect(page.locator('#main')).toBeFocused();
 });
 
-test('앱 설치 버튼은 메뉴 밖 오른쪽 아래에 떠 있다', async ({ page }, testInfo) => {
-  await fakeBackend(page, seed());
-  await page.goto('/schedule');
-  await expect(page.getByRole('navigation', { name: '주요 메뉴' })).toBeVisible();
-  // 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
-  await page.evaluate(() => {
-    const event = Object.assign(new Event('beforeinstallprompt'), {
-      prompt: async () => {},
-      userChoice: Promise.resolve({ outcome: 'dismissed' }),
-    });
-    window.dispatchEvent(event);
-  });
-  const button = page.getByRole('button', { name: '앱 설치' });
-  await expect(button).toBeVisible();
-  await expect(page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '앱 설치' })).toHaveCount(0);
+test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 설치, 앱 정보', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, rating: null, angler_ratings: { '김 조사': 4 } }; // 한 사람만 평점을 줌
+  await fakeBackend(page, base);
+  await page.goto('./');
+  // 평점 대기가 있으면 설정 메뉴에 건수를 붙입니다.
+  const settings = page.getByRole('link', { name: /설정.*평점 대기 1건/ });
+  await expect(settings.first()).toBeVisible();
+  await settings.first().click();
+  await expect(page).toHaveTitle('설정 | 낚고먹고');
+  await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: '출조 알림' }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
 
-  const install = (await button.boundingBox())!;
-  const { width, height } = await page.evaluate(() => ({ width: document.documentElement.clientWidth, height: window.innerHeight }));
-  expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
-  if (width < 1024) {
-    // 좁은 화면의 테마 전환 버튼은 왼쪽 아래에 있어 설치 버튼과 겹치지 않습니다.
-    const theme = (await page.getByRole('button', { name: /테마로 바꾸기/ }).boundingBox())!;
-    expect(theme.x).toBeLessThanOrEqual(20);
-  }
-  expect(install.y + install.height).toBeGreaterThan(height - 120);
-  if (testInfo.project.name === 'mobile') {
-    const nav = (await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox())!;
-    expect(install.y + install.height).toBeLessThanOrEqual(nav.y); // 하단 탭을 가리지 않습니다.
-  }
+  // 화면 테마: 다크를 고르면 바뀌고, 기기 설정 따르기로 돌아갈 수 있습니다.
+  const theme = page.getByRole('region', { name: '화면 테마' });
+  await theme.getByLabel('다크').check();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await theme.getByLabel('기기 설정 따르기').check();
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
+
+  // 앱 설치: 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
+  await page.evaluate(() => {
+    window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
+  });
+  await expect(page.getByRole('region', { name: '앱 설치' }).getByRole('button', { name: '앱 설치' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '앱 정보' })).toContainText(/v\d+\.\d+\.\d+/);
   await expectFits(page);
+  await expectAccessible(page);
+
+  // 예전 장비 주소는 설정으로 넘깁니다.
+  await page.goto('./gear');
+  await expect(page).toHaveURL(/\/settings$/);
 });
 
 test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 팝업과 지도 전환 이름이 동작한다', async ({ page }) => {
@@ -349,38 +349,6 @@ test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연�
   expect(db.records![0]).toMatchObject({ end_date: '2026-10-31', people: 2, companions: '국환, 창선', weather: '맑음' });
 });
 
-test('장비: 조사별로 추가, 수정, 삭제하고 사진을 미리 본다', async ({ page }) => {
-  const db = await fakeBackend(page, seed());
-  await page.goto('./gear');
-  const tab = page.getByRole('button', { name: '류 조사', exact: true });
-  if (page.viewportSize()!.width < 1024) await tab.click(); // 좁은 화면은 조사를 탭으로 고릅니다.
-  await page.getByRole('button', { name: '류 조사 장비 추가' }).click();
-  const dialog = page.getByRole('dialog', { name: '새 장비' });
-  await expect(dialog.getByRole('radio', { name: '류 조사' })).toBeChecked();
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog.getByText('장비 이름을 입력해 주세요.')).toBeVisible();
-  await dialog.getByLabel('분류', { exact: true }).selectOption('릴');
-  await dialog.getByLabel('브랜드').fill('다이와');
-  await dialog.getByLabel('장비 이름').fill('뜰채');
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-  await dialog.getByLabel('사진', { exact: true }).setInputFiles({ name: '뜰채.png', mimeType: 'image/png', buffer: png });
-  await expect(dialog.getByRole('img', { name: '올릴 장비 사진 미리보기' })).toBeVisible();
-  await expectAccessible(page);
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  await expect(page.getByRole('heading', { name: '[다이와] 뜰채' })).toBeVisible();
-  expect(db.angler_gear![0]).toMatchObject({ angler: '류 조사', category: '릴', brand: '다이와', name: '뜰채' });
-  await expectFits(page);
-
-  await page.getByRole('button', { name: '[다이와] 뜰채 수정' }).click();
-  await page.getByRole('dialog', { name: '장비 수정' }).getByLabel('장비 이름').fill('큰 뜰채');
-  await page.getByRole('dialog', { name: '장비 수정' }).getByRole('button', { name: '저장' }).click();
-  await expect(page.getByRole('heading', { name: '[다이와] 큰 뜰채' })).toBeVisible();
-  await page.getByRole('button', { name: '[다이와] 큰 뜰채 삭제' }).click();
-  await expect(page.getByRole('heading', { name: '[다이와] 큰 뜰채' })).toBeHidden();
-  expect(db.angler_gear).toHaveLength(0);
-});
-
 test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile');
   await fakeBackend(page, seed());
@@ -409,13 +377,6 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
   // 스크롤바 자리를 비우는 환경이 있어 고정 값 대신 실제 화면 폭과 비교합니다.
   expect(Math.round(nav.x + nav.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
   await check('./records', '전체 기록');
-  await page.evaluate(() => {
-    window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
-  });
-  await expect(page.getByRole('button', { name: '앱 설치' })).toBeVisible();
-  // 설치 버튼이 보여도 메뉴는 오른쪽 칸 너비를 그대로 씁니다.
-  const withInstall = await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox();
-  expect(Math.round(withInstall!.x + withInstall!.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
   const links = await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link').evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().width)));
   expect(new Set(links).size).toBe(1); // 5칸이 같은 너비입니다.
 });
@@ -431,20 +392,19 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사·장비 세트 조건을 더한다', async ({ page }) => {
+test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사 조건을 더한다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, {
     ...base,
     records: [
       ...base.records!,
-      { id: 's1', place_id: 'p2', visited_on: '2026-09-01', catches: '', memo: '모둠회', gear_sets: [{ angler: '김 조사', name: '루어 세트', items: [] }] },
+      { id: 's1', place_id: 'p2', visited_on: '2026-09-01', catches: '', memo: '모둠회' },
     ],
     fish_catches: [{ id: 'f1', record_id: 'r01', angler: '류 조사', species: '거대 망둥어', length_cm: 17, position: 0 }],
-    gear_sets: [{ id: 'g1', angler: '김 조사', name: '루어 세트', position: 0, created_at: '2026-01-01' }],
   });
   await page.goto('./records');
   const pane = page.locator('.pane-records');
-  const search = page.getByLabel('장소·조과·어종·장비·메뉴·메모에서 찾기');
+  const search = page.getByLabel('장소·조과·어종·메뉴·메모에서 찾기');
   await search.fill('망둥어');
   await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
@@ -466,86 +426,12 @@ test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사·
   await page.getByLabel('잡은 조사').selectOption('김 조사');
   await expect(pane.getByText('조건에 맞는 기록이 없습니다.')).toBeVisible();
 
-  // 조건: 장비 세트, 장소
+  // 조건: 장소
   await pane.getByRole('button', { name: '조건 지우기' }).click();
-  await page.getByLabel('장비 세트').selectOption({ label: '김 조사 루어 세트' });
-  await expect(pane.getByText('모둠회')).toBeVisible();
-  await expect(pane.getByText('감성돔 1마리')).toBeHidden();
-  await page.getByLabel('장비 세트').selectOption('');
   await page.getByLabel('장소', { exact: true }).selectOption({ label: '거문도 방파제' });
   await expect(pane.getByText('감성돔 1마리')).toBeVisible();
   await expect(pane.getByText('모둠회')).toBeHidden();
   await expectAccessible(page);
-});
-
-const gearSeed = () => ({
-  ...seed(),
-  records: [{ id: 'r1', place_id: 'p1', visited_on: '2026-10-01', gear: '[A] 로드하나, [다이와] 릴하나', catches: '' }],
-  angler_gear: [
-    { id: 'a', angler: '김 조사', category: '로드', brand: 'A', name: '로드하나', position: 0 },
-    { id: 'b', angler: '김 조사', category: '로드', brand: '', name: '로드둘', position: 1 },
-    { id: 'c', angler: '김 조사', category: '릴', brand: '다이와', name: '릴하나', position: 0 },
-  ],
-});
-
-test('장비: 끌어서 옮기고, 위·아래 버튼으로도 옮기며, 사용 횟수를 보여 준다', async ({ page }) => {
-  const db = await fakeBackend(page, gearSeed());
-  await page.goto('./gear');
-  const row = page.locator('[data-gear-item="a"]');
-  await expect(row.getByText('사용 1회')).toBeVisible();
-  await expectAccessible(page);
-
-  // 로드하나를 로드둘 아래로 끕니다.
-  const from = (await row.locator('.gear-handle').boundingBox())!;
-  const to = (await page.locator('[data-gear-item="b"]').boundingBox())!;
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 4 });
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height - 4, { steps: 2 });
-  await page.mouse.up();
-  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'a')!.position).toBe(1);
-  expect(db.angler_gear!.find((item) => item.id === 'b')!.position).toBe(0);
-
-  // 버튼으로 분류 끝을 넘어가면 다음 분류로 갑니다.
-  await page.getByRole('button', { name: '[A] 로드하나 아래로' }).click();
-  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'a')!.category).toBe('릴');
-  await expect(page.getByRole('button', { name: '[A] 로드하나 아래로' })).toBeFocused();
-  await expectFits(page);
-});
-
-test('장비 세트: 만들어 일정에 고르면 기록에 담기고, 한 사람만 평점을 주면 평점 대기로 알린다', async ({ page }) => {
-  const db = await fakeBackend(page, { ...gearSeed(), events: [{ id: 'ev', date: '2026-11-07', end_date: '2026-11-07', start_time: '06:00:00', title: '출조', place_id: 'p1', memo: '' }] });
-  await page.goto('./gear');
-  await page.getByRole('button', { name: '김 조사 장비 세트 추가' }).click();
-  const dialog = page.getByRole('dialog', { name: '새 장비 세트' });
-  await dialog.getByLabel('세트 이름').fill('바다 워킹 루어 세트');
-  await dialog.getByLabel('[A] 로드하나').check();
-  await dialog.getByLabel('[다이와] 릴하나').check();
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  expect(db.gear_set_items).toHaveLength(2);
-
-  // 일정에 세트를 고르면 일정에 보이고, 기록을 남길 때 불러옵니다.
-  await page.goto('./schedule?date=2026-11-07');
-  await page.getByRole('button', { name: '출조 일정 수정' }).click();
-  const eventDialog = page.getByRole('dialog', { name: '일정 수정' });
-  await eventDialog.getByLabel('김 조사 세트').selectOption({ label: '바다 워킹 루어 세트' });
-  await eventDialog.getByRole('button', { name: '저장' }).click();
-  await expect(eventDialog).toBeHidden();
-  await expect(page.getByText('장비 세트 김 조사 바다 워킹 루어 세트')).toBeVisible();
-  await page.getByRole('button', { name: '출조 기록 남기기' }).click();
-  const recordDialog = page.getByRole('dialog', { name: /기록/ });
-  await expect(recordDialog.getByLabel('[A] 로드하나')).toBeChecked();
-  await recordDialog.getByLabel('[다이와] 릴하나').uncheck(); // 그날 쓴 장비로 고칩니다.
-  await recordDialog.getByLabel('김 조사 평점').selectOption('4');
-  await recordDialog.getByRole('button', { name: '저장' }).click();
-  await expect(recordDialog).toBeHidden();
-  const saved = db.records!.find((row) => row.event_id === 'ev')!;
-  expect(saved.gear_sets).toEqual([{ angler: '김 조사', name: '바다 워킹 루어 세트', items: [expect.objectContaining({ label: '[A] 로드하나' })] }]);
-  expect(saved.rating).toBeNull();
-  await expect(page.getByRole('button', { name: '평점 대기 1건' })).toBeVisible();
-  await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('김 조사 장비 세트 / 바다 워킹 루어 세트')).toBeVisible();
-
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {
@@ -582,27 +468,6 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기']);
 });
 
-test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', async ({ page }) => {
-  const db = await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'm', angler: '김 조사', category: '라인', subcategory: '원줄', brand: '셉트', name: '합사', position: 0 }] });
-  await page.goto('./gear');
-  await page.getByRole('button', { name: '김 조사 장비 추가' }).click();
-  const dialog = page.getByRole('dialog', { name: '새 장비' });
-  await expect(dialog.getByLabel('세부 분류')).toHaveCount(0);
-  await dialog.getByLabel('분류', { exact: true }).selectOption('라인');
-  await dialog.getByLabel('세부 분류').selectOption('목줄');
-  await dialog.getByLabel('장비 이름').fill('카본');
-  await expectAccessible(page);
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  expect(db.angler_gear!.at(-1)).toMatchObject({ category: '라인', subcategory: '목줄', name: '카본' });
-  await expect(page.locator('[data-gear-sub="목줄"][data-angler="김 조사"]').getByRole('heading', { name: '카본' })).toBeVisible();
-
-  await page.getByRole('button', { name: '[셉트] 합사 아래로' }).click();
-  await expect.poll(() => db.angler_gear!.find((item) => item.id === 'm')!.subcategory).toBe('목줄');
-  await expect(page.locator('[data-gear-sub="목줄"][data-angler="김 조사"]').getByRole('heading', { name: '[셉트] 합사' })).toBeVisible();
-  await expectAccessible(page);
-});
-
 test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼이 한 줄에 놓이며, 길찾기 출발지가 된다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
@@ -624,7 +489,7 @@ test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼�
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
 });
 
-test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 빗금으로 이어 보인다', async ({ page }) => {
+test('이미 기록한 일정에는 기록 남기기가 없고, 예전 장비 글은 보이지 않는다', async ({ page }) => {
   await fakeBackend(page, {
     ...seed(),
     events: [
@@ -636,10 +501,10 @@ test('이미 기록한 일정에는 기록 남기기가 없고, 장비는 빗금
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('button', { name: '남은 출조 기록 남기기' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다녀온 출조 기록 남기기' })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '기록', exact: true }).getByRole('article').getByText('[A] 로드 / [B] 릴 / [C] 채비')).toBeVisible();
+  await expect(page.getByRole('region', { name: '기록', exact: true }).getByRole('article').getByText(/로드|채비/)).toHaveCount(0); // 장비는 사용자 요청으로 뺐습니다(저장 값은 그대로).
 });
 
-test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴다', async ({ page }) => {
+test('기록 화면에서 기록을 수정한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./records');
   await page.getByRole('button', { name: /거문도 방파제 .*기록 수정/ }).first().click();
@@ -649,15 +514,6 @@ test('기록 화면에서 기록을 수정하고, 장비에 미끼 분류를 쓴
   await expect(dialog).toBeHidden();
   await expect(page.getByText(/\/ 폭우$/).first()).toBeVisible();
   expect(db.records).toHaveLength(25);
-
-  await page.goto('./gear');
-  await expect(page.getByRole('region', { name: '김 조사 미끼' })).toBeVisible();
-  await page.getByRole('button', { name: '김 조사 장비 추가' }).click();
-  const gear = page.getByRole('dialog', { name: '새 장비' });
-  await gear.getByLabel('분류', { exact: true }).selectOption('미끼');
-  await gear.getByLabel('장비 이름').fill('크릴');
-  await gear.getByRole('button', { name: '저장' }).click();
-  await expect(page.getByRole('region', { name: '김 조사 미끼' }).getByRole('heading', { name: '크릴' })).toBeVisible();
 });
 
 test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를 보여 준다', async ({ page }) => {

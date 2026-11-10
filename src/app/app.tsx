@@ -12,14 +12,14 @@ const pages = {
   schedule: () => import('@/pages/schedule').then((page) => ({ default: page.SchedulePage })),
   stats: () => import('@/pages/stats').then((page) => ({ default: page.StatsPage })),
   place: () => import('@/pages/place').then((page) => ({ default: page.PlacePage })),
-  gear: () => import('@/pages/gear').then((page) => ({ default: page.GearPage })),
+  settings: () => import('@/pages/settings').then((page) => ({ default: page.SettingsPage })),
   dex: () => import('@/pages/dex').then((page) => ({ default: page.DexPage })),
 };
 const MapPage = lazy(pages.map);
 const SchedulePage = lazy(pages.schedule);
 const StatsPage = lazy(pages.stats);
 const PlacePage = lazy(pages.place);
-const GearPage = lazy(pages.gear);
+const SettingsPage = lazy(pages.settings);
 const DexPage = lazy(pages.dex);
 
 // 조회는 offlineFirst: 오프라인이어도 한 번은 요청해 서비스 워커(public/sw.js)에 저장된 마지막 응답을 받습니다.
@@ -47,7 +47,8 @@ const Page = () => {
   if (pathname === '/calendar') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/records') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/stats') return <StatsPage />;
-  if (pathname === '/gear') return <GearPage />;
+  if (pathname === '/settings') return <SettingsPage />;
+  if (pathname === '/gear') return <Navigate to="/settings" />; // 장비 메뉴는 없어졌습니다.
   if (pathname === '/dex') return <DexPage />;
   const place = /^\/places\/([^/]+)$/.exec(pathname);
   if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;

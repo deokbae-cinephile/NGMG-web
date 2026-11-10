@@ -1,10 +1,9 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { InstallButton } from '@/features/install-app';
+import { usePendingRatings } from '@/entities/record';
 import { ScrollTopButton } from '@/features/scroll-top';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName, type PageVariant } from '@/shared/ui';
-import { PendingRatings } from './pending-ratings';
 import { SaveOutbox } from './save-outbox';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
@@ -12,7 +11,7 @@ const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/schedule', label: '일정 및 기록', icon: 'calendar' },
   { to: '/stats', label: '통계', icon: 'stats' },
   { to: '/dex', label: '도감', icon: 'dex' },
-  { to: '/gear', label: '장비', icon: 'rod' },
+  { to: '/settings', label: '설정', icon: 'settings' },
 ];
 
 /** 화면 코드를 받는 동안 그 화면 모양의 자리를 보여 줍니다. */
@@ -21,7 +20,6 @@ const skeletonFor = (pathname: string): PageVariant => {
   if (pathname === '/schedule') return 'schedule';
   if (pathname === '/stats') return 'stats';
   if (pathname === '/dex') return 'dex';
-  if (pathname === '/gear') return 'gear';
   if (pathname.startsWith('/places/')) return 'place';
   return 'default';
 };
@@ -30,6 +28,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const first = useRef(true);
+  const pending = usePendingRatings().data?.length ?? 0;
 
   // 화면이 바뀌면 맨 위부터 보여 줍니다. 그리기 전에 옮기고, 새 화면이 그려진 다음에도 한 번 더 옮깁니다.
   useLayoutEffect(() => {
@@ -61,12 +60,20 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         </NavLink>
         <ThemeToggle />
         <nav aria-label="주요 메뉴" className="main-nav">
-          {MENU.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link" title={item.label}>
-              <Icon name={item.icon} size={22} className="nav-icon" />
-              <span className="nav-text">{item.label}</span>
-            </NavLink>
-          ))}
+          {MENU.map((item) => {
+            // 평점 대기가 있으면 설정 메뉴에 건수를 붙입니다. 읽는 이름에도 넣어 색만으로 알리지 않습니다.
+            const badge = item.to === '/settings' && pending ? pending : 0;
+            return (
+              <NavLink key={item.to} to={item.to} end={item.to === '/'} className="nav-link" title={item.label}>
+                <span className="relative">
+                  <Icon name={item.icon} size={22} className="nav-icon" />
+                  {badge > 0 && <span aria-hidden="true" className="nav-badge">{badge > 9 ? '9+' : badge}</span>}
+                </span>
+                <span className="nav-text">{item.label}</span>
+                {badge > 0 && <span className="sr-only">{`, 평점 대기 ${badge}건`}</span>}
+              </NavLink>
+            );
+          })}
         </nav>
       </header>
       <main id="main" ref={main} tabIndex={-1} className="main-area min-h-0 flex-1 outline-none lg:overflow-y-auto">
@@ -74,11 +81,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           {children}
         </Suspense>
       </main>
-      {/* 설치와 맨 위로는 메뉴(GNB)와 다른 동작이라 메뉴 밖 오른쪽 아래에 따로 띄웁니다. */}
+      {/* 저장 대기와 맨 위로는 메뉴(GNB)와 다른 동작이라 메뉴 밖 오른쪽 아래에 따로 띄웁니다. 평점 대기·앱 설치는 설정에 있습니다. */}
       <div className="floating-actions">
         <SaveOutbox />
-        <PendingRatings />
-        <InstallButton />
         <ScrollTopButton />
       </div>
     </div>
