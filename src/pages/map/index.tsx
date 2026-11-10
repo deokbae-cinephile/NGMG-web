@@ -13,7 +13,7 @@ const NO_PLACES: Place[] = [];
 
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
-  const { data: ratings, error: ratingsError } = usePlaceRatings();
+  const { data: ratings, error: ratingsError, isPending: ratingsPending } = usePlaceRatings();
   // 지도에 들어올 때마다 '전체'에서 시작합니다(사용자 요청).
   const [filter, setFilter] = useState<Filter>('all');
   const [selectedId, setSelectedId] = useState<string>();
@@ -96,9 +96,10 @@ export const MapPage = () => {
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}
           </p>
 
-          {isPending && <SkeletonRows variant="place" />}
+          {/* 목록은 평점순이라 평점까지 받은 뒤 보여 줍니다(평점을 못 받으면 이름순으로 보여 주고 위에 오류를 알립니다). */}
+          {(isPending || (ratingsPending && !ratingsError)) && <SkeletonRows variant="place" />}
           <ul aria-label="장소 목록" className="flex flex-col">
-            {listed.map((place) => {
+            {!(ratingsPending && !ratingsError) && listed.map((place) => {
               const selected = place.id === selectedId;
               return (
                 <li key={place.id} className={`panel ${selected ? 'panel-active' : ''}`}>
