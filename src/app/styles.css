@@ -93,6 +93,19 @@ select {
   padding-right: 2.5rem !important;
 }
 
+/* 날짜·시간 입력칸도 셀렉트와 같은 꺾쇠를 같은 자리(오른쪽 0.75rem)에 둡니다. 누르면 브라우저의 날짜·시간 선택창이 열립니다. */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  width: 12px;
+  height: 8px;
+  margin: 0 0 0 0.5rem;
+  padding: 0;
+  background: var(--select-arrow) center / 12px 8px no-repeat;
+  color: transparent;
+  cursor: pointer;
+  opacity: 1;
+}
+
 /* 화면 전체를 본문의 선과 같은 색과 두께로 감쌉니다. */
 body::after {
   content: '';
