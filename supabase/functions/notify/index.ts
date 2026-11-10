@@ -26,20 +26,24 @@ const kst = (offset = 0) => {
   return { key: date.toISOString().slice(0, 10), day: date.getUTCDay() };
 };
 
-/** 보내고, 없어진 구독(404·410)은 지웁니다. */
+/** 보내고, 없어진 구독(404·410)은 지웁니다. expired는 지운 구독 수입니다. */
 const send = async (subscriptions: Subscription[], message: Message) => {
   let sent = 0;
+  let expired = 0;
   for (const { endpoint, p256dh, auth } of subscriptions) {
     try {
       await webpush.sendNotification({ endpoint, keys: { p256dh, auth } }, JSON.stringify(message), { TTL: 12 * 3600, urgency: 'normal' });
       sent += 1;
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) await sql`delete from public.push_subscriptions where endpoint = ${endpoint}`;
+      if (status === 404 || status === 410) {
+        await sql`delete from public.push_subscriptions where endpoint = ${endpoint}`;
+        expired += 1;
+      }
       else console.error('push failed', status, (error as Error).message);
     }
   }
-  return sent;
+  return { sent, expired };
 };
 
 const dailyMessages = async (): Promise<Message[]> => {
@@ -92,7 +96,7 @@ Deno.serve(async (request) => {
     const messages = await dailyMessages();
     const subscriptions = messages.length ? await sql<Subscription[]>`select endpoint, p256dh, auth from public.push_subscriptions` : [];
     let sent = 0;
-    for (const message of messages) sent += await send(subscriptions, message);
+    for (const message of messages) sent += (await send(subscriptions, message)).sent;
     return json({ messages: messages.length, sent });
   }
 
@@ -100,8 +104,8 @@ Deno.serve(async (request) => {
     if (!(await isMember(request))) return json({ error: 'forbidden' }, 403);
     const subscriptions = await sql<Subscription[]>`select endpoint, p256dh, auth from public.push_subscriptions where endpoint = ${body.test}`;
     if (!subscriptions.length) return json({ error: 'not subscribed' }, 404);
-    const sent = await send(subscriptions, { title: '낚고먹고 알림', body: '알림을 켰습니다. 출조 전날 저녁에 알려 드릴게요.', url: '/schedule', tag: 'test' });
-    return json({ sent });
+    const result = await send(subscriptions, { title: '낚고먹고 알림', body: '알림을 켰습니다. 출조 전날 저녁에 알려 드릴게요.', url: '/schedule', tag: 'test' });
+    return json(result);
   }
   return json({ error: 'bad request' }, 400);
 });

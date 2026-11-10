@@ -21,8 +21,8 @@ export const currentSubscription = async () => {
   return reg ? reg.pushManager.getSubscription() : null;
 };
 
-/** 알림을 켜고 테스트 알림을 보냅니다. */
-export const enablePush = async () => {
+/** 알림을 켜고 테스트 알림을 보냅니다. 구독은 저장됐지만 테스트 알림을 못 보냈으면 tested가 false입니다. */
+export const enablePush = async (): Promise<{ tested: boolean }> => {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('알림 권한을 허용해야 받을 수 있습니다. 브라우저나 기기 설정에서 허용해 주세요.');
   const keyResponse = await supabase.functions.fetch('notify');
@@ -38,7 +38,19 @@ export const enablePush = async () => {
     if (!existing) await subscription.unsubscribe().catch(() => undefined);
     throw new Error('알림 구독을 저장하지 못했습니다.');
   }
-  await supabase.functions.fetch('notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test: endpoint }) });
+  try {
+    const response = await supabase.functions.fetch('notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test: endpoint }) });
+    const result = (await response.json().catch(() => ({}))) as { sent?: number; expired?: number };
+    if (result.expired) {
+      // 푸시 서비스가 이 구독을 없앴다고 알려 왔습니다. 서버 행은 함수가 지웠으니 브라우저 구독도 정리합니다.
+      await subscription.unsubscribe().catch(() => undefined);
+      throw new Error('이 기기의 알림 구독이 만료되었습니다. 알림 켜기를 다시 눌러 주세요.');
+    }
+    return { tested: response.ok && Boolean(result.sent) };
+  } catch (error) {
+    if (error instanceof Error && /[가-힣]/.test(error.message)) throw error;
+    return { tested: false }; // 테스트 요청만 실패: 구독은 저장되어 예약 알림은 받습니다.
+  }
 };
 
 /** 이 기기의 알림을 끕니다. */
