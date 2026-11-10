@@ -64,6 +64,7 @@ export type EventInput = {
   title: string;
   place_id: string | null;
   memo: string;
+  gear_set_ids: string[];
 };
 
 export const saveEvent = async ({ id, isNew, ...values }: EventInput) => {

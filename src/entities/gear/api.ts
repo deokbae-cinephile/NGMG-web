@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Gear } from '@/shared/api';
+import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase, type Gear, type GearSet } from '@/shared/api';
 import { compressImage } from '@/shared/lib';
 import { SAVE_KEY } from '@/shared/ui';
 
@@ -72,4 +72,43 @@ const deleteGear = async (item: Pick<Gear, 'id' | 'photo_path'>) => {
 export const useDeleteGear = () => {
   const client = useQueryClient();
   return useMutation({ mutationFn: deleteGear, onSuccess: () => client.invalidateQueries({ queryKey: ['gear'] }) });
+};
+
+/** 조사별 장비 세트와 세트에 넣은 장비 */
+export const useGearSets = () =>
+  useQuery({
+    queryKey: ['gear-sets'],
+    queryFn: async (): Promise<GearSet[]> => {
+      const { data, error } = await supabase.from('gear_sets').select('*, items:gear_set_items(gear_id, position)').order('position').order('created_at');
+      if (error) throw new Error('장비 세트를 불러오지 못했습니다.');
+      return (data as GearSet[]).map((set) => ({ ...set, items: [...(set.items ?? [])].sort((a, b) => a.position - b.position) }));
+    },
+  });
+
+export type GearSetInput = { id: string; angler: string; name: string; position: number; gearIds: string[] };
+
+/** 세트 이름을 저장하고, 세트에 넣은 장비는 통째로 바꿉니다. */
+const saveGearSet = async ({ gearIds, ...set }: GearSetInput) => {
+  const saved = await supabase.from('gear_sets').upsert(set);
+  if (saved.error) throw new Error('장비 세트를 저장하지 못했습니다.');
+  const removal = await supabase.from('gear_set_items').delete().eq('set_id', set.id);
+  if (removal.error) throw new Error('장비 세트를 저장하지 못했습니다.');
+  if (!gearIds.length) return;
+  const inserted = await supabase.from('gear_set_items').insert(gearIds.map((gear_id, position) => ({ set_id: set.id, gear_id, position })));
+  if (inserted.error) throw new Error('장비 세트를 저장하지 못했습니다.');
+};
+
+export const useSaveGearSet = () => {
+  const client = useQueryClient();
+  return useMutation({ mutationKey: SAVE_KEY, mutationFn: saveGearSet, onSuccess: () => client.invalidateQueries({ queryKey: ['gear-sets'] }) });
+};
+
+const deleteGearSet = async (id: string) => {
+  const { error } = await supabase.from('gear_sets').delete().eq('id', id);
+  if (error) throw new Error('장비 세트를 삭제하지 못했습니다.');
+};
+
+export const useDeleteGearSet = () => {
+  const client = useQueryClient();
+  return useMutation({ mutationFn: deleteGearSet, onSuccess: () => client.invalidateQueries({ queryKey: ['gear-sets'] }) });
 };

@@ -1,12 +1,15 @@
 import { useRef } from 'react';
 import type { MenuItem } from '@/shared/api';
 import { Field, RemovablePhoto } from '@/shared/ui';
+import { AnglerRatingFields, toDraft, type RatingDraft } from './angler-rating-fields';
 
 export type MenuRow = {
   id: string;
   name: string;
   price: string;
-  rating: string;
+  ratings: RatingDraft;
+  /** 조사별 평점이 생기기 전에 남긴 평점. 조사별 평점을 주면 그쪽을 씁니다. */
+  legacyRating: number | null;
   photo_path: string | null;
   photo_url?: string;
   file: File | null;
@@ -17,14 +20,15 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
   id: item?.id ?? crypto.randomUUID(),
   name: item?.name ?? '',
   price: item?.price?.toString() ?? '',
-  rating: item?.rating?.toString() ?? '',
+  ratings: toDraft(item?.angler_ratings),
+  legacyRating: item && !Object.keys(item.angler_ratings ?? {}).length ? item.rating : null,
   photo_path: item?.photo_path ?? null,
   photo_url: item?.photo_url,
   file: null,
   removePhoto: false,
 });
 
-const nameError = (row: MenuRow) => ((row.price || row.rating || row.file) && !row.name.trim() ? '메뉴 이름을 입력해 주세요.' : undefined);
+const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '메뉴 이름을 입력해 주세요.' : undefined);
 const priceError = (row: MenuRow) => (Number(row.price) < 0 || !Number.isInteger(Number(row.price)) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
 /** 내용을 적다 만 줄 */
@@ -71,20 +75,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                   onChange={(event) => set(row.id, { price: event.target.value })}
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor={`${row.id}-rating`} className="mono-label">{`${label} 평점`}</label>
-                <select
-                  id={`${row.id}-rating`}
-                  className="min-h-11 border border-field bg-surface px-3 text-ink"
-                  value={row.rating}
-                  onChange={(event) => set(row.id, { rating: event.target.value })}
-                >
-                  <option value="">선택 안 함</option>
-                  {[5, 4, 3, 2, 1].map((score) => (
-                    <option key={score} value={score}>{`${score}점`}</option>
-                  ))}
-                </select>
-              </div>
+              <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />
               <div className="flex flex-wrap items-end gap-3">
                 {row.file ? (
                   <RemovablePhoto file={row.file} alt={`${label} 새 사진 미리보기`} removeLabel={`${label} 새 사진 빼기`} onRemove={() => set(row.id, { file: null })} />

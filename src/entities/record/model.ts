@@ -1,4 +1,4 @@
-import { ANGLERS, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails } from '@/shared/api';
+import { ANGLERS, type AnglerRatings, type FishCatch, type PlaceKind, type PlaceRecord, type RecordDetails } from '@/shared/api';
 
 export { ANGLERS };
 
@@ -40,11 +40,7 @@ export const WEATHER_STATES = ['맑음', '구름', '흐림', '비', '폭우', '�
 
 /** 기록 폼에서 입력받는 항목 */
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
-  fishing: [
-    { name: 'gear', label: '장비', placeholder: '예: 1호 5.3m 갯바위대 / 2500번 릴' },
-    { name: 'rig', label: '채비', placeholder: '예: 반유동, 0.8호 찌' },
-    { name: 'bait', label: '미끼', placeholder: '여러 개면 / 로 구분: 크릴 / 홍갯지렁이' },
-  ],
+  fishing: [], // 장비·채비·미끼는 조사별 장비 세트(GearSetFieldset) 하나로 받습니다.
   restaurant: [], // 메뉴는 MenuFieldset에서 줄마다 받습니다.
   etc: [],
 };
@@ -81,12 +77,23 @@ export const formatMenu = (items: MenuDraft[]) =>
     .map(({ name, price }) => (price ? `${name} ${Number(price)}원` : name))
     .join(' / ');
 
-/** 맛집 기록의 평점: 평점을 준 메뉴들의 평균(소수 첫째 자리). 하나도 없으면 null입니다. */
-export const menuAverage = (items: { name: string; rating: string }[]) => {
-  const ratings = items.filter((item) => item.name.trim() && item.rating).map((item) => Number(item.rating));
-  return ratings.length ? Math.round((ratings.reduce((sum, value) => sum + value, 0) / ratings.length) * 10) / 10 : null;
+const given = (ratings: AnglerRatings = {}) => ANGLERS.filter((angler) => typeof ratings[angler] === 'number');
+
+/** 두 조사가 모두 준 평점의 평균(소수 첫째 자리). 한 사람만 줬거나 아무도 안 줬으면 null입니다. */
+export const combinedRating = (ratings: AnglerRatings = {}) => {
+  const values = given(ratings).map((angler) => ratings[angler]!);
+  return values.length === ANGLERS.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : null;
 };
 
-/** 메뉴 한 줄을 '모둠회 - 30,000원 (4점)'처럼 읽습니다. */
-export const menuLine = ({ name, price, rating }: Pick<MenuItem, 'name' | 'price' | 'rating'>) =>
-  `${name}${price === null ? '' : ` - ${price.toLocaleString('ko-KR')}원`}${rating === null ? '' : ` (${rating}점)`}`;
+/** 한 사람만 평점을 줘 나머지 사람을 기다리는지 */
+export const isPartialRating = (ratings: AnglerRatings = {}) => given(ratings).length > 0 && given(ratings).length < ANGLERS.length;
+
+/** 아직 평점을 주지 않은 조사 */
+export const missingRaters = (ratings: AnglerRatings = {}) => ANGLERS.filter((angler) => typeof ratings[angler] !== 'number');
+
+/** '김 조사 4점 / 류 조사 5점' */
+export const ratingDetail = (ratings: AnglerRatings = {}) => given(ratings).map((angler) => `${angler} ${ratings[angler]}점`).join(' / ');
+
+/** 기록이나 메뉴 가운데 한 사람만 평점을 준 것이 있으면 평점을 기다리는 기록입니다. */
+export const pendingRating = (record: { angler_ratings?: AnglerRatings; menu_items?: { angler_ratings?: AnglerRatings }[] }) =>
+  isPartialRating(record.angler_ratings) || (record.menu_items ?? []).some((item) => isPartialRating(item.angler_ratings));

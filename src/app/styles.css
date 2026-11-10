@@ -483,6 +483,39 @@ body::after {
   .floating-actions > * {
     pointer-events: auto;
   }
+  /* 평점 대기 알림: 한 사람만 평점을 준 기록이 있는 동안 계속 보입니다. 누르면 기록 목록이 위로 열립니다. */
+  .pending-ratings {
+    position: relative;
+  }
+  .pending-ratings-toggle {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-accent);
+    padding: 0 0.875rem;
+    color: var(--color-on-accent);
+    cursor: pointer;
+  }
+  .pending-ratings-list {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.5rem);
+    width: max-content;
+    max-width: min(18rem, calc(100vw - 1.5rem));
+    max-height: 50dvh;
+    overflow-y: auto;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+  }
+  .pending-ratings-list li + li {
+    border-top: 1px solid var(--color-soft);
+  }
+  @media (hover: hover) {
+    .pending-ratings-list a:hover {
+      background: var(--color-surface);
+    }
+  }
   .install-button {
     display: flex;
     min-height: 2.75rem;

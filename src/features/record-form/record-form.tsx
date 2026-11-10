@@ -1,35 +1,53 @@
-import { useMutation } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { defaultGearLabels, useGear } from '@/entities/gear';
-import { fetchLatestGear, formatBait, formatGear, formatMenu, MAX_PHOTOS, menuAverage, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
-import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
+import { snapshotSet, useGear, useGearSets } from '@/entities/gear';
+import { combinedRating, formatBait, formatGear, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, useDeleteRecord, useSaveRecord, WEATHER_STATES } from '@/entities/record';
+import type { Place, PlaceRecord, RecordDetails, RecordGearSet, RecordPhoto } from '@/shared/api';
 import { toDateKey } from '@/shared/lib';
 import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
+import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
+import { GearSetFieldset } from './gear-set-fieldset';
 import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fieldset';
 
 type TextValues = Record<Exclude<keyof RecordDetails, 'people' | 'price'>, string>;
-type Values = TextValues & { visited_on: string; end_date: string; memo: string; rating: string };
+type Values = TextValues & { visited_on: string; end_date: string; memo: string };
 type Props = {
   place: Pick<Place, 'id' | 'kind'>;
   record?: PlaceRecord;
   date?: string;
   endDate?: string;
   eventId?: string;
+  /** 일정에서 고른 장비 세트. 새 기록의 장비 세트로 불러옵니다. */
+  gearSetIds?: string[];
   onDone: () => void;
 };
 
 const TEXT_FIELDS: (keyof TextValues)[] = ['companions', 'gear', 'rig', 'bait', 'weather', 'tide', 'wind', 'water_temp', 'menu'];
 
-export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Props) => {
+/** 메뉴 평점: 두 사람 평균. 조사별 평점을 하나도 안 줬으면 예전에 남긴 평점을 그대로 씁니다. */
+const itemRating = (row: MenuRow) => {
+  const given = toRatings(row.ratings);
+  return combinedRating(given) ?? (Object.keys(given).length ? null : row.legacyRating);
+};
+
+/**
+ * 맛집 기록 평점: 평점이 정해진 메뉴들의 평균. 한 사람만 평점을 준 메뉴가 있으면 비워 둡니다(null).
+ * 평점을 준 메뉴가 하나도 없으면 undefined를 돌려 예전에 기록에 남긴 평점을 쓰게 합니다.
+ */
+const restaurantRating = (rows: MenuRow[]) => {
+  if (rows.some((row) => isPartialRating(toRatings(row.ratings)))) return null;
+  const values = rows.flatMap((row) => itemRating(row) ?? []);
+  return values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : undefined;
+};
+
+export const RecordForm = ({ place, record, date, endDate, eventId, gearSetIds = [], onDone }: Props) => {
   const kind = place.kind;
   const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<Values>({
     defaultValues: {
       visited_on: record?.visited_on ?? date ?? toDateKey(new Date()),
       end_date: record?.end_date ?? endDate ?? date ?? toDateKey(new Date()),
       memo: record?.memo ?? '',
-      rating: record?.rating?.toString() ?? '',
       ...Object.fromEntries(TEXT_FIELDS.map((name) => [name, record?.[name] ?? ''])),
       bait: formatBait(record?.bait ?? ''),
     },
@@ -52,21 +70,22 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
   const [checkedFish, setCheckedFish] = useState(false);
   const [menu, setMenu] = useState<MenuRow[]>(() => (record?.menu_items.length ? record.menu_items.map(newMenuRow) : [newMenuRow()]));
   const [checkedMenu, setCheckedMenu] = useState(false);
-  // 메뉴 평점이 생기기 전에 기록에 남긴 평점입니다. 메뉴에 평점을 주면 평균으로 바뀝니다.
-  const [legacyRating] = useState(() => (record?.menu_items.some((item) => item.rating !== null) ? null : (record?.rating ?? null)));
-  const registeredGear = useGear();
-  const defaultGear = defaultGearLabels(registeredGear.data ?? []).join(' / ');
-  // 새 낚시 기록의 장비 칸은 장비 화면에 등록한 로드와 릴로 채웁니다. 이미 적은 내용은 덮어쓰지 않습니다.
-  useEffect(() => {
-    if (!record && kind === 'fishing' && defaultGear && !getValues('gear')) setValue('gear', defaultGear);
-  }, [record, kind, defaultGear, getValues, setValue]);
+  // 조사별 평점이 생기기 전에 남긴 평점입니다. 조사별 평점을 주면 그쪽을 씁니다.
+  const [legacyRating] = useState(() =>
+    record && !Object.keys(record.angler_ratings ?? {}).length && !record.menu_items.some((item) => Object.keys(item.angler_ratings ?? {}).length) ? record.rating : null,
+  );
+  const [ratings, setRatings] = useState<RatingDraft>(() => toDraft(record?.angler_ratings));
+  // 장비 세트: 기록에 남긴 세트, 새 기록이면 일정에서 고른 세트를 불러옵니다. 고치기 시작하면 그 값을 씁니다.
+  const gear = useGear();
+  const gearSets = useGearSets();
+  const [editedSets, setEditedSets] = useState<RecordGearSet[] | undefined>(() => (record ? (record.gear_sets ?? []) : undefined));
+  const eventSets = useMemo(
+    () => (gearSets.data ?? []).filter((set) => gearSetIds.includes(set.id)).map((set) => snapshotSet(set, gear.data ?? [])),
+    [gearSets.data, gear.data, gearSetIds],
+  );
+  const sets = editedSets ?? eventSets;
   const save = useSaveRecord();
   const remove = useDeleteRecord();
-
-  const gear = useMutation({
-    mutationFn: fetchLatestGear,
-    onSuccess: (latest) => (['gear', 'rig', 'bait'] as const).forEach((name) => latest[name] && setValue(name, name === 'bait' ? formatBait(latest[name]) : latest[name])),
-  });
 
   const kept = (record?.photos ?? []).filter((photo) => !removed.includes(photo));
   const left = MAX_PHOTOS - kept.length;
@@ -83,6 +102,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     setCheckedMenu(true);
     if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
     const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
+    const anglerRatings = toRatings(ratings);
+    const setsToSave = sets.filter((set) => set.items.length);
     if (tooMany || save.isPending) return;
     save.mutate(
       {
@@ -93,11 +114,15 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         end_date: values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
-        rating: kind === 'restaurant' ? (menuAverage(keptMenu) ?? legacyRating) : values.rating ? Number(values.rating) : null,
+        rating: kind === 'restaurant' ? (restaurantRating(keptMenu) === undefined ? legacyRating : (restaurantRating(keptMenu) ?? null)) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
+        angler_ratings: kind === 'restaurant' ? {} : anglerRatings,
+        gear_sets: kind === 'fishing' ? setsToSave : (record?.gear_sets ?? []),
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' ? (record?.price ?? null) : null, // 합계는 보여 주지 않지만 예전에 남긴 값은 지우지 않습니다.
         ...(Object.fromEntries(TEXT_FIELDS.map((name) => [name, used.has(name) ? (name === 'gear' ? formatGear(values.gear) : name === 'bait' ? formatBait(values.bait) : values[name].trim()) : (record?.[name] ?? '')])) as TextValues),
         ...(kind === 'restaurant' ? { menu: formatMenu(menu) } : {}),
+        // 세트의 장비 이름을 장비 칸에도 남겨 검색과 장비 사용 횟수에 씁니다. 세트가 없으면 예전 글을 그대로 둡니다.
+        ...(kind === 'fishing' && setsToSave.length ? { gear: setsToSave.flatMap((set) => set.items.map((item) => item.label)).join(' / ') } : {}),
         files,
         removedPhotos: removed,
         nextPosition: Math.max(-1, ...kept.map((photo) => photo.position)) + 1,
@@ -116,7 +141,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           id: row.id,
           name: row.name.trim(),
           price: row.price ? Number(row.price) : null,
-          rating: row.rating ? Number(row.rating) : null,
+          rating: itemRating(row),
+          angler_ratings: toRatings(row.ratings),
           photo_path: row.photo_path,
           position,
           file: row.file,
@@ -166,33 +192,21 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
               ))}
             </select>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="button" disabled={gear.isPending} onClick={() => gear.mutate()}>
-              지난 장비·채비 불러오기
-            </button>
-          </div>
-          <p role="status" className="text-sm text-muted empty:hidden">
-            {gear.isSuccess ? '지난 기록의 장비와 채비를 채웠습니다.' : ''}
-          </p>
-          <ErrorText error={gear.error} />
+          <GearSetFieldset value={sets} onChange={setEditedSets} />
         </>
       )}
       {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}
       {kind !== 'restaurant' && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {fields.map((field) => (
-            <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
-          ))}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="record-rating" className="mono-label">평점</label>
-            <select id="record-rating" className="min-h-11 border border-field bg-surface px-3 text-ink" {...register('rating')}>
-              <option value="">선택 안 함</option>
-              {[5, 4, 3, 2, 1].map((score) => (
-                <option key={score} value={score}>{`${score}점`}</option>
+        <>
+          {fields.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fields.map((field) => (
+                <Field key={field.name} label={field.label} placeholder={field.placeholder} {...register(field.name)} />
               ))}
-            </select>
-          </div>
-        </div>
+            </div>
+          )}
+          <AnglerRatingFields id="record-rating" value={ratings} onChange={setRatings} />
+        </>
       )}
       <TextareaField label="메모" {...register('memo')} />
 

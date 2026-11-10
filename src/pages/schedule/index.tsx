@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useDeleteEvent, useMonthEvents } from '@/entities/event';
+import { useGearSets } from '@/entities/gear';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
@@ -32,6 +33,10 @@ export const SchedulePage = () => {
   const dayEvents = useMonthEvents(selected); // 달을 넘겨도 고른 날의 일정은 그대로 보입니다.
   const dayRecords = useDayRecords(date);
   const remove = useDeleteEvent();
+  const gearSets = useGearSets();
+  /** 일정에 고른 세트를 '김 조사 바다 워킹 루어 세트 / 류 조사 찌낚시 세트'처럼 */
+  const setNames = (event: CalendarEvent) =>
+    (gearSets.data ?? []).filter((set) => (event.gear_set_ids ?? []).includes(set.id)).map((set) => `${set.angler} ${set.name}`).join(' / ');
 
   const counts = new Map<string, number>();
   // 일정이 있는 날. 연박이면 앞뒤 날과 이어지는지 함께 둡니다.
@@ -137,6 +142,7 @@ export const SchedulePage = () => {
                         {event.place.name}
                       </Link>
                     )}
+                    {setNames(event) && <p className="text-sm text-muted">{`장비 세트 ${setNames(event)}`}</p>}
                     {event.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{event.memo}</p>}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center">
@@ -230,6 +236,7 @@ export const SchedulePage = () => {
             date={recordForm.event?.date ?? date}
             endDate={recordForm.event?.end_date}
             eventId={recordForm.event?.id}
+            gearSetIds={recordForm.event?.gear_set_ids}
             onDone={() => setRecordForm(undefined)}
           />
         </Modal>
