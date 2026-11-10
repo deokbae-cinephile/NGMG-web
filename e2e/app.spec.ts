@@ -421,16 +421,51 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('기록 검색은 어종으로도 찾는다', async ({ page }) => {
+test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사·장비 세트 조건을 더한다', async ({ page }) => {
+  const base = seed();
   await fakeBackend(page, {
-    ...seed(),
+    ...base,
+    records: [
+      ...base.records!,
+      { id: 's1', place_id: 'p2', visited_on: '2026-09-01', catches: '', memo: '모둠회', gear_sets: [{ angler: '김 조사', name: '루어 세트', items: [] }] },
+    ],
     fish_catches: [{ id: 'f1', record_id: 'r01', angler: '류 조사', species: '거대 망둥어', length_cm: 17, position: 0 }],
+    gear_sets: [{ id: 'g1', angler: '김 조사', name: '루어 세트', position: 0, created_at: '2026-01-01' }],
   });
   await page.goto('./records');
-  await page.getByLabel('조과·어종·미끼·메뉴·메모에서 찾기').fill('망둥어');
+  const pane = page.locator('.pane-records');
+  const search = page.getByLabel('장소·조과·어종·장비·메뉴·메모에서 찾기');
+  await search.fill('망둥어');
   await page.getByRole('button', { name: '찾기', exact: true }).click();
-  await expect(page.locator('.pane-records').getByText('거대 망둥어 17cm')).toBeVisible();
-  await expect(page.locator('.pane-records').getByText('감성돔 1마리')).toBeHidden();
+  await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
+  await expect(pane.getByText('감성돔 1마리')).toBeHidden();
+
+  // 장소 이름으로도 찾습니다.
+  await search.fill('바다횟');
+  await page.getByRole('button', { name: '찾기', exact: true }).click();
+  await expect(pane.getByText('모둠회')).toBeVisible();
+  await expect(pane.getByText('감성돔 2마리')).toBeHidden();
+  await search.fill('');
+
+  // 조건: 잡은 조사
+  await pane.getByText('조건 더 보기').click();
+  await page.getByLabel('잡은 조사').selectOption('류 조사');
+  await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
+  await expect(pane.getByText('감성돔 1마리')).toBeHidden();
+  await expect(pane.getByText('조건 더 보기 (1개 적용 중)')).toBeVisible();
+  await page.getByLabel('잡은 조사').selectOption('김 조사');
+  await expect(pane.getByText('조건에 맞는 기록이 없습니다.')).toBeVisible();
+
+  // 조건: 장비 세트, 장소
+  await pane.getByRole('button', { name: '조건 지우기' }).click();
+  await page.getByLabel('장비 세트').selectOption({ label: '김 조사 루어 세트' });
+  await expect(pane.getByText('모둠회')).toBeVisible();
+  await expect(pane.getByText('감성돔 1마리')).toBeHidden();
+  await page.getByLabel('장비 세트').selectOption('');
+  await page.getByLabel('장소', { exact: true }).selectOption({ label: '거문도 방파제' });
+  await expect(pane.getByText('감성돔 1마리')).toBeVisible();
+  await expect(pane.getByText('모둠회')).toBeHidden();
+  await expectAccessible(page);
 });
 
 const gearSeed = () => ({
@@ -500,6 +535,12 @@ test('장비 세트: 만들어 일정에 고르면 기록에 담기고, 한 사�
   expect(saved.rating).toBeNull();
   await expect(page.getByRole('button', { name: '평점 대기 1건' })).toBeVisible();
   await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('김 조사 장비 세트 / 바다 워킹 루어 세트')).toBeVisible();
+
+  // 통계: 장비 세트별로 출조 횟수와 마릿수를 모읍니다.
+  await page.goto('./stats');
+  const sets = page.getByRole('region', { name: '장비 세트별 조과' });
+  await expect(sets.getByText('김 조사 바다 워킹 루어 세트')).toBeVisible();
+  await expect(sets.getByText('출조 1회')).toBeVisible();
 });
 
 test('달력: 가운데 연도를 누르면 10년치에서 고른다', async ({ page }) => {

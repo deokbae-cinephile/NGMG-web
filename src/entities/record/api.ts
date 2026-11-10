@@ -36,16 +36,45 @@ const withPhotoUrls = async (rows: Row[]): Promise<PlaceRecord[]> => {
   }));
 };
 
-const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
+/** 전체 기록 찾기 조건. 모두 함께 맞아야 합니다. */
+export type RecordFilters = {
+  kind?: PlaceKind;
+  keyword?: string;
+  placeId?: string;
+  /** 이 조사가 잡은 물고기가 있는 기록 */
+  angler?: string;
+  /** 이 장비 세트(조사와 세트 이름)를 쓴 기록 */
+  gearSet?: { angler: string; name: string };
+};
+
+const fetchPage = async (page: number, { kind, keyword = '', placeId, angler, gearSet }: RecordFilters) => {
   const from = page * PAGE_SIZE;
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
+  if (placeId) query = query.eq('place_id', placeId);
+  if (gearSet) query = query.contains('gear_sets', JSON.stringify([gearSet]));
+  if (angler) {
+    const caught = await supabase.from('fish_catches').select('record_id').eq('angler', angler).limit(2000);
+    if (caught.error) throw new Error('기록을 불러오지 못했습니다.');
+    const ids = [...new Set(caught.data.map((row) => row.record_id as string))];
+    if (!ids.length) return [];
+    query = query.in('id', ids);
+  }
   const text = cleanKeyword(keyword);
   if (text) {
-    // 어종은 다른 표에 있어 그 어종을 잡은 기록을 먼저 찾아 조건에 더합니다.
-    const fish = await supabase.from('fish_catches').select('record_id').ilike('species', `%${text}%`).limit(500);
-    if (fish.error) throw new Error('기록을 불러오지 못했습니다.');
-    query = query.or(recordSearchFilter(text, [...new Set(fish.data.map((row) => row.record_id as string))]));
+    // 어종과 장소 이름은 다른 표에 있어 맞는 기록과 장소를 먼저 찾아 조건에 더합니다.
+    const [fish, places] = await Promise.all([
+      supabase.from('fish_catches').select('record_id').ilike('species', `%${text}%`).limit(500),
+      supabase.from('places').select('id').ilike('name', `%${text}%`).limit(200),
+    ]);
+    if (fish.error || places.error) throw new Error('기록을 불러오지 못했습니다.');
+    query = query.or(
+      recordSearchFilter(
+        text,
+        [...new Set(fish.data.map((row) => row.record_id as string))],
+        places.data.map((row) => row.id as string),
+      ),
+    );
   }
   const { data, error } = await query
     .order('visited_on', { ascending: false })
@@ -55,10 +84,10 @@ const fetchPage = async (page: number, kind?: PlaceKind, keyword = '') => {
   return withPhotoUrls(data as unknown as Row[]);
 };
 
-export const useRecordPages = (kind?: PlaceKind, keyword?: string) =>
+export const useRecordPages = (filters: RecordFilters) =>
   useInfiniteQuery({
-    queryKey: ['records', 'all', kind, keyword],
-    queryFn: ({ pageParam }) => fetchPage(pageParam, kind, keyword),
+    queryKey: ['records', 'all', filters],
+    queryFn: ({ pageParam }) => fetchPage(pageParam, filters),
     initialPageParam: 0,
     getNextPageParam: (last, _pages, lastParam) => (last.length === PAGE_SIZE ? lastParam + 1 : undefined),
   });
@@ -128,7 +157,7 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     },
   });
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating'> & {
+export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'bait' | 'gear' | 'catches' | 'rating' | 'gear_sets'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
   fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
 };
@@ -142,12 +171,12 @@ export const useStatRecords = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('records')
-          .select('id, visited_on, bait, gear, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
+          .select('id, visited_on, bait, gear, catches, rating, gear_sets, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)')
           .order('visited_on')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('통계를 불러오지 못했습니다.');
-        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })) })));
+        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })), gear_sets: row.gear_sets ?? [] })));
         if (data.length < 1000) return rows;
       }
     },

@@ -134,12 +134,12 @@ export const createFakeServer = (seed: Seed = {}) => {
       if (['select', 'order', 'offset', 'limit', 'columns', 'on_conflict'].includes(key)) return;
       if (key === 'or') {
         const terms = [...value.matchAll(/(\w+)\.ilike\."%(.*?)%"/g)];
-        const ids = value.match(/id\.in\.\(([^)]*)\)/)?.[1]?.split(',') ?? [];
+        const lists = [...value.matchAll(/(\w+)\.in\.\(([^)]*)\)/g)].map(([, column = '', list = '']) => [column, list.split(',')] as const);
         const notEmpty = [...value.matchAll(/(\w+)\.neq\.(?=,|$)/g)].map(([, column = '']) => column);
         result = result.filter(
           (row) =>
             terms.some(([, column = '', text = '']) => String(row[column]).toLowerCase().includes(text.toLowerCase())) ||
-            ids.includes(String(row.id)) ||
+            lists.some(([column, list]) => list.includes(String(row[column]))) ||
             notEmpty.some((column) => row[column] !== '' && row[column] != null),
         );
         return;
@@ -149,7 +149,14 @@ export const createFakeServer = (seed: Seed = {}) => {
       if (op === 'neq') result = result.filter((row) => String(read(row, key)) !== operand);
       if (op === 'gte') result = result.filter((row) => String(read(row, key)) >= operand);
       if (op === 'lte') result = result.filter((row) => String(read(row, key)) <= operand);
-      if (op === 'cs') {
+      if (op === 'cs' && operand.startsWith('[{')) {
+        // jsonb 배열 포함: 원하는 객체마다 필드가 모두 같은 항목이 있어야 합니다.
+        const wanted = JSON.parse(operand) as Row[];
+        result = result.filter((row) => {
+          const list = read(row, key);
+          return Array.isArray(list) && wanted.every((item) => list.some((entry: Row) => Object.entries(item).every(([field, expected]) => entry[field] === expected)));
+        });
+      } else if (op === 'cs') {
         const wanted = operand.slice(1, -1).split(',').map((item) => item.replaceAll('"', ''));
         result = result.filter((row) => {
           const list = read(row, key);
