@@ -1,3 +1,4 @@
+import { Writable } from '@/entities/session';
 import { useState } from 'react';
 import { KindBadge, PlaceActions, useDeletePlace, usePlaces } from '@/entities/place';
 import { FishPhotoGrid, RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
@@ -49,14 +50,16 @@ export const PlacePage = ({ id }: { id: string }) => {
           <p className="mono-label">{`${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`}</p>
           {place.memo && <p className="whitespace-pre-wrap break-words">{place.memo}</p>}
           <PlaceActions place={place} />
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="button" onClick={() => setEditing(true)}>
-              장소 수정
-            </button>
-            <button type="button" className="button button-accent" disabled={remove.isPending} onClick={onDelete}>
-              장소 삭제
-            </button>
-          </div>
+          <Writable>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="button" onClick={() => setEditing(true)}>
+                장소 수정
+              </button>
+              <button type="button" className="button button-accent" disabled={remove.isPending} onClick={onDelete}>
+                장소 삭제
+              </button>
+            </div>
+          </Writable>
           <ErrorText error={remove.error} />
         </div>
         {place.kind === 'fishing' && (
@@ -76,9 +79,11 @@ export const PlacePage = ({ id }: { id: string }) => {
           <div className="flex items-baseline gap-3">
             <h2 id="place-records-title" className="title text-xl">기록</h2>
           </div>
-          <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>
-            기록 추가
-          </button>
+          <Writable>
+            <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>
+              기록 추가
+            </button>
+          </Writable>
         </div>
         <div className="cell-body flex flex-col gap-4">
           <ErrorText error={records.error} />
@@ -103,9 +108,11 @@ export const PlacePage = ({ id }: { id: string }) => {
                 key={record.id}
                 record={record}
                 actions={
-                  <button type="button" className="button" onClick={() => setRecordForm({ record })}>
-                    기록 수정
-                  </button>
+                  <Writable>
+                    <button type="button" className="button" onClick={() => setRecordForm({ record })}>
+                      기록 수정
+                    </button>
+                  </Writable>
                 }
               />
             ))}

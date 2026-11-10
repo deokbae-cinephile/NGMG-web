@@ -81,7 +81,7 @@ const isMember = async (request: Request) => {
   if (!response.ok) return false;
   const user = (await response.json()) as { id?: string };
   if (!user.id) return false;
-  const rows = await sql`select 1 from public.members where user_id = ${user.id}`;
+  const rows = await sql`select 1 from public.members where user_id = ${user.id} and role = 'member'`; // 게스트는 알림을 켤 수 없습니다.
   return rows.length > 0;
 };
 

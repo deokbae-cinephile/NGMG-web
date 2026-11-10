@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { usePendingRatings } from '@/entities/record';
+import { useCanWrite } from '@/entities/session';
 import { ScrollTopButton } from '@/features/scroll-top';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
@@ -29,6 +30,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const first = useRef(true);
   const pending = usePendingRatings().data?.length ?? 0;
+  const canWrite = useCanWrite();
 
   // 화면이 바뀌면 맨 위부터 보여 줍니다. 그리기 전에 옮기고, 새 화면이 그려진 다음에도 한 번 더 옮깁니다.
   useLayoutEffect(() => {
@@ -77,6 +79,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         </nav>
       </header>
       <main id="main" ref={main} tabIndex={-1} className="main-area min-h-0 flex-1 outline-none lg:overflow-y-auto">
+        {!canWrite && <p className="guest-banner">게스트로 보는 중입니다. 보기만 할 수 있습니다.</p>}
         <Suspense fallback={<PageSkeleton variant={skeletonFor(pathname)} />}>
           {children}
         </Suspense>

@@ -91,6 +91,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
+  const [tilesReady, setTilesReady] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
   const dark = useTheme() === 'dark';
 
@@ -120,6 +121,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   useEffect(() => {
     let cancelled = false;
     let observer: ResizeObserver | undefined;
+    let revealTimer = 0;
     loadKakao()
       .then((kakao) => {
         if (cancelled || !container.current) return;
@@ -151,12 +153,21 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           resizing = false;
         });
         observer.observe(node);
+        // 첫 지도 그림을 다 받을 때까지 감춰 둡니다(다른 메뉴에서 돌아올 때 빈 화면이 번쩍이지 않게). 늦어도 1.5초 뒤에는 보여 줍니다.
+        const reveal = () => {
+          kakao.maps.event.removeListener(instance, 'tilesloaded', reveal);
+          window.clearTimeout(revealTimer);
+          if (!cancelled) setTilesReady(true);
+        };
+        kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
+        revealTimer = window.setTimeout(reveal, 1500);
         setMap({ kakao, instance });
       })
       .catch(() => setError(true));
     return () => {
       cancelled = true;
       observer?.disconnect();
+      window.clearTimeout(revealTimer);
     };
   }, []);
 
@@ -326,8 +337,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   }
 
   return (
-    <div className="relative h-full w-full">
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'}`} />
+    // 지도를 감춘 동안에는 바탕색이 보입니다.
+    <div className="relative h-full w-full bg-surface">
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-moving'}`} />
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
         <strong className="font-normal">평점</strong>
         {[1, 2, 3, 4, 5].map((score) => (

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Writable } from '@/entities/session';
 import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
@@ -114,9 +115,11 @@ export const SchedulePage = () => {
               </h2>
             </div>
           </div>
-          <button type="button" className="button button-primary" onClick={() => setForm({})}>
-            일정 추가
-          </button>
+          <Writable>
+            <button type="button" className="button button-primary" onClick={() => setForm({})}>
+              일정 추가
+            </button>
+          </Writable>
         </div>
         <div className="cell-body flex flex-col gap-10">
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
@@ -140,20 +143,22 @@ export const SchedulePage = () => {
                     )}
                     {event.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{event.memo}</p>}
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center">
-                    <button type="button" className="text-action" aria-label={`${event.title} 일정 수정`} onClick={() => setForm({ event })}>
-                      수정
-                    </button>
-                    <button
-                      type="button"
-                      className="text-action text-action-accent"
-                      aria-label={`${event.title} 일정 삭제`}
-                      disabled={remove.isPending}
-                      onClick={() => onDelete(event)}
-                    >
-                      삭제
-                    </button>
-                  </div>
+                  <Writable>
+                    <div className="flex shrink-0 flex-wrap items-center">
+                      <button type="button" className="text-action" aria-label={`${event.title} 일정 수정`} onClick={() => setForm({ event })}>
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className="text-action text-action-accent"
+                        aria-label={`${event.title} 일정 삭제`}
+                        disabled={remove.isPending}
+                        onClick={() => onDelete(event)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </Writable>
                 </li>
               ))}
             </ol>
@@ -169,9 +174,11 @@ export const SchedulePage = () => {
                       <span>{event.title}</span>
                       <span className="text-sm text-muted">{event.place?.name}</span>
                     </span>
-                    <button type="button" className="button" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })}>
-                      기록 남기기
-                    </button>
+                    <Writable>
+                      <button type="button" className="button" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })}>
+                        기록 남기기
+                      </button>
+                    </Writable>
                   </li>
                 ))}
               </ul>
@@ -197,9 +204,11 @@ export const SchedulePage = () => {
                     </p>
                   }
                   actions={
-                    <button type="button" className="text-action" aria-label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })}>
-                      수정
-                    </button>
+                    <Writable>
+                      <button type="button" className="text-action" aria-label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })}>
+                        수정
+                      </button>
+                    </Writable>
                   }
                 />
               ))}

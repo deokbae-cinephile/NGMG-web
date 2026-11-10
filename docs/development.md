@@ -42,6 +42,12 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 무료 플랜은 오랫동안 접속이 없으면 프로젝트가 일시 중지될 수 있습니다. 그때는 대시보드에서 다시 시작합니다.
 
+## 게스트 계정 (읽기 전용)
+
+`members.role`이 `guest`인 계정은 모든 데이터를 볼 수 있지만 쓰지 못합니다. `is_member()`는 `member`만 참이라 기존 ALL 정책(쓰기)을 막고, `is_reader()`로 표마다 SELECT 정책과 사진 저장소 읽기 정책을 더했습니다(`20261120000000_guest_read_only.sql`). 앱은 `members`에서 자기 역할을 읽어(`useRole`, `useCanWrite`, `<Writable>`) 쓰기 버튼과 알림 켜기를 감춥니다.
+
+게스트 계정은 저장소에 비밀번호를 남기지 않도록 DB에서 직접 만들었습니다. 새로 만들 때는 대시보드에서 계정을 만들고 `insert into public.members (user_id, role) values ('<사용자 id>', 'guest')`로 등록합니다(대시보드의 비밀번호 최소 길이는 6자).
+
 ## 알림 (웹 푸시)
 
 출조 전날 20시(내일 일정이 있을 때)와 일요일 20시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 설정 화면의 **출조 알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.

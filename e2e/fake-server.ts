@@ -1,6 +1,6 @@
 // Supabase와 Kakao SDK 응답을 흉내 내는 가짜 서버입니다. Playwright(fake-backend.ts)와 배포용 데모(demo-entry.ts)가 함께 씁니다.
 export type Row = Record<string, unknown> & { id: string };
-export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'menu_items' | 'gear_sets' | 'gear_set_items' | 'angler_gear' | 'events' | 'checklist_items', Row[]>>;
+export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'menu_items' | 'gear_sets' | 'gear_set_items' | 'angler_gear' | 'events' | 'checklist_items' | 'members', Row[]>>;
 
 export type FakeRequest = { method: string; url: string; accept: string; body: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 export type FakeResponse = { status: number; contentType: string; body: string };
@@ -100,7 +100,7 @@ export const createFakeServer = (seed: Seed = {}) => {
     table === 'events' ? { ...row, end_date: row.end_date ?? row.date } : table === 'records' ? { ...row, end_date: row.end_date ?? row.visited_on } : row;
   const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => withEndDate(table, { ...DEFAULTS[table], ...row } as Row));
   const db: Record<string, Row[]> = Object.fromEntries(
-    ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'gear_sets', 'gear_set_items', 'angler_gear', 'events', 'checklist_items'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
+    ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'gear_sets', 'gear_set_items', 'angler_gear', 'events', 'checklist_items', 'members'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
   );
   const removedFiles: string[] = [];
   let nextId = 1;
