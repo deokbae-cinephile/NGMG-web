@@ -11,7 +11,11 @@ type Filter = PlaceKind | 'all';
 
 /** 오른쪽 칸: 전체 기록을 찾고 훑어봅니다. */
 export const AllRecords = () => {
-  const [filter, setFilter] = useState<Filter>(() => getPreference('records-filter', 'all'));
+  // 예전에 '기타'처럼 지금은 없는 분류를 골라 두었으면 '전체'로 시작합니다.
+  const [filter, setFilter] = useState<Filter>(() => {
+    const saved = getPreference<Filter>('records-filter', 'all');
+    return saved === 'all' || KINDS.includes(saved) ? saved : 'all';
+  });
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [editing, setEditing] = useState<PlaceRecord>();

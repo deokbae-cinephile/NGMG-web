@@ -864,14 +864,16 @@ test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기
 });
 
 test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기타가 없다', async ({ page }) => {
-  await fakeBackend(page, seed());
+  const base = seed();
+  await fakeBackend(page, { ...base, places: [...base.places!, place('p9', '예전 기타 장소', 'etc')] });
   await page.goto('./');
   await expect(page.locator('.pin').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^예전 기타 장소 \(기타\) 선택/ })).toBeVisible(); // 예전에 기타로 저장한 장소도 핀은 남습니다.
   // 카카오 지도는 올리는 순간 핀 크기를 재어 기준점을 정합니다. 그때 핀 모양 클래스가 없으면 핀이 오른쪽 아래로 어긋납니다.
   const classes = await page.evaluate(() => (window as unknown as { __overlayClasses: string[] }).__overlayClasses);
   const pins = classes.filter((name) => name !== '' && !name.includes('map-popup'));
   expect(pins.length).toBeGreaterThan(0);
-  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant)\b/);
+  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|etc)\b/);
   const filters = page.getByRole('group', { name: '분류' });
   await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집']);
 });

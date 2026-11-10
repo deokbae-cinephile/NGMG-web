@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
+import { ALL_KINDS, BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
@@ -183,7 +183,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const { kakao, instance } = map;
     pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
     // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
-    const clusterers = KINDS.map(
+    const clusterers = ALL_KINDS.map(
       (kind) =>
         new kakao.maps.MarkerClusterer({
           map: instance,
