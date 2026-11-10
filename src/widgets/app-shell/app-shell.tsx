@@ -2,7 +2,6 @@ import { Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from 're
 import { usePendingRatings } from '@/entities/record';
 import { useRole } from '@/entities/session';
 import { ScrollTopButton } from '@/features/scroll-top';
-import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName, type PageVariant } from '@/shared/ui';
 import { SaveOutbox } from './save-outbox';
@@ -60,7 +59,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         <NavLink to="/" className="topbar-logo">
           <Logo />
         </NavLink>
-        <ThemeToggle />
         <nav aria-label="주요 메뉴" className="main-nav">
           {MENU.map((item) => {
             // 평점 대기가 있으면 설정 메뉴에 건수를 붙입니다. 읽는 이름에도 넣어 색만으로 알리지 않습니다.
