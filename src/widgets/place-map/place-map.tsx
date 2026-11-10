@@ -296,6 +296,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     };
     const observer = new ResizeObserver(fit);
     observer.observe(node);
+    observer.observe(area); // 지도 칸이 줄어도 다시 확인합니다.
     return () => observer.disconnect();
   }, [map, selected]);
 
