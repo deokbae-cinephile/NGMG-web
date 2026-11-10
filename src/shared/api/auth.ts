@@ -29,14 +29,16 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
   let timer: number | undefined;
   const listeners = new Set<Listener>();
 
-  const read = (): Session | null => {
+  /** 저장된 세션. 저장소를 쓸 수 없으면 undefined, 저장 키가 없으면 null입니다. */
+  const readStored = (): Session | null | undefined => {
     try {
       const value = JSON.parse(localStorage.getItem(storageKey) ?? 'null') as Session | null;
       return value?.access_token && value.refresh_token ? value : null;
     } catch {
-      return null;
+      return undefined;
     }
   };
+  const read = () => readStored() ?? null;
   const write = (session: Session | null) => {
     try {
       if (session) localStorage.setItem(storageKey, JSON.stringify(session));
@@ -90,8 +92,13 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
         const used = current.refresh_token;
         const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: used });
         // 기다리는 동안 새 로그인이나 다른 탭이 세션을 바꿨으면 이 응답은 버리고 바뀐 세션을 씁니다.
-        // 저장소를 못 읽으면(null) 이 탭의 세션만 봅니다.
-        const latest = read();
+        // 저장소를 못 읽으면(undefined) 이 탭의 세션만 봅니다.
+        const latest = readStored();
+        // 다른 탭이 세션을 지웠으면(저장소는 쓸 수 있는데 키가 없음) 응답을 버리고 로그아웃합니다.
+        if (latest === null && current) {
+          set('SIGNED_OUT', null, false);
+          return null;
+        }
         if (current?.refresh_token !== used || (latest && latest.refresh_token !== used)) {
           if (latest && latest.refresh_token !== current?.refresh_token) set('TOKEN_REFRESHED', latest, false);
           return current;

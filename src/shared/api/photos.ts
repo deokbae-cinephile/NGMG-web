@@ -1,6 +1,9 @@
 import { compressImage } from '@/shared/lib';
 import { PHOTO_BUCKET, SIGNED_URL_SECONDS, supabase } from './supabase';
 
+/** 서명 주소에서 토큰을 뺀 앞부분 (…/storage/v1/object/sign/버킷) */
+const signedPathBase = () => `${import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')}/storage/v1/object/sign/${PHOTO_BUCKET}`;
+
 /** 썸네일은 긴 변 480px. 64px 칸과 도감 카드처럼 작게 보이는 곳에 씁니다. */
 const THUMB_SIZE = 480;
 
@@ -33,6 +36,12 @@ export const signPhotos = async (paths: string[], { throwOnError = false } = {})
   const unique = [...new Set(paths)];
   if (!unique.length) return urls;
   const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls([...unique, ...unique.map(thumbPath)], SIGNED_URL_SECONDS);
+  // 오프라인이면 토큰 없는 서명 경로를 씁니다. 서비스 워커(public/sw.js)가 사진을 토큰을 뺀 경로로 저장해 두어 이미 본 사진은 그대로 보입니다.
+  if (error && !navigator.onLine) {
+    const base = signedPathBase();
+    unique.forEach((path) => urls.set(path, { url: `${base}/${path}`, thumb: `${base}/${thumbPath(path)}` }));
+    return urls;
+  }
   // 목록은 사진 없이도 보이므로 그대로 두고, 사진 주소만 따로 받는 곳(도감)은 실패를 알려 다시 받게 합니다.
   if (error && throwOnError) throw error;
   const signed = new Map(data?.flatMap((item) => (item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : [])));
