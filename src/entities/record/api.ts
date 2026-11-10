@@ -7,7 +7,7 @@ export const MAX_PHOTOS = 10;
 export const PAGE_SIZE = 10;
 
 const SELECT =
-  '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position), menu_items(id, name, price, rating, photo_path, position)';
+  '*, place:places!inner(id, name, kind), photos:record_photos(id, storage_path, position), fish:fish_catches(id, angler, species, length_cm, photo_path, position), menu_items(id, name, price, rating, angler_ratings, photo_path, position)';
 
 type Row = Omit<PlaceRecord, 'photos' | 'fish' | 'menu_items'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[]; menu_items?: MenuItem[] };
 

@@ -113,12 +113,17 @@ export const createFakeServer = (seed: Seed = {}) => {
     return db.records!.find((item) => item.id === row.record_id)?.[column];
   };
 
-  const embed = (table: string, row: Row): Row => {
+  const embed = (table: string, row: Row, select = ''): Row => {
     const place = db.places!.find((item) => item.id === row.place_id) ?? null;
     if (table === 'events') return { ...row, place };
     if (table === 'records') {
-      const of = (list: Row[]) => list.filter((item) => item.record_id === row.id);
-      return { ...row, place, photos: of(db.record_photos!), fish: of(db.fish_catches!), menu_items: of(db.menu_items!) };
+      // 실서버처럼 select에 적은 칸만 돌려줍니다. 칸을 빠뜨린 조회를 테스트가 잡도록 합니다.
+      const of = (name: string, list: Row[]) => {
+        const rows = list.filter((item) => item.record_id === row.id);
+        const columns = new RegExp(`(?:^|[,(])(?:\\w+:)?${name}\\(([^()]*)\\)`).exec(select)?.[1];
+        return columns && !columns.includes('*') ? rows.map((item) => Object.fromEntries(columns.split(',').map((column) => [column.trim(), item[column.trim()]]))) : rows;
+      };
+      return { ...row, place, photos: of('record_photos', db.record_photos!), fish: of('fish_catches', db.fish_catches!), menu_items: of('menu_items', db.menu_items!) };
     }
     if (table === 'gear_sets') return { ...row, items: db.gear_set_items!.filter((item) => item.set_id === row.id) };
     if (table === 'fish_catches' || table === 'menu_items') {
@@ -223,7 +228,7 @@ export const createFakeServer = (seed: Seed = {}) => {
       const offset = Number(params.get('offset') ?? 0);
       const limit = params.get('limit');
       if (limit) result = result.slice(offset, offset + Number(limit));
-      result = result.map((row) => embed(table, row));
+      result = result.map((row) => embed(table, row, params.get('select') ?? ''));
       const columns = params.get('select') ?? '*';
       if (!/[*(]/.test(columns)) {
         result = result.map((row) => Object.fromEntries(columns.split(',').map((column) => [column, row[column]])) as Row);

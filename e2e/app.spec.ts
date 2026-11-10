@@ -684,6 +684,12 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
   // 한 사람만 준 평점도 보여 줍니다.
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('류 조사 3.5점 (평점 대기)')).toBeVisible();
+
+  // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
+  await page.goto('./places/p2');
+  await expect(page.getByText('류 조사 3.5점 / 김 조사 평점 대기')).toBeVisible();
+  await page.getByRole('button', { name: /기록 수정/ }).first().click();
+  await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/메뉴 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
 test('지도: 평균 평점에 따라 핀 색이 바뀌고 숫자로도 보여 준다', async ({ page }) => {
