@@ -1,6 +1,6 @@
 // 웹 푸시 알림 함수.
 // - GET: 구독에 쓰는 공개 키(VAPID)를 돌려줍니다.
-// - POST {kind: 'daily'} + x-cron-secret: 매일 20시(pg_cron). 내일 일정이 있으면 출조 알림, 일요일에는 평점 대기 알림을 보냅니다.
+// - POST {kind: 'daily'} + x-cron-secret: 매일 오후 6시(한국 시간, pg_cron). 내일 일정이 있으면 출조 알림, 일요일에는 평점 대기 알림을 보냅니다.
 // - POST {test: endpoint} + 로그인 토큰: 방금 켠 기기로 테스트 알림을 보냅니다.
 // 필요한 비밀 값: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET (supabase secrets set)
 import webpush from 'npm:web-push@3.6.7';
@@ -104,7 +104,7 @@ Deno.serve(async (request) => {
     if (!(await isMember(request))) return json({ error: 'forbidden' }, 403);
     const subscriptions = await sql<Subscription[]>`select endpoint, p256dh, auth from public.push_subscriptions where endpoint = ${body.test}`;
     if (!subscriptions.length) return json({ error: 'not subscribed' }, 404);
-    const result = await send(subscriptions, { title: '낚고먹고 알림', body: '알림을 켰습니다. 출조 전날 저녁에 알려 드릴게요.', url: '/schedule', tag: 'test' });
+    const result = await send(subscriptions, { title: '낚고먹고 알림', body: '알림을 켰습니다. 출조 전날 오후 6시에 알려 드릴게요.', url: '/schedule', tag: 'test' });
     return json(result);
   }
   return json({ error: 'bad request' }, 400);

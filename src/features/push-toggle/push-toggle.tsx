@@ -35,7 +35,7 @@ export const PushToggle = () => {
       } else {
         const { tested } = await enablePush();
         setOn(true);
-        setMessage(tested ? '알림을 켰습니다. 출조 전날 20시에 알려 드립니다.' : '알림을 켰지만 테스트 알림을 보내지 못했습니다. 끄고 다시 켜면 다시 보내 봅니다.');
+        setMessage(tested ? '알림을 켰습니다. 출조 전날 오후 6시에 알려 드립니다.' : '알림을 켰지만 테스트 알림을 보내지 못했습니다. 끄고 다시 켜면 다시 보내 봅니다.');
       }
     } catch (error) {
       // 실패 뒤에는 브라우저의 실제 구독 여부로 화면을 맞춥니다.
@@ -53,7 +53,7 @@ export const PushToggle = () => {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p>
           {on ? '이 기기에서 받는 중' : '받지 않음'}
-          <span className="block text-sm text-muted">내일 일정이 있으면 전날 20시, 평점 대기가 있으면 일요일 20시에 알려 드립니다.</span>
+          <span className="block text-sm text-muted">내일 일정이 있으면 전날 오후 6시, 평점 대기가 있으면 일요일 오후 6시에 알려 드립니다.</span>
         </p>
         <button type="button" className="button" disabled={busy || on === undefined} onClick={() => void toggle()}>
           {on ? '알림 끄기' : '알림 켜기'}

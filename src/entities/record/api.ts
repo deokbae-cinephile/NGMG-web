@@ -161,7 +161,7 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
 
 export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'catches' | 'rating'> & {
   place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
-  fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[];
+  fish: Pick<FishCatch, 'id'>[];
 };
 
 /** 통계용으로 모든 기록의 일부 항목만 받습니다. */
@@ -174,13 +174,13 @@ export const useStatRecords = () =>
         const { data, error } = await supabase
           .from('records')
           .select(
-            'id, visited_on, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(angler, species, length_cm)',
+            'id, visited_on, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(id)',
           )
           .order('visited_on')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('통계를 불러오지 못했습니다.');
-        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: (row.fish ?? []).map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) })), rating: row.rating === null ? null : Number(row.rating) })));
+        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: row.fish ?? [], rating: row.rating === null ? null : Number(row.rating) })));
         if (data.length < 1000) return rows;
       }
     },
@@ -216,24 +216,7 @@ export const usePlaceFishPhotos = (placeId?: string) =>
     },
   });
 
-/** 최근에 남긴 잡은 물고기 */
-export const useRecentFish = (limit = 8) =>
-  useQuery({
-    queryKey: ['records', 'recent-fish', limit],
-    queryFn: async (): Promise<RecentFish[]> => {
-      const { data, error } = await supabase
-        .from('fish_catches')
-        .select('id, angler, species, length_cm, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (error) throw new Error('잡은 물고기를 불러오지 못했습니다.');
-      const rows = data as unknown as RecentFish[];
-      const urls = await signPhotos(rows.flatMap((fish) => fish.photo_path ?? []));
-      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), ...photoFields(urls, fish.photo_path) }));
-    },
-  });
-
-export type DexFish = RecentFish;
+export type DexFish = RecentFish; // 잡은 물고기와 그 기록의 날짜·장소
 
 /** 도감용으로 잡은 물고기를 모두 받습니다. */
 export const useFishDex = () =>

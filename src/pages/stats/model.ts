@@ -1,77 +1,12 @@
-import { ANGLERS, type StatRecord } from '@/entities/record';
+import type { StatRecord } from '@/entities/record';
 
-type Fish = StatRecord['fish'][number];
 const top = (values: string[], limit = 5) => {
   const counts = new Map<string, number>();
   values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).slice(0, limit);
 };
 
-/** 물고기에 잡은 날짜와 장소를 붙입니다. */
-export type CaughtFish = Fish & { visited_on: string; place: string };
-const caught = (records: StatRecord[]): CaughtFish[] =>
-  records.flatMap((record) => record.fish.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm), visited_on: record.visited_on, place: record.place.name })));
-
-const speciesName = (species: string) => species.trim().replace(/\s+/g, ' ');
-const biggestOf = <T extends Fish>(list: T[]) => list.reduce<T | null>((best, item) => (!best || item.length_cm > best.length_cm ? item : best), null);
-
-/** 어종별 마릿수와 최대어. isNew는 그해 처음 잡은 어종입니다(그 전 해에는 없음). */
-export const speciesStats = (fish: CaughtFish[], before: CaughtFish[]) => {
-  const seen = new Set(before.map((item) => speciesName(item.species)));
-  const groups = new Map<string, CaughtFish[]>();
-  fish.forEach((item) => {
-    const name = speciesName(item.species);
-    if (name) groups.set(name, [...(groups.get(name) ?? []), item]);
-  });
-  return [...groups]
-    .map(([species, list]) => ({ species, count: list.length, biggest: biggestOf(list)!, isNew: !seen.has(species) }))
-    .sort((a, b) => b.count - a.count || b.biggest.length_cm - a.biggest.length_cm || a.species.localeCompare(b.species, 'ko'));
-};
-
-/** 달마다 잡힌 어종과 마릿수 (1월부터 12월) */
-export const monthSpecies = (fish: CaughtFish[]) =>
-  Array.from({ length: 12 }, (_, index) => {
-    const counts = new Map<string, number>();
-    fish
-      .filter((item) => Number(item.visited_on.slice(5, 7)) === index + 1)
-      .forEach((item) => {
-        const name = speciesName(item.species);
-        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-      });
-    return { month: index + 1, species: [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')) };
-  });
-
-/** 낚시 장소별 출조 날짜 수, 잡은 날 수, 꽝 비율, 평균 마릿수 (출조 많은 순) */
-export const placeCatchRates = (fishing: StatRecord[]) => {
-  const places = new Map<string, { name: string; days: Set<string>; catchDays: Set<string>; fish: number }>();
-  fishing.forEach((record) => {
-    const place = places.get(record.place.id) ?? { name: record.place.name, days: new Set<string>(), catchDays: new Set<string>(), fish: 0 };
-    place.days.add(record.visited_on);
-    if (record.fish.length) place.catchDays.add(record.visited_on);
-    place.fish += record.fish.length;
-    places.set(record.place.id, place);
-  });
-  return [...places.entries()]
-    .map(([id, { name, days, catchDays, fish }]) => ({ id, name, trips: days.size, catchDays: catchDays.size, blankRate: 1 - catchDays.size / days.size, average: fish / days.size }))
-    .sort((a, b) => b.trips - a.trips || b.average - a.average || a.name.localeCompare(b.name, 'ko'));
-};
-
-/** 조사별 개인 최대어가 바뀐 기록 (모든 해, 최근 순) */
-export const personalBests = (fish: CaughtFish[]) =>
-  ANGLERS.map((angler) => {
-    let best = 0;
-    const steps = [...fish]
-      .filter((item) => item.angler === angler)
-      .sort((a, b) => a.visited_on.localeCompare(b.visited_on))
-      .filter((item) => {
-        if (item.length_cm <= best) return false;
-        best = item.length_cm;
-        return true;
-      });
-    return { angler, steps: steps.reverse() };
-  });
-
-/** 고른 해의 통계. 출조는 낚시 장소에 남긴 기록의 날짜 수로 셉니다. */
+/** 고른 해의 통계: 출조 횟수(낚시 장소에 남긴 기록의 날짜 수), 잡은 물고기 수, 월별 출조, 자주 간 장소 */
 export const summarize = (records: StatRecord[], year: number) => {
   const inYear = records.filter((record) => record.visited_on.startsWith(String(year)));
   const fishing = inYear.filter((record) => record.place.kind === 'fishing');
@@ -80,17 +15,11 @@ export const summarize = (records: StatRecord[], year: number) => {
     const key = `${year}-${String(index + 1).padStart(2, '0')}`;
     return new Set(fishing.filter((record) => record.visited_on.startsWith(key)).map((record) => record.visited_on)).size;
   });
-  const fish = caught(fishing);
-  const before = caught(records.filter((record) => record.place.kind === 'fishing' && record.visited_on < `${year}`));
   return {
     trips: tripDays.size,
-    fish: fish.length,
+    fish: fishing.reduce((sum, record) => sum + record.fish.length, 0),
     months,
     places: top(inYear.map((record) => record.place.name)),
-    species: speciesStats(fish, before),
-    monthSpecies: monthSpecies(fish),
-    placeRates: placeCatchRates(fishing),
-    bests: personalBests(caught(records.filter((record) => record.place.kind === 'fishing'))),
   };
 };
 

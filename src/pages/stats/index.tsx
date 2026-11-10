@@ -1,6 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { fishLabel, useStatRecords } from '@/entities/record';
-import { formatDate } from '@/shared/lib';
+import { useState } from 'react';
+import { useStatRecords } from '@/entities/record';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { summarize, yearsOf } from './model';
 
@@ -32,28 +31,6 @@ const Ranking = ({ id, title, rows, unit }: { id: string; title: string; rows: [
     </section>
   );
 };
-
-/** 통계 한 덩어리. 위 선으로 구분합니다. */
-const Block = ({ id, title, children }: { id: string; title: string; children: ReactNode }) => (
-  <section aria-labelledby={id} className="border-t border-line">
-    <div className="cell-head">
-      <h2 id={id} className="title text-xl">{title}</h2>
-    </div>
-    <div className="cell-body">{children}</div>
-  </section>
-);
-
-const Empty = ({ children }: { children: ReactNode }) => <p className="text-muted">{children}</p>;
-
-/** 좁은 화면에서 표가 넘치면 표만 가로로 밀어 봅니다. 키보드로도 밀 수 있게 초점을 받습니다. */
-const TableScroll = ({ label, children }: { label: string; children: ReactNode }) => (
-  // 가로로 넘치는 영역은 키보드로 밀 수 있게 이름 있는 영역에 초점을 줍니다(WCAG 2.1.1, axe scrollable-region-focusable).
-  // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-  <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto">
-    {children}
-  </div>
-);
-
 
 export const StatsPage = () => {
   const { data: records = [], isPending, error } = useStatRecords();
@@ -123,112 +100,13 @@ export const StatsPage = () => {
         </ol>
       </section>
 
-      <Block id="species-title" title="어종별 조과">
-        {stats.species.length === 0 ? (
-          <Empty>이해에 잡은 물고기가 없습니다.</Empty>
-        ) : (
-          <TableScroll label="어종별 조과 표">
-            <table className="stat-table">
-              <caption className="sr-only">어종별 마릿수와 최대어. 새 어종은 이해에 처음 잡은 어종입니다.</caption>
-              <thead>
-                <tr>
-                  <th scope="col">어종</th>
-                  <th scope="col">마릿수</th>
-                  <th scope="col">최대어</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.species.map(({ species, count, biggest, isNew }) => (
-                  <tr key={species}>
-                    <th scope="row">
-                      {species}
-                      {isNew && <span className="lead-badge ml-2">새 어종</span>}
-                    </th>
-                    <td>{`${count}마리`}</td>
-                    <td>{`${biggest.length_cm}cm (${biggest.angler})`}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScroll>
-        )}
-      </Block>
 
-      <Block id="month-species-title" title="월별 어종">
-        {stats.monthSpecies.every(({ species }) => species.length === 0) ? (
-          <Empty>이해에 잡은 물고기가 없습니다.</Empty>
-        ) : (
-          <ol className="flex flex-col">
-            {stats.monthSpecies
-              .filter(({ species }) => species.length > 0)
-              .map(({ month, species }) => (
-                <li key={month} className="panel grid grid-cols-[3rem_minmax(0,1fr)] gap-3">
-                  <span className="mono-label pt-0.5">{`${month}월`}</span>
-                  <span className="break-words">{species.map(([name, count]) => `${name} ${count}마리`).join(' / ')}</span>
-                </li>
-              ))}
-          </ol>
-        )}
-      </Block>
 
-      <Block id="place-rate-title" title="장소별 조과율">
-        {stats.placeRates.length === 0 ? (
-          <Empty>이해의 낚시 기록이 없습니다.</Empty>
-        ) : (
-          <TableScroll label="장소별 조과율 표">
-            <table className="stat-table">
-              <caption className="sr-only">낚시 장소별 출조 횟수, 꽝 비율(잡은 물고기가 없던 날의 비율), 하루 평균 마릿수</caption>
-              <thead>
-                <tr>
-                  <th scope="col">장소</th>
-                  <th scope="col">출조</th>
-                  <th scope="col">꽝 비율</th>
-                  <th scope="col">평균</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.placeRates.map(({ id, name, trips, blankRate, average }) => (
-                  <tr key={id}>
-                    <th scope="row" className="break-words">{name}</th>
-                    <td>{`${trips}회`}</td>
-                    <td>{`${Math.round(blankRate * 100)}%`}</td>
-                    <td>{`${Math.round(average * 10) / 10}마리`}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScroll>
-        )}
-      </Block>
 
       <div className="border-t border-line">
         <Ranking id="top-places" title="자주 간 장소" rows={stats.places} unit="번" />
       </div>
 
-      <Block id="bests-title" title="최대어 기록 변화">
-        <div className="grid gap-x-6 lg:grid-cols-2">
-          {stats.bests.map(({ angler, steps }) => (
-            <section key={angler} aria-label={`${angler} 최대어 기록 변화`}>
-              <h3 className="mono-label pb-1.5">{angler}</h3>
-              {steps.length === 0 ? (
-                <Empty>아직 잡은 물고기가 없습니다.</Empty>
-              ) : (
-                <ol className="flex flex-col">
-                  {steps.slice(0, 5).map((fish, index) => (
-                    <li key={`${fish.visited_on} ${fish.length_cm}`} className="panel flex flex-col gap-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        {fishLabel(fish)}
-                        {index === 0 && <span className="lead-badge">현재 기록</span>}
-                      </span>
-                      <span className="text-sm text-muted break-words">{`${formatDate(fish.visited_on)} / ${fish.place}`}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-          ))}
-        </div>
-      </Block>
     </div>
   );
 };

@@ -50,11 +50,11 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 알림 (웹 푸시)
 
-출조 전날 20시(내일 일정이 있을 때)와 일요일 20시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 설정 화면의 **출조 알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
+출조 전날 오후 6시(내일 일정이 있을 때)와 일요일 오후 6시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
 
 - 구독: `push_subscriptions` 표(멤버만 읽고 씀)
 - 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
-- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 11시에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. `notify_url`이 없으면 부르지 않고, `notify_cron_secret`이 없거나 함수의 `CRON_SECRET`과 다르면 함수가 403으로 거절합니다.
+- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 9시(한국 시간 오후 6시)에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. `notify_url`이 없으면 부르지 않고, `notify_cron_secret`이 없거나 함수의 `CRON_SECRET`과 다르면 함수가 403으로 거절합니다.
 
 새 프로젝트에서는 한 번만 준비합니다. 키와 비밀 값은 저장소에 넣지 않습니다.
 
@@ -126,7 +126,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 연회색).
 
-글꼴은 Noto Sans KR을 `@fontsource/noto-sans-kr`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
+글꼴은 나눔고딕(Nanum Gothic)을 `@fontsource/nanum-gothic`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
 
 ## 첫 로딩과 화면 전환
 

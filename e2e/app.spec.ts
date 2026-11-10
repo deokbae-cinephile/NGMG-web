@@ -274,14 +274,15 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await settings.first().click();
   await expect(page).toHaveTitle('설정 | 낚고먹고');
   await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제/ })).toBeVisible();
-  await expect(page.getByRole('region', { name: '출조 알림' }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
+  await expect(page.getByRole('region', { name: '알림', exact: true }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
 
-  // 화면 테마: 다크를 고르면 바뀌고, 기기 설정 따르기로 돌아갈 수 있습니다.
+  // 화면 테마: 라이트·다크 중에서 고릅니다(기기 설정 따르기는 없음).
   const theme = page.getByRole('region', { name: '화면 테마' });
+  await expect(theme.getByRole('radio')).toHaveCount(2);
   await theme.getByLabel('다크').check();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await theme.getByLabel('기기 설정 따르기').check();
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
+  await theme.getByLabel('라이트').check();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
   // 앱 설치: 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
   await page.evaluate(() => {
@@ -358,7 +359,7 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.getByRole('link', { name: '통계' }).click();
-  await expect(page.getByRole('heading', { name: '어종별 조과' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '월별 출조' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
@@ -392,7 +393,7 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사 조건을 더한다', async ({ page }) => {
+test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, {
     ...base,
@@ -404,7 +405,8 @@ test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사 �
   });
   await page.goto('./records');
   const pane = page.locator('.pane-records');
-  const search = page.getByLabel('장소·조과·어종·메뉴·메모에서 찾기');
+  const search = page.getByRole('searchbox', { name: /기록 찾기/ });
+  await expect(page.getByText('장소·조과·어종·메뉴·메모에서 찾기')).toHaveCount(0); // 안내 문구는 화면에 없습니다.
   await search.fill('망둥어');
   await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
@@ -417,20 +419,7 @@ test('기록 검색: 어종·장소 이름으로 찾고, 장소·잡은 조사 �
   await expect(pane.getByText('감성돔 2마리')).toBeHidden();
   await search.fill('');
 
-  // 조건: 잡은 조사
-  await pane.getByText('조건 더 보기').click();
-  await page.getByLabel('잡은 조사').selectOption('류 조사');
-  await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
-  await expect(pane.getByText('감성돔 1마리')).toBeHidden();
-  await expect(pane.getByText('조건 더 보기 (1개 적용 중)')).toBeVisible();
-  await page.getByLabel('잡은 조사').selectOption('김 조사');
-  await expect(pane.getByText('조건에 맞는 기록이 없습니다.')).toBeVisible();
-
-  // 조건: 장소
-  await pane.getByRole('button', { name: '조건 지우기' }).click();
-  await page.getByLabel('장소', { exact: true }).selectOption({ label: '거문도 방파제' });
-  await expect(pane.getByText('감성돔 1마리')).toBeVisible();
-  await expect(pane.getByText('모둠회')).toBeHidden();
+  await expect(pane.getByText(/조건 더 보기/)).toHaveCount(0);
   await expectAccessible(page);
 });
 
@@ -534,6 +523,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(card.getByText('42.5cm')).toBeVisible();
   await expect(card.getByText('류 조사')).toBeVisible();
   await expect(card.getByText('2마리')).toBeVisible();
+  // 시간과 장소는 따로 한 줄씩, 모두 5줄입니다.
+  expect(await card.locator('dt').allTextContents()).toEqual(['빅원', '조사', '시간', '장소', '마릿수']);
   await expect(page.getByRole('heading', { name: '거대 망둥어' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
@@ -653,7 +644,7 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
 });
 
-test('통계: 출조·마릿수, 어종, 월별 어종, 장소별 조과율, 최대어 기록 변화', async ({ page }) => {
+test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 장소만 보여 준다', async ({ page }) => {
   // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -682,18 +673,9 @@ test('통계: 출조·마릿수, 어종, 월별 어종, 장소별 조과율, 최
   await expect(tiles).toContainText('잡은 물고기3마리');
   await expect(tiles.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
-  const species = page.getByRole('table', { name: /어종별/ });
-  await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('2마리');
-  await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('새 어종');
-  await expect(species.getByRole('row', { name: /볼락/ })).not.toContainText('새 어종'); // 작년에 잡았습니다.
-
-  await expect(page.getByRole('region', { name: '월별 어종' }).getByText('감성돔 1마리 / 볼락 1마리')).toBeVisible();
-  const rates = page.getByRole('table', { name: /장소별/ });
-  await expect(rates.getByRole('row', { name: /거문도 방파제/ })).toContainText('50%');
   // 사용자 요청으로 뺀 통계
-  for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
-  const bests = page.getByRole('region', { name: '김 조사 최대어 기록 변화' });
-  await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
+  for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '자주 간 장소' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 });
