@@ -961,6 +961,19 @@ body::after {
   }
 
   /* 핀을 고르면 뜨는 말풍선. 핀 위에 놓이도록 아래를 비우고, 꼬리로 핀을 가리킵니다. */
+  /* 잡은 물고기 사진: 장소 상세는 격자, 지도 말풍선은 작은 한 줄 */
+  .fish-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 1rem 0.75rem;
+  }
+  .fish-photo-strip {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-block: 0.25rem;
+  }
   .map-popup {
     animation: popup-in 0.18s ease-out;
     position: relative;

@@ -15,6 +15,8 @@ export {
   useFishDex,
   useMenuDex,
   useSignedPhotos,
+  usePlaceFishPhotos,
+  type PlaceFishPhoto,
   usePendingRatings,
   type DexFish,
   type RecordFilters,
@@ -27,4 +29,5 @@ export { ANGLERS, fishLabel, formatBait, formatGear, combinedRating, formatMenu,
 export { FishRow } from './fish-row';
 export { RatingChip, ratingClass } from './rating-chip';
 export { RecordCard } from './record-card';
+export { FishPhotoGrid } from './fish-photo-grid';
 export { MenuRow } from './menu-row';

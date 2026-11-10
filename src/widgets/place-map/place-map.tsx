@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
-import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
+import { FishPhotoGrid, RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -216,7 +216,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
     // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
     const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
-    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
+    // 낚시 장소는 말풍선에 물고기 사진 줄이 붙어 더 내립니다.
+    const lift = selected.kind === 'fishing' ? 150 : 90;
+    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * lift, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
     const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
     const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
     const near = selected.latitude <= north && selected.latitude >= south && selected.longitude <= east && selected.longitude >= west;
@@ -281,6 +283,22 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     }
     return () => overlay.setMap(null);
   }, [map, selected, popupHost]);
+
+  // 말풍선이 나중에 커지면(사진이 뜨거나 긴 주소) 위쪽이 지도 밖으로 잘리지 않게 지도를 그만큼 내립니다.
+  useEffect(() => {
+    const node = popup.current;
+    const area = container.current;
+    if (!map || !selected || !node || !area || typeof ResizeObserver === 'undefined') return;
+    const MARGIN = 8;
+    const fit = () => {
+      const top = node.getBoundingClientRect().top - area.getBoundingClientRect().top;
+      if (top < MARGIN) map.instance.panBy(0, top - MARGIN); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(node);
+    observer.observe(area); // 지도 칸이 줄어도 다시 확인합니다.
+    return () => observer.disconnect();
+  }, [map, selected]);
 
   // Esc로 팝업을 닫습니다.
   useEffect(() => {
@@ -350,6 +368,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
+            {selected.kind === 'fishing' && <FishPhotoGrid placeId={selected.id} limit={3} compact />}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 자세히 보기
