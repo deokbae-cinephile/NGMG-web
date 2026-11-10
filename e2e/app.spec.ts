@@ -824,6 +824,7 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
   await expectFits(page);
   await expectAccessible(page);
+});
 
 test('기록: 폼을 연 뒤 다른 사람이 고쳤으면 덮어쓸지 묻는다', async ({ page }) => {
   const base = seed();
