@@ -60,6 +60,20 @@ supabase functions deploy notify --use-api
 supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_cron_secret'); select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/notify', 'notify_url')"
 ```
 
+## 오프라인 저장과 동시 수정
+
+- 저장 대기열(`src/shared/lib/outbox.ts`, IndexedDB): 오프라인에서 기록을 저장하면 입력과 사진 파일을 기기에 두고, 앱을 열 때·연결이 돌아올 때·화면으로 돌아올 때·1분마다 올립니다(`useRecordOutbox`). 같은 id와 사진 경로로 덮어쓰므로 일부만 올라간 뒤 다시 올려도 중복되지 않습니다. 오프라인에서 저장한 내용은 그 사이 다른 사람이 고쳤어도 덮어씁니다.
+- 동시 수정: 기록 폼은 열 때의 `updated_at`을 보내고, 저장 직전 DB 값과 다르면 `RecordConflictError`로 덮어쓸지 묻습니다.
+
+## 백업
+
+매주 월요일 3시(한국 시간)에 Edge Function `supabase/functions/backup`이 public 스키마의 모든 표를 `{ createdAt, tables: { 표 이름: 행[] } }` JSON으로 비공개 버킷 `backups`에 저장합니다(최근 12개). 사진 파일은 Storage `record-photos`에 그대로 있고 경로만 표에 남습니다.
+
+- 예약: pg_cron `ngmg-weekly-backup`이 Vault의 `backup_url`로 `notify_cron_secret`을 붙여 부릅니다.
+- 받기: 대시보드 **Storage > backups**에서 내려받습니다. 버킷에 정책이 없어 앱에서는 읽을 수 없습니다.
+- 되살리기: 표마다 `insert into public.<표> select * from json_populate_recordset(null::public.<표>, '<행 JSON>')`로 넣습니다. 외래 키 순서(places → events → records → 나머지)를 지킵니다.
+- 새 프로젝트: `supabase functions deploy backup --use-api` 뒤 `select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/backup', 'backup_url')`.
+
 ## Kakao 지도 준비
 
 1. [Kakao Developers](https://developers.kakao.com)에서 앱을 만들고 **카카오맵** 사용을 켭니다.

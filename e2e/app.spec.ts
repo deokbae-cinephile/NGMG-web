@@ -824,4 +824,38 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
   await expectFits(page);
   await expectAccessible(page);
+
+test('기록: 폼을 연 뒤 다른 사람이 고쳤으면 덮어쓸지 묻는다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, updated_at: '2026-11-01T00:00:00+00:00' };
+  const db = await fakeBackend(page, base);
+  await page.goto('./records');
+  await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
+  const dialog = page.getByRole('dialog', { name: '기록 수정' });
+  await dialog.getByLabel('메모').fill('내가 쓴 메모');
+  db.records![0]!.updated_at = '2026-11-02T00:00:00+00:00'; // 다른 사람이 먼저 저장
+  const messages: string[] = [];
+  page.on('dialog', (confirm) => messages.push(confirm.message())); // 수락은 위의 공통 설정이 합니다.
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(messages.join()).toContain('먼저 고쳤습니다');
+  expect(db.records!.find((row) => row.id === 'r00')!.memo).toBe('내가 쓴 메모');
+});
+
+test('기록: 오프라인에서 저장하면 대기열에 두었다가 연결되면 올린다', async ({ page, context }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./places/p1');
+  await expect(page.getByText('감성돔 1마리')).toBeVisible();
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByLabel('메모').fill('바다에서 쓴 기록');
+  await context.setOffline(true);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: '저장 대기 1건' })).toBeVisible();
+  expect(db.records).toHaveLength(25);
+  await context.setOffline(false);
+  await expect(page.getByRole('button', { name: '저장 대기 1건' })).toBeHidden();
+  expect(db.records).toHaveLength(26);
+  expect(db.records!.at(-1)!.memo).toBe('바다에서 쓴 기록');
 });

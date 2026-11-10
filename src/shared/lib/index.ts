@@ -4,6 +4,7 @@ export * from './geo';
 export * from './holidays';
 export * from './image';
 export * from './kakao';
+export * from './outbox';
 export * from './preferences';
 export * from './share';
 export * from './router';

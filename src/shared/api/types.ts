@@ -119,6 +119,8 @@ export type PlaceRecord = RecordDetails & {
   menu_items: MenuItem[];
   gear_sets: RecordGearSet[];
   angler_ratings: AnglerRatings;
+  /** 마지막으로 고친 시각. 두 사람이 동시에 고쳤는지 확인하는 데 씁니다. */
+  updated_at?: string;
 };
 
 export type CalendarEvent = {

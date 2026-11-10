@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/features/theme-toggle';
 import { NavLink, useLocation } from '@/shared/lib';
 import { Icon, Logo, PageSkeleton, type IconName, type PageVariant } from '@/shared/ui';
 import { PendingRatings } from './pending-ratings';
+import { SaveOutbox } from './save-outbox';
 
 const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: '지도', icon: 'pin' },
@@ -75,6 +76,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       </main>
       {/* 설치와 맨 위로는 메뉴(GNB)와 다른 동작이라 메뉴 밖 오른쪽 아래에 따로 띄웁니다. */}
       <div className="floating-actions">
+        <SaveOutbox />
         <PendingRatings />
         <InstallButton />
         <ScrollTopButton />

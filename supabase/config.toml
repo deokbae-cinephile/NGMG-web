@@ -12,3 +12,7 @@ enabled = true
 [functions.notify]
 # 예약 호출(pg_cron)은 비밀 값 헤더로, 테스트 알림은 로그인 토큰으로 함수 안에서 직접 확인합니다.
 verify_jwt = false
+
+[functions.backup]
+# 예약 호출(pg_cron)만 받습니다. 비밀 값 헤더를 함수 안에서 확인합니다.
+verify_jwt = false
