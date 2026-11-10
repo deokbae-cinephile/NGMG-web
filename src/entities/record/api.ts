@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { forEachLimit } from '@/shared/lib';
-import { removePhotos, signPhotos, supabase, uploadPhoto, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto, type PhotoUrls } from '@/shared/api';
+import { ANGLERS, removePhotos, signPhotos, supabase, uploadPhoto, type AnglerRatings, type CalendarEvent, type FishCatch, type MenuItem, type PlaceKind, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto, type PhotoUrls } from '@/shared/api';
 import { OUTBOX_EVENT, outboxList, outboxPut, outboxRemove, type OutboxItem } from '@/shared/lib';
-import { cleanKeyword, pendingRating, recordSearchFilter } from './model';
+import { cleanKeyword, isPartialRating, missingRaters, pendingRating, recordSearchFilter } from './model';
 import { SAVE_KEY } from '@/shared/ui';
 
 export const MAX_PHOTOS = 10;
@@ -219,6 +219,23 @@ export const usePlaceFishPhotos = (placeId?: string) =>
 export type DexFish = RecentFish; // 잡은 물고기와 그 기록의 날짜·장소
 
 /** 도감용으로 잡은 물고기를 모두 받습니다. */
+/** 지금까지 저장한 어종 이름(많이 잡은 순). 기록 폼에서 같은 이름을 골라 마릿수·빅원 집계가 나뉘지 않게 합니다. */
+export const useSpeciesOptions = () =>
+  useQuery({
+    queryKey: ['records', 'species'],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from('fish_catches').select('species').neq('species', '').limit(5000);
+      if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
+      const counts = new Map<string, number>();
+      (data as { species: string }[]).forEach(({ species }) => {
+        const name = species.trim();
+        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+      });
+      return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([name]) => name);
+    },
+    staleTime: 300_000,
+  });
+
 export const useFishDex = () =>
   useQuery({
     queryKey: ['records', 'dex'],
@@ -276,7 +293,8 @@ export const useSignedPhotos = (paths: string[]) =>
     combine: (results) => new Map(results.flatMap((result) => [...(result.data ?? [])])),
   });
 
-export type PendingRating = { id: string; visited_on: string; place: { name: string } };
+/** waiting: 기록이나 메뉴에 아직 평점을 주지 않은 조사 */
+export type PendingRating = { id: string; visited_on: string; place: { name: string }; waiting: string[] };
 
 /** 한 사람만 평점을 준 기록 (최근 순). 나머지 사람의 평점을 받을 때까지 알려 줍니다. */
 export const usePendingRatings = () =>
@@ -288,7 +306,13 @@ export const usePendingRatings = () =>
         .select('id, visited_on, angler_ratings, place:places!inner(name), menu_items(angler_ratings)')
         .order('visited_on', { ascending: false });
       if (error) throw new Error('평점을 기다리는 기록을 불러오지 못했습니다.');
-      return (data as unknown as (PendingRating & { angler_ratings: AnglerRatings; menu_items: { angler_ratings: AnglerRatings }[] })[]).filter(pendingRating);
+      type Row = Omit<PendingRating, 'waiting'> & { angler_ratings: AnglerRatings; menu_items: { angler_ratings: AnglerRatings }[] };
+      return (data as unknown as Row[]).filter(pendingRating).map((row) => {
+        // 한 사람만 준 기록 평점과 메뉴 평점에서, 아직 주지 않은 사람을 모읍니다.
+        const partial = [row.angler_ratings, ...row.menu_items.map((item) => item.angler_ratings)].filter((ratings) => isPartialRating(ratings));
+        const waiting = ANGLERS.filter((angler) => partial.some((ratings) => missingRaters(ratings).includes(angler)));
+        return { id: row.id, visited_on: row.visited_on, place: row.place, waiting };
+      });
     },
   });
 

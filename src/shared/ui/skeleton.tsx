@@ -14,38 +14,57 @@ const Status = ({ children, className = '' }: { children: ReactNode; className?:
   </div>
 );
 
-export type RowVariant = 'list' | 'place' | 'event' | 'record' | 'fish';
+export type RowVariant = 'list' | 'place' | 'event' | 'record' | 'fish' | 'upcoming';
 
 const Row = ({ variant }: { variant: RowVariant }) => {
   switch (variant) {
-    case 'place': // 지도 목록: 이름과 분류, 주소, 오른쪽 사진
+    case 'place': // 지도 목록: 이름과 분류·평점 표시, 주소
       return (
-        <div className="panel flex items-start gap-3">
-          <span className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="panel flex flex-col gap-2">
+          <span className="flex items-center gap-2">
             <Bar className="h-5 w-2/5" />
-            <Bar className="h-3.5 w-3/5" />
+            <Bar className="h-5 w-7" />
           </span>
-          <Bar className="size-16 shrink-0" />
+          <Bar className="h-3.5 w-1/4" />
+        </div>
+      );
+    case 'upcoming': // 모아 보기(다가오는 일정, 기록을 기다리는 지난 일정): 칸 끝까지 닿는 줄
+      return (
+        <div className="flex flex-col gap-2 border-b border-soft px-5 py-4">
+          <span className="flex items-center gap-2">
+            <Bar className="h-5 w-10" />
+            <Bar className="h-5 w-24" />
+          </span>
+          <Bar className="h-3.5 w-3/5" />
         </div>
       );
     case 'event': // 일정: 시간, 제목과 장소 (넓으면 옆으로)
       return (
         <div className="panel panel-roomy flex flex-col gap-2 sm:flex-row sm:items-start">
-          <Bar className="h-4 w-24 shrink-0 sm:mt-1" />
+          <Bar className="h-4 w-12 shrink-0 sm:mt-1 sm:mr-16" />
           <span className="flex min-w-0 flex-1 flex-col gap-2">
             <Bar className="h-5 w-2/5" />
-            <Bar className="h-3.5 w-3/5" />
+            <Bar className="h-3.5 w-1/4" />
           </span>
         </div>
       );
-    case 'record': // 기록 카드: 날짜, 장소, 평점, 항목들
+    case 'record': // 기록 카드: 날짜, 장소와 분류, 평점, 메모
       return (
         <div className="panel panel-roomy flex flex-col gap-3">
-          <Bar className="h-3.5 w-40" />
-          <Bar className="h-5 w-1/3" />
-          <Bar className="h-4 w-20" />
-          <Bar className="h-3.5 w-3/5" />
-          <Bar className="h-3.5 w-1/2" />
+          <Bar className="h-3.5 w-36" />
+          <span className="flex items-center gap-2">
+            <Bar className="h-5 w-1/3" />
+            <Bar className="h-5 w-7" />
+          </span>
+          <span className="flex flex-col gap-1.5">
+            <Bar className="h-3 w-10" />
+            <Bar className="h-5 w-14" />
+            <Bar className="h-3.5 w-40" />
+          </span>
+          <span className="flex flex-col gap-1.5">
+            <Bar className="h-3 w-10" />
+            <Bar className="h-4 w-1/2" />
+          </span>
         </div>
       );
     case 'fish': // 잡은 물고기: 사진, 어종과 조사
@@ -58,18 +77,18 @@ const Row = ({ variant }: { variant: RowVariant }) => {
           </span>
         </div>
       );
-    default:
+    default: // 날짜, 이름, 한 줄 설명
       return (
         <div className="panel flex flex-col gap-2">
           <Bar className="h-3.5 w-24" />
-          <Bar className="h-5 w-3/5" />
-          <Bar className="h-3.5 w-4/5" />
+          <Bar className="h-5 w-2/5" />
+          <Bar className="h-3.5 w-1/3" />
         </div>
       );
   }
 };
 
-/** 목록 자리. variant로 실제 항목의 모양(사진 위치, 줄 수)을 맞춥니다. */
+/** 목록 자리. variant로 실제 항목의 모양(줄 수, 여백)을 맞춥니다. */
 export const SkeletonRows = ({ count = 4, variant = 'list' }: { count?: number; variant?: RowVariant }) => (
   <Status className="flex flex-col">
     {Array.from({ length: count }, (_, index) => (
@@ -80,10 +99,11 @@ export const SkeletonRows = ({ count = 4, variant = 'list' }: { count?: number; 
   </Status>
 );
 
-const Head = ({ action = false }: { action?: boolean }) => (
+/** 칸 머리: 제목과 오른쪽 단추(action에 단추 너비 클래스) */
+const Head = ({ action, title = 'w-28' }: { action?: string; title?: string }) => (
   <div className="cell-head">
-    <Bar className="h-6 w-28" />
-    {action && <Bar className="h-11 w-24" />}
+    <Bar className={`h-6 ${title}`} />
+    {action && <Bar className={`h-11 ${action}`} />}
   </div>
 );
 
@@ -95,7 +115,19 @@ const Rows = ({ count, variant = 'list' }: { count: number; variant?: RowVariant
   </div>
 );
 
-/** 도감처럼 사진 카드가 늘어선 칸의 자리 (머리 포함) */
+/** 이름표와 단추 줄 (지도·기록의 분류 단추) */
+const Choices = ({ count }: { count: number }) => (
+  <div className="flex flex-col gap-1.5">
+    <Bar className="h-3.5 w-8" />
+    <div className="flex gap-2">
+      {Array.from({ length: count }, (_, index) => (
+        <Bar key={index} className="h-11 w-[3.9rem]" />
+      ))}
+    </div>
+  </div>
+);
+
+/** 도감처럼 사진 카드가 늘어선 칸의 자리 (머리 포함). 카드 글은 이름과 5줄입니다. */
 export const CardGridSkeleton = () => (
   <>
     <Head />
@@ -103,11 +135,17 @@ export const CardGridSkeleton = () => (
       {Array.from({ length: 4 }, (_, index) => (
         <li key={index} className="flex flex-col bg-paper">
           <Bar className="aspect-[4/3] w-full" />
-          <span className="flex flex-col gap-2 p-4">
-            <Bar className="h-3.5 w-12" />
-            <Bar className="h-5 w-2/5" />
-            <Bar className="h-3.5 w-4/5" />
-            <Bar className="h-3.5 w-3/5" />
+          <span className="flex flex-col gap-2 p-5">
+            <Bar className="h-3.5 w-10" />
+            <Bar className="h-6 w-2/5" />
+            <span className="flex flex-col gap-1.5">
+              {[0, 1, 2, 3, 4].map((line) => (
+                <span key={line} className="flex gap-8">
+                  <Bar className="h-3.5 w-10" />
+                  <Bar className={`h-3.5 ${line % 2 ? 'w-24' : 'w-32'}`} />
+                </span>
+              ))}
+            </span>
           </span>
         </li>
       ))}
@@ -115,7 +153,17 @@ export const CardGridSkeleton = () => (
   </>
 );
 
-const MONTH_HEIGHTS = [2, 4, 3, 6, 5, 8, 4, 7, 3, 5, 2, 4];
+const MONTH_HEIGHTS = [0, 0, 2, 4, 3, 6, 5, 8, 4, 3, 5, 0];
+
+/** 통계 순위 한 줄: 번호, 이름과 덧붙임, 횟수, 막대 */
+const RankRow = ({ width }: { width: string }) => (
+  <div className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+    <Bar className="h-3.5 w-3" />
+    <Bar className="h-4 w-2/5" />
+    <Bar className="h-3.5 w-6" />
+    <span className={`skeleton col-start-2 col-end-4 h-3 ${width}`} />
+  </div>
+);
 
 const LAYOUTS = {
   // 지도: 휴대폰은 위에 지도, 아래에 목록. 넓은 화면은 왼쪽 지도, 오른쪽 목록.
@@ -128,135 +176,209 @@ const LAYOUTS = {
         <div className="cell-head">
           <div className="map-actions">
             <Bar className="h-11 flex-1" />
-            <Bar className="h-11 w-20" />
-            <Bar className="h-11 w-20" />
+            <Bar className="h-11 w-[4.75rem]" />
+            <Bar className="h-11 w-[4.25rem]" />
           </div>
         </div>
         <div className="cell-body flex flex-col gap-5">
-          <div className="flex gap-2">
-            {Array.from({ length: 4 }, (_, index) => (
-              <Bar key={index} className="h-11 w-14" />
-            ))}
+          <Choices count={3} />
+          <div className="flex flex-col gap-1.5">
+            <Bar className="h-3.5 w-20" />
+            <Bar className="h-11 w-full" />
           </div>
-          <Bar className="h-11 w-full" />
+          <Bar className="h-3.5 w-14" />
           <Rows count={4} variant="place" />
         </div>
       </section>
     </div>
   ),
-  // 일정 및 기록: 넓은 화면은 달력·모아 보기 / 고른 날 / 전체 기록 세 칸, 휴대폰은 위에서 아래로.
+  // 일정 및 기록: 넓은 화면은 달력·모아 보기 / 고른 날 / 전체 기록 세 칸, 휴대폰은 위에서 아래로(전체 기록은 접힌 머리만).
   schedule: (
     <div className="panes panes-wide panes-schedule">
       <section className="pane pane-calendar">
-        <Head action />
+        <Head title="w-12" action="w-[3.9rem]" />
         <div className="flex justify-center px-5 py-4">
           <div className="cal w-full">
-            <div className="flex justify-between pb-3">
-              <Bar className="h-7 w-32" />
-              <Bar className="h-7 w-20" />
+            <div className="flex items-center justify-between pb-4">
+              <Bar className="h-6 w-28" />
+              <span className="flex gap-4">
+                <Bar className="size-6" />
+                <Bar className="size-6" />
+              </span>
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-y-3">
+              {Array.from({ length: 7 }, (_, index) => (
+                <Bar key={index} className="mx-auto h-3.5 w-4" />
+              ))}
               {Array.from({ length: 35 }, (_, index) => (
-                <Bar key={index} className="mx-auto size-9" />
+                <Bar key={index} className="mx-auto size-8 rounded-full" />
               ))}
             </div>
           </div>
         </div>
       </section>
       <section className="pane pane-day">
-        <div className="flex items-end justify-between gap-3 border-b border-line px-5 pt-6 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-4 border-b border-line px-5 py-5">
           <div className="flex items-end gap-4">
-            <Bar className="h-14 w-20" />
-            <span className="flex flex-col gap-2 pb-1">
-              <Bar className="h-3.5 w-12" />
-              <Bar className="h-6 w-44" />
-            </span>
+            <Bar className="h-16 w-20" />
+            <Bar className="mb-1 h-6 w-44" />
           </div>
-          <Bar className="h-11 w-24" />
+          <Bar className="h-11 w-28" />
         </div>
-        <div className="cell-body">
-          <Rows count={2} variant="event" />
+        <div className="cell-body flex flex-col gap-6">
+          <Rows count={1} variant="event" />
+          <div className="flex flex-col gap-2 border-t border-line pt-6">
+            <Bar className="h-6 w-12" />
+            <Rows count={1} variant="record" />
+          </div>
         </div>
       </section>
       <section className="pane pane-side">
-        <Head />
-        <Rows count={3} />
+        <Head title="w-32" />
+        <Rows count={2} variant="upcoming" />
       </section>
       <section className="pane pane-records">
-        <Head />
-        <div className="cell-body flex flex-col gap-5">
-          <Bar className="h-11 w-3/5" />
-          <Rows count={2} variant="record" />
+        <div className="cell-head">
+          <Bar className="h-6 w-24" />
+          <Bar className="size-5 lg:hidden" />
+        </div>
+        <div className="max-lg:hidden">
+          <div className="cell-body flex flex-col gap-5 border-b border-line">
+            <Choices count={3} />
+            <div className="flex gap-2">
+              <Bar className="h-11 flex-1" />
+              <Bar className="h-11 w-16" />
+            </div>
+          </div>
+          <div className="cell-body">
+            <Rows count={2} variant="record" />
+          </div>
         </div>
       </section>
     </div>
   ),
-  // 통계: 숫자 칸, 월별 막대, 순위
+  // 통계: 숫자 칸, 월별 막대, 자주 간 낚시 포인트·맛집
   stats: (
     <div>
-      <Head action />
+      <Head title="w-32" action="w-28" />
       <div className="grid grid-cols-2 gap-px border-b border-line bg-line">
         {[0, 1].map((index) => (
           <div key={index} className="flex flex-col gap-2 bg-paper p-5">
             <Bar className="h-3.5 w-16" />
-            <Bar className="h-14 w-20" />
+            <span className="flex items-end gap-1">
+              <Bar className="h-[4.5rem] w-12" />
+              <Bar className="h-4 w-6" />
+            </span>
           </div>
         ))}
       </div>
-      <section className="border-b border-line">
+      <section>
         <Head />
         <div className="grid grid-cols-12 items-end gap-1 px-5 pt-6 pb-4 sm:gap-3">
           {MONTH_HEIGHTS.map((height, index) => (
-            <span key={index} className="skeleton w-full" style={{ height: `${height * 0.6 + 0.5}rem` }} />
+            <span key={index} className="flex flex-col items-center gap-1">
+              <Bar className="h-3 w-2" />
+              <span className="skeleton w-full" style={{ height: `${height + 0.125}rem` }} />
+              <Bar className="h-3 w-3" />
+            </span>
           ))}
         </div>
       </section>
-      <div className="panes lg:grid-cols-2 lg:h-auto!">
-        {[0, 1].map((index) => (
-          <section key={index} className="pane">
-            <Head />
-            <div className="cell-body">
-              <Rows count={3} />
+      <div className="grid gap-px border-t border-line bg-line md:grid-cols-2">
+        {['w-40', 'w-28'].map((title) => (
+          <section key={title} className="bg-paper">
+            <Head title={title} />
+            <div className="cell-body flex flex-col gap-3">
+              <RankRow width="w-full" />
+              <RankRow width="w-1/2" />
             </div>
           </section>
         ))}
       </div>
     </div>
   ),
-  // 도감: 탭, 머리, 카드
+  // 도감: 탭, 찾기 칸, 머리, 카드
   dex: (
     <div>
-      <div className="grid h-12 grid-cols-2 border-b border-line">
-        <Bar className="h-full" />
-        <span />
+      <div className="border-b border-line">
+        <div className="grid h-12 grid-cols-2 border-b border-line">
+          <Bar className="h-full" />
+          <span className="flex items-center justify-center">
+            <Bar className="h-4 w-16" />
+          </span>
+        </div>
+        <div className="dex-search">
+          <Bar className="block h-11 w-full" />
+        </div>
       </div>
       <CardGridSkeleton />
     </div>
   ),
-  // 장소 상세: 장소 정보와 기록 두 칸
+  // 장소 상세: 장소 정보와 잡은 물고기 사진 / 기록 두 칸
   place: (
     <div className="panes lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <section className="pane">
         <div className="cell-head">
-          <Bar className="h-6 w-16" />
+          <Bar className="h-6 w-8" />
         </div>
         <div className="cell-body flex flex-col gap-4">
-          <Bar className="h-10 w-3/5 lg:h-12" />
-          <Bar className="h-5 w-4/5" />
-          <Bar className="h-3.5 w-40" />
+          <span className="flex flex-col gap-2 border-b border-line pb-2">
+            <Bar className="h-10 w-3/5 lg:h-12" />
+          </span>
+          <Bar className="h-5 w-2/5" />
+          <Bar className="h-3.5 w-36" />
+          <div className="flex flex-wrap gap-2">
+            <Bar className="h-11 w-32" />
+            <Bar className="h-11 w-28" />
+            <Bar className="h-11 w-20" />
+          </div>
           <div className="flex gap-2">
+            <Bar className="h-11 w-20" />
             <Bar className="h-11 w-24" />
-            <Bar className="h-11 w-24" />
+          </div>
+        </div>
+        <div className="border-t border-line">
+          <Head title="w-36" />
+          <div className="cell-body">
+            <Bar className="h-4 w-3/5" />
           </div>
         </div>
       </section>
       <section className="pane">
-        <Head action />
+        <Head title="w-12" action="w-28" />
         <div className="cell-body flex flex-col gap-4">
-          <Bar className="h-16 w-full" />
+          <div className="grid grid-cols-3 divide-x divide-line border-y border-line">
+            {[0, 1, 2].map((index) => (
+              <span key={index} className="flex min-h-[6.5rem] flex-col gap-2 p-3">
+                <Bar className="h-3 w-10" />
+                <Bar className="h-5 w-14" />
+              </span>
+            ))}
+          </div>
           <Rows count={2} variant="record" />
         </div>
       </section>
+    </div>
+  ),
+  // 설정: 평점 대기, 알림, 화면 테마, 앱 설치, 앱 정보
+  settings: (
+    <div>
+      {[
+        ['w-20', ['h-3.5 w-4/5', 'h-3.5 w-24', 'h-5 w-28']],
+        ['w-12', ['h-5 w-16', 'h-3.5 w-4/5', 'h-11 w-24']],
+        ['w-20', ['h-11 w-36']],
+        ['w-20', ['h-3.5 w-4/5']],
+        ['w-20', ['h-4 w-20']],
+      ].map(([title, lines], index) => (
+        <section key={index} className="border-b border-line">
+          <Head title={title as string} />
+          <div className="cell-body flex flex-col gap-2">
+            {(lines as string[]).map((line) => (
+              <Bar key={line} className={line} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   ),
   default: (

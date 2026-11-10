@@ -121,7 +121,8 @@ export const SchedulePage = () => {
             </button>
           </Writable>
         </div>
-        <div className="cell-body flex flex-col gap-10">
+        {/* 이날 일정, 기록을 기다리는 일정, 기록 사이에 선을 그어 나눕니다. */}
+        <div className="cell-body flex flex-col gap-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
             <h3 id="events-title" className="sr-only">이날 일정</h3>
             <ErrorText error={dayEvents.error ?? remove.error} />

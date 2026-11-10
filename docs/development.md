@@ -124,7 +124,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 | `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
 | `danger` | `#b3221e` | 삭제·오류 |
 
-제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 기타: 연회색).
+제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색). '기타' 분류는 고를 수 없게 뺐고, 예전 자료 표시를 위해 값과 연회색만 남겨 두었습니다.
 
 글꼴은 나눔고딕(Nanum Gothic)을 `@fontsource/nanum-gothic`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
 
@@ -140,6 +140,6 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 - Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.
 - 사진은 올릴 때 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올립니다(`forEachLimit`). 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
-- 사진 여러 장은 작은 슬라이드 라이브러리(Embla Carousel)로 넘기고, 이 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
+- 사진 여러 장은 브라우저 기본 가로 스크롤(scroll-snap)로 넘깁니다. 슬라이드 라이브러리(Embla)는 일부 휴대폰에서 밀어도 넘어가지 않아 걷어 냈습니다. 슬라이드 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
 - 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답(DB는 요청 토큰의 사용자별로 따로 저장)을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받고, 저장은 `always`라 오프라인이면 바로 실패를 알립니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
 - 글꼴은 글자 조각(unicode-range)을 그대로 씁니다. 화면마다 10~13조각(약 27~52KB)만 받습니다.

@@ -5,7 +5,7 @@ import { RecordCard, useRecordPages } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceKind, PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
-import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Field, Icon, Modal, SkeletonRows } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';
 
@@ -15,6 +15,8 @@ export const AllRecords = () => {
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
   const [editing, setEditing] = useState<PlaceRecord>();
+  // 휴대폰에서는 전체 기록을 접어 두고 머리를 눌러 엽니다(아코디언). 넓은 화면은 늘 펼쳐 둡니다.
+  const [open, setOpen] = useState(false);
   const { data, error, isPending, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = useRecordPages({
     kind: filter === 'all' ? undefined : filter,
     keyword,
@@ -36,11 +38,18 @@ export const AllRecords = () => {
   return (
     <section aria-labelledby="records-title" className="pane pane-records">
       <div className="cell-head">
-        <h2 id="records-title" className="title text-xl">전체 기록</h2>
+        <h2 id="records-title" className="title text-xl max-lg:flex-1">
+          <button type="button" className="records-toggle lg:hidden" aria-expanded={open} aria-controls="records-body" onClick={() => setOpen(!open)}>
+            전체 기록
+            <Icon name={open ? 'chevronUp' : 'chevronDown'} size={20} />
+          </button>
+          <span className="max-lg:hidden">전체 기록</span>
+        </h2>
         <p role="status" className="mono-label">
-          {isFetchingNextPage ? '더 불러오는 중' : records.length ? `${records.length}건 표시 중` : ''}
+          {isFetchingNextPage ? '더 불러오는 중' : ''}
         </p>
       </div>
+      <div id="records-body" className={open ? '' : 'max-lg:hidden'}>
       <div className="cell-body flex flex-col gap-5 border-b border-line">
           <fieldset>
             <legend className="mono-label pb-1.5">분류</legend>
@@ -125,6 +134,7 @@ export const AllRecords = () => {
           ) : (
             <div ref={more} aria-hidden="true" className="h-px" />
           ))}
+      </div>
       </div>
       {editing && (
         <Modal title="기록 수정" onClose={() => setEditing(undefined)}>

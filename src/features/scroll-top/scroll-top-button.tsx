@@ -42,8 +42,7 @@ export const ScrollTopButton = () => {
   if (shownOn !== pathname) return null;
 
   const toTop = () => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    target.current?.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    target.current?.scrollTo({ top: 0, behavior: 'instant' }); // 스크롤 움직임 없이 바로 맨 위로 갑니다(사용자 요청).
     // 버튼이 사라져도 키보드 초점이 길을 잃지 않게 본문으로 옮깁니다.
     document.getElementById('main')?.focus({ preventScroll: true });
   };

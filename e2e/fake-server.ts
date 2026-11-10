@@ -29,6 +29,7 @@ export const KAKAO_SDK = `
     class CustomOverlay {
       constructor(o) {
         this.o = o;
+        (window.__overlayClasses ||= []).push(o.content.className || ''); // 지도에 올릴 때의 핀 모양(크기를 재는 순간)을 검사합니다.
         if (!o.map) return;
         o.content.style.position = 'absolute';
         o.content.style.left = ((o.position.getLng() - 125.5) / 4.5) * 100 + '%';

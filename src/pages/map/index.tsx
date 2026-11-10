@@ -1,5 +1,5 @@
 import { Writable } from '@/entities/session';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
@@ -30,6 +30,15 @@ export const MapPage = () => {
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
+  const items = useRef(new Map<string, HTMLLIElement>());
+
+  // 장소를 고르면(목록이나 핀) 그 장소 항목을 목록 맨 위(휴대폰은 지도 바로 아래)로 바로 옮겨 펼친 버튼까지 보이게 합니다.
+  // 항목이 펼쳐진 뒤의 자리로 옮기도록 그린 다음 프레임에 옮깁니다.
+  useEffect(() => {
+    if (!selectedId) return;
+    const frame = requestAnimationFrame(() => items.current.get(selectedId)?.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId]);
 
   const search = keyword.trim().toLowerCase();
   // 지도가 핀을 불필요하게 다시 그리지 않도록 조건이 바뀔 때만 새로 만듭니다.
@@ -116,7 +125,14 @@ export const MapPage = () => {
             {!waitingRatings && listed.map((place) => {
               const selected = place.id === selectedId;
               return (
-                <li key={place.id} className={`panel ${selected ? 'panel-active' : ''}`}>
+                <li
+                  key={place.id}
+                  ref={(node) => {
+                    if (node) items.current.set(place.id, node);
+                    else items.current.delete(place.id);
+                  }}
+                  className={`panel place-item ${selected ? 'panel-active' : ''}`}
+                >
                   <button
                     type="button"
                     className="flex min-h-11 w-full cursor-pointer items-start gap-3 text-left"

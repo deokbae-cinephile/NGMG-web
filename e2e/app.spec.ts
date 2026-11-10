@@ -23,6 +23,18 @@ const seed = (): Seed => ({
   record_photos: [{ id: 'ph1', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 }],
 });
 
+/** 일정 및 기록 화면을 열고, 휴대폰처럼 전체 기록이 접혀 있으면 펼칩니다. */
+const openRecords = async (page: Page) => {
+  await page.goto('./records');
+  await expect(page.getByRole('heading', { name: '전체 기록' })).toBeVisible();
+  const toggle = page.getByRole('button', { name: '전체 기록' });
+  if (await toggle.isVisible()) {
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false'); // 휴대폰에서는 접힌 채로 시작합니다.
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+};
+
 const expectFits = async (page: Page) => {
   // 문서 가로 스크롤과 함께, 잘려서 스크롤이 안 생기는 경우도 잡도록 본문 요소의 오른쪽 끝을 봅니다.
   const overflow = await page.evaluate(() => {
@@ -182,15 +194,6 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await expect(page.getByRole('region', { name: '기록', exact: true }).getByText('볼락 21.5cm')).toBeVisible();
   await expect(page.getByRole('region', { name: '잡은 물고기 사진' }).getByRole('img')).toHaveCount(1); // 사진 지도에도 모입니다.
 
-  // 지도 정보 창의 물고기 사진은 지도 바탕의 흑백 처리를 받지 않고 원래 색으로 보입니다(라이트·다크 모두).
-  for (const theme of ['light', 'dark']) {
-    await page.evaluate((value) => localStorage.setItem('theme', value), theme);
-    await page.goto('./');
-    await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
-    const photo = page.getByRole('group', { name: '거문도 방파제 정보' }).getByRole('img').first();
-    await expect(photo).toBeVisible();
-    expect(await photo.evaluate((img) => getComputedStyle(img).filter)).toBe('none');
-  }
   expect(db.records).toHaveLength(26);
   expect(db.record_photos).toHaveLength(2);
   expect(db.fish_catches).toHaveLength(1);
@@ -283,15 +286,17 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await expect(settings.first()).toBeVisible();
   await settings.first().click();
   await expect(page).toHaveTitle('설정 | 낚고먹고');
-  await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제.*류 조사 평점 필요/ })).toBeVisible(); // 평점을 줘야 하는 사람을 밝힙니다.
   await expect(page.getByRole('region', { name: '알림', exact: true }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
 
   // 화면 테마: 라이트·다크 중에서 고릅니다(기기 설정 따르기는 없음).
   const theme = page.getByRole('region', { name: '화면 테마' });
-  await expect(theme.getByRole('radio')).toHaveCount(2);
-  await theme.getByLabel('다크').check();
+  await expect(theme.getByRole('radio')).toHaveCount(0); // 라디오 대신 단추입니다.
+  await expect(theme.getByRole('button')).toHaveCount(2);
+  await theme.getByRole('button', { name: '다크' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await theme.getByLabel('라이트').check();
+  await expect(theme.getByRole('button', { name: '다크' })).toHaveAttribute('aria-pressed', 'true');
+  await theme.getByRole('button', { name: '라이트' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
   // 앱 설치: 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
@@ -363,7 +368,7 @@ test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연�
 test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile');
   await fakeBackend(page, seed());
-  await page.goto('./records');
+  await openRecords(page);
   await expect(page.getByText('감성돔 1마리')).toBeVisible();
   await expect(page.locator('.topbar-logo')).toBeHidden();
   await page.evaluate(() => window.scrollTo(0, 1200));
@@ -413,7 +418,7 @@ test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) =>
     ],
     fish_catches: [{ id: 'f1', record_id: 'r01', angler: '류 조사', species: '거대 망둥어', length_cm: 17, position: 0 }],
   });
-  await page.goto('./records');
+  await openRecords(page);
   const pane = page.locator('.pane-records');
   const search = page.getByRole('searchbox', { name: /기록 찾기/ });
   await expect(page.getByText('장소·조과·어종·메뉴·메모에서 찾기')).toHaveCount(0); // 안내 문구는 화면에 없습니다.
@@ -505,7 +510,7 @@ test('이미 기록한 일정에는 기록 남기기가 없고, 예전 장비 �
 
 test('기록 화면에서 기록을 수정한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./records');
+  await openRecords(page);
   await page.getByRole('button', { name: /거문도 방파제 .*기록 수정/ }).first().click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
   await dialog.getByLabel('날씨').selectOption('폭우');
@@ -727,7 +732,7 @@ test('기록: 폼을 연 뒤 다른 사람이 고쳤으면 덮어쓸지 묻는�
   const base = seed();
   base.records![0] = { ...base.records![0]!, updated_at: '2026-11-01T00:00:00+00:00' };
   const db = await fakeBackend(page, base);
-  await page.goto('./records');
+  await openRecords(page);
   await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
   await dialog.getByLabel('메모').fill('내가 쓴 메모');
@@ -766,7 +771,7 @@ test('기록: 저장을 빠르게 두 번 눌러도 한 번만 저장하고 가�
   page.on('request', (request) => request.method() === 'POST' && request.url().includes('/rest/v1/records') && saves.push(request.url()));
   const messages: string[] = [];
   page.on('dialog', (dialog) => messages.push(dialog.message()));
-  await page.goto('./records');
+  await openRecords(page);
   await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
   await dialog.getByLabel('메모').fill('한 번만');
@@ -780,7 +785,7 @@ test('기록: 저장을 빠르게 두 번 눌러도 한 번만 저장하고 가�
   expect(messages).toEqual([]);
 });
 
-test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 사진을 모아 본다', async ({ page }) => {
+test('사진 지도: 장소 상세에서 잡은 물고기 사진을 모아 보고, 지도 말풍선에는 사진을 넣지 않는다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, {
     ...base,
@@ -805,9 +810,8 @@ test('사진 지도: 장소 상세와 지도 말풍선에서 잡은 물고기 �
   await page.goto('./');
   await page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택/ }).click();
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
-  // 말풍선은 최근 3장만 보여 주고, 더 있으면 전체 개수를 알립니다.
-  await expect(popup.getByRole('list', { name: '최근 잡은 물고기 사진' }).getByRole('img')).toHaveCount(3);
-  await expect(popup.getByText('사진 4장 중 3장')).toBeVisible();
+  await expect(popup).toBeVisible();
+  await expect(popup.getByRole('img')).toHaveCount(0); // 말풍선에는 사진을 넣지 않습니다(사용자 요청). 사진은 장소 상세에서 봅니다.
 });
 
 test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보여 준다', async ({ page }) => {
@@ -825,7 +829,7 @@ test('장비를 뺀 뒤에도 기록·일정을 고쳐 저장하면 예전 장�
   base.events = [{ ...base.events![0]!, gear_set_ids: ['set-1'] }];
   const db = await fakeBackend(page, base);
 
-  await page.goto('./records');
+  await openRecords(page);
   await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
   const record = page.getByRole('dialog', { name: '기록 수정' });
   await record.getByLabel('메모').fill('장비 칸 없이 고침');
@@ -857,4 +861,66 @@ test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기
   await page.goto('./settings');
   await expect(page.getByText('게스트 계정은 알림을 켤 수 없습니다.')).toBeVisible();
   await expectAccessible(page);
+});
+
+test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기타가 없다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  // 카카오 지도는 올리는 순간 핀 크기를 재어 기준점을 정합니다. 그때 핀 모양 클래스가 없으면 핀이 오른쪽 아래로 어긋납니다.
+  const classes = await page.evaluate(() => (window as unknown as { __overlayClasses: string[] }).__overlayClasses);
+  const pins = classes.filter((name) => name !== '' && !name.includes('map-popup'));
+  expect(pins.length).toBeGreaterThan(0);
+  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant)\b/);
+  const filters = page.getByRole('group', { name: '분류' });
+  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집']);
+});
+
+test('도감: 탭마다 따로 찾고, 어종 카드는 빅원을 잡은 날로 간다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    fish_catches: [
+      { id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 40, position: 0 },
+      { id: 'f2', record_id: 'r03', angler: '류 조사', species: '볼락', length_cm: 22, position: 0 },
+    ],
+  });
+  await page.goto('./dex');
+  const fishSearch = page.getByRole('searchbox', { name: /어종 찾기/ });
+  await fishSearch.fill('볼락');
+  await expect(page.getByRole('heading', { level: 3 })).toHaveText(['볼락']);
+  await expect(page.getByRole('button', { name: '어종 도감' })).toHaveCSS('font-weight', '700'); // 고른 탭은 굵게
+  await page.getByRole('button', { name: '메뉴 도감' }).click();
+  await expect(page.getByRole('searchbox', { name: /메뉴 찾기/ })).toHaveValue(''); // 메뉴 도감은 따로 찾습니다.
+  await page.getByRole('button', { name: '어종 도감' }).click();
+  await expect(fishSearch).toHaveValue('볼락');
+  await fishSearch.fill('없는물고기');
+  await expect(page.getByText("'없는물고기'에 맞는 어종이 없습니다.")).toBeVisible();
+  await fishSearch.fill('');
+  await page.getByRole('link', { name: /볼락/ }).click();
+  await expect(page).toHaveURL(/\/schedule\?date=2026-10-27/);
+});
+
+test('기록 카드: n박 n일을 쓰지 않고, 잡은 물고기는 메모 아래에 둔다. 전체 기록에 건수를 쓰지 않는다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, end_date: '2026-10-31', memo: '바람이 셌음' };
+  await fakeBackend(page, { ...base, fish_catches: [{ id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 40, position: 0 }] });
+  await openRecords(page);
+  const card = page.getByRole('article').filter({ hasText: '바람이 셌음' }).first();
+  await expect(card).toBeVisible();
+  const text = (await card.textContent()) ?? '';
+  expect(text).not.toMatch(/\d+박 \d+일/);
+  expect(text.indexOf('메모')).toBeLessThan(text.indexOf('잡은 물고기'));
+  await expect(page.getByText(/건 표시 중/)).toHaveCount(0);
+});
+
+test('기록 폼: 전에 잡은 어종을 눌러 고른다', async ({ page }) => {
+  await fakeBackend(page, { ...seed(), fish_catches: [{ id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 40, position: 0 }] });
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByRole('button', { name: '물고기 추가' }).click();
+  const fish = dialog.getByRole('group', { name: '물고기 1', exact: true });
+  await fish.getByRole('group', { name: '물고기 1 전에 잡은 어종' }).getByRole('button', { name: '감성돔' }).click();
+  await expect(fish.getByLabel('어종')).toHaveValue('감성돔');
+  await expect(fish.getByRole('button', { name: '감성돔' })).toHaveAttribute('aria-pressed', 'true');
 });
