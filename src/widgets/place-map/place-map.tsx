@@ -26,7 +26,7 @@ const createBasePin = () => {
   pin.className = 'pin pin-base';
   pin.setAttribute('role', 'img');
   pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
-  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}<span aria-hidden="true" class="pin-label">${BASE_PLACE.name}</span>`;
+  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}`; // 이름은 aria-label로만 알리고 핀 옆 이름표는 두지 않습니다.
   return pin;
 };
 

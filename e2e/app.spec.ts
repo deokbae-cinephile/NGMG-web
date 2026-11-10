@@ -383,7 +383,7 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.getByRole('link', { name: '통계' }).click();
-  await expect(page.getByRole('heading', { name: '김 조사 vs 류 조사' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '어종별 조과' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
@@ -572,7 +572,7 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toHaveCount(0);
   await page.goto('./stats');
   await expect(page.locator('dl dt').first()).toBeVisible();
-  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기', '맛집 방문', '맛집 지출']);
+  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기']);
 });
 
 test('장비: 라인은 원줄과 목줄로 나누어 고르고 옮긴다', async ({ page }) => {
@@ -779,7 +779,7 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
 });
 
-test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점 성향, 작년 비교, 최대어 기록 변화', async ({ page }) => {
+test('통계: 어종, 월별 어종, 장소별 조과율, 작년 비교, 최대어 기록 변화', async ({ page }) => {
   // 작년 비교는 오늘 날짜까지 세므로 시계를 고정합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -807,10 +807,6 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   await expect(tiles.getByText('작년 같은 기간 1회 (+2)')).toBeVisible();
   await expect(tiles.getByText('작년 같은 기간 1마리 (+2)')).toBeVisible();
 
-  const duel = page.getByRole('region', { name: '김 조사 vs 류 조사' });
-  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('감성돔 41cm')).toBeVisible();
-  await expect(duel.getByRole('region', { name: '김 조사' }).getByText('앞섬')).toHaveCount(2); // 마릿수, 최대어 (어종 수는 1종으로 같음)
-
   const species = page.getByRole('table', { name: /어종별/ });
   await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('2마리');
   await expect(species.getByRole('row', { name: /감성돔/ })).toContainText('새 어종');
@@ -819,8 +815,8 @@ test('통계: 대결, 어종, 월별 어종, 장소별 조과율, 맛집, 평점
   await expect(page.getByRole('region', { name: '월별 어종' }).getByText('감성돔 1마리 / 볼락 1마리')).toBeVisible();
   const rates = page.getByRole('table', { name: /장소별/ });
   await expect(rates.getByRole('row', { name: /거문도 방파제/ })).toContainText('50%');
-  await expect(page.getByRole('region', { name: '맛집' }).getByText('지출 합계 50,000원')).toBeVisible();
-  await expect(page.getByRole('region', { name: '평점 성향' }).getByText(/2점 차/)).toBeVisible();
+  // 사용자 요청으로 뺀 통계
+  for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
   const bests = page.getByRole('region', { name: '김 조사 최대어 기록 변화' });
   await expect(bests.getByRole('listitem')).toHaveCount(3); // 25 → 30 → 41
   await expectFits(page);

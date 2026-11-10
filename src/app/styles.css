@@ -947,16 +947,6 @@ body::after {
     cursor: default;
     pointer-events: none;
   }
-  .pin-label {
-    position: absolute;
-    left: calc(100% + 0.375rem);
-    border: 1px solid var(--color-ink);
-    background: var(--color-paper);
-    padding: 0 0.375rem;
-    color: var(--color-ink);
-    font-size: 0.8125rem;
-    white-space: nowrap;
-  }
   /* 지도 화면 맨 위 버튼 세 개. 좁은 화면에서도 한 줄에 들어가도록 안쪽 여백을 줄입니다. */
   .map-actions {
     display: flex;
