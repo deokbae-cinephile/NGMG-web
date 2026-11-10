@@ -630,6 +630,33 @@ test('기록 사진 여러 장은 슬라이드로 넘긴다', async ({ page }) =
   await expectAccessible(page);
 });
 
+test.describe('터치 화면', () => {
+  test.use({ hasTouch: true });
+  test('기록 사진은 손가락으로 밀어 넘긴다', async ({ page }) => {
+    // 화면 확대를 막는 touch-action: manipulation 아래에서도 옆으로 미는 동작을 브라우저가 가져가지 않아야 합니다.
+    await fakeBackend(page, {
+      ...seed(),
+      record_photos: [
+        { id: 'a', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
+        { id: 'b', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },
+      ],
+    });
+    await page.goto('./places/p1');
+    const slider = page.getByRole('region', { name: /기록 사진 2장/ });
+    await expect(slider.getByText('1 / 2')).toBeVisible();
+    await slider.scrollIntoViewIfNeeded();
+    const box = (await slider.boundingBox())!;
+    const y = box.y + box.height / 2;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x?: number) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: x === undefined ? [] : [{ x, y }] });
+    const start = box.x + box.width * 0.8;
+    await touch('touchStart', start);
+    for (let step = 1; step <= 10; step += 1) await touch('touchMove', start - box.width * 0.06 * step);
+    await touch('touchEnd');
+    await expect(slider.getByText('2 / 2')).toBeVisible();
+  });
+});
+
 test('일정 및 기록: 넓은 화면은 페이지 전체가 아니라 칸마다 스크롤한다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop');
   await fakeBackend(page, seed());

@@ -1246,6 +1246,9 @@ body::after {
   position: relative;
   width: 100%;
 }
+.photo-slider-viewport {
+  touch-action: pan-y;
+}
 .photo-slider-track {
   display: flex;
   width: 100%;
