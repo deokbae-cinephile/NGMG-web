@@ -64,15 +64,15 @@ test('로그인 화면: 틀리면 안내하고 맞으면 들어간다', async ({
   await expect(page.getByRole('heading', { name: '내 장소', exact: true })).toBeVisible();
 });
 
-test('첫 로딩: 벽을 밀고 로고가 드러난 뒤 앱이 열리고, 새로고침하면 다시 재생하지 않는다', async ({ page }) => {
+test('첫 로딩: 스플래시 로고가 보인 뒤 앱이 열리고, 새로고침하면 다시 보이지 않는다', async ({ page }) => {
   await fakeBackend(page, seed(), { intro: true });
   await page.goto('./');
-  await expect(page.locator('.intro-wall')).toBeAttached();
-  await expect(page.locator('.intro')).toBeHidden({ timeout: 8000 });
+  await expect(page.locator('.splash .logo')).toBeAttached();
+  await expect(page.locator('.splash')).toBeHidden({ timeout: 8000 });
   await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
-  await expect(page.locator('.intro-wall')).toHaveCount(0);
+  await expect(page.locator('.splash .logo')).toHaveCount(0);
 });
 
 test('지도: 검색으로 장소를 추가하고 필터를 기억한다', async ({ page }) => {
@@ -242,7 +242,7 @@ test('키보드: 본문 바로가기와 메뉴 이동이 동작한다', async ({
   await fakeBackend(page, seed());
   await page.goto('./schedule');
   await expect(page.getByRole('heading', { name: '달력' })).toBeVisible();
-  await expect(page.locator('.intro')).toHaveCount(0); // 첫 로딩이 덮는 동안에는 뒤 화면에 초점이 가지 않습니다.
+  await expect(page.locator('.splash')).toHaveCount(0); // 첫 화면이 덮는 동안에는 뒤 화면에 초점이 가지 않습니다.
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: '본문 바로가기' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -270,13 +270,11 @@ test('앱 설치 버튼은 메뉴 밖 오른쪽 아래에 떠 있다', async ({ 
 
   const install = (await button.boundingBox())!;
   const { width, height } = await page.evaluate(() => ({ width: document.documentElement.clientWidth, height: window.innerHeight }));
+  expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
   if (width < 1024) {
-    // 좁은 화면은 테마 전환 버튼이 맨 오른쪽 아래에 있고, 설치 버튼은 그 왼쪽에 놓입니다.
+    // 좁은 화면의 테마 전환 버튼은 왼쪽 아래에 있어 설치 버튼과 겹치지 않습니다.
     const theme = (await page.getByRole('button', { name: /테마로 바꾸기/ }).boundingBox())!;
-    expect(width - (theme.x + theme.width)).toBeLessThanOrEqual(20);
-    expect(install.x + install.width).toBeLessThanOrEqual(theme.x);
-  } else {
-    expect(width - (install.x + install.width)).toBeLessThanOrEqual(20);
+    expect(theme.x).toBeLessThanOrEqual(20);
   }
   expect(install.y + install.height).toBeGreaterThan(height - 120);
   if (testInfo.project.name === 'mobile') {

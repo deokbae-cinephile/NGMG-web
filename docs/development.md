@@ -95,7 +95,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 첫 로딩과 화면 전환
 
-- 첫 로딩(`src/app/intro.tsx`): 낚시꾼이 검은 벽을 밀고 지나가면 로고가 드러납니다. 탭마다 한 번만 재생하고(`sessionStorage`의 `ngmg:intro`), 움직임 줄이기 설정이면 재생하지 않습니다. `index.html`의 `#boot`가 자바스크립트를 받는 동안 같은 색을 보여 줍니다.
+- 첫 화면(`src/app/splash.tsx`): 가운데 로고만 놓인 스플래시가 앱이 준비될 때까지 보였다가 서서히 사라집니다. 탭마다 한 번만 로고를 보여 주고(`sessionStorage`의 `ngmg:intro`), 그 뒤에는 바탕만 덮었다가 바로 엽니다. `index.html`의 `#boot`가 같은 모습이라 자바스크립트를 받는 동안에도 이어집니다.
 - 화면 전환: 로그인 뒤 다른 메뉴의 코드를 미리 받고, 데이터가 오는 동안에는 스켈레톤(`src/shared/ui/skeleton.tsx`)으로 자리를 잡아 화면이 밀리지 않게 합니다.
 - 지도는 마지막으로 보던 곳에서 시작합니다(`map-view`). 저장된 위치가 없으면 무악재역에서 시작합니다.
 

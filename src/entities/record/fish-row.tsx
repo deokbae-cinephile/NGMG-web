@@ -1,5 +1,5 @@
 import type { FishCatch } from '@/shared/api';
-import { Icon, Photo } from '@/shared/ui';
+import { Icon } from '@/shared/ui';
 import { fishLabel } from './model';
 
 type Props = { fish: Pick<FishCatch, 'species' | 'length_cm' | 'angler' | 'photo_url'>; detail?: string };
@@ -9,7 +9,7 @@ export const FishRow = ({ fish, detail }: Props) => (
   <div className="flex items-center gap-3">
     {fish.photo_url ? (
       <a href={fish.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-        <Photo src={fish.photo_url} alt={`${fishLabel(fish)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line object-cover" />
+        <img src={fish.photo_url} alt={`${fishLabel(fish)} 사진 (새 창에서 크게 보기)`} loading="lazy" className="size-16 border border-line bg-surface object-cover" />
       </a>
     ) : (
       <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center bg-surface text-muted">

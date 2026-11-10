@@ -81,7 +81,7 @@ export const AllRecords = () => {
       </div>
       <div className="cell-body flex flex-col">
         <ErrorText error={error} />
-        {isPending && <SkeletonRows />}
+        {isPending && <SkeletonRows count={3} variant="record" />}
         {!isPending && !error && records.length === 0 && (
           <p className="text-muted">
             {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르거나 지난 일정에서 기록을 남길 수 있습니다.'}
@@ -106,21 +106,17 @@ export const AllRecords = () => {
             }
           />
         ))}
-        {/* 무한 스크롤: 이 표시가 화면 근처에 오면 다음 기록을 불러옵니다. */}
-        {hasNextPage && (
-          <div ref={more} role="status" className="flex min-h-16 items-center justify-center">
-            {isFetchNextPageError ? (
+        {/* 무한 스크롤: 이 자리가 화면 근처에 오면 다음 기록을 불러옵니다. 실패했을 때만 다시 불러오기 버튼이 나옵니다. */}
+        {hasNextPage &&
+          (isFetchNextPageError ? (
+            <div ref={more} className="flex justify-center py-4">
               <button type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
                 다시 불러오기
               </button>
-            ) : (
-              <>
-                <span className="sr-only">다음 기록을 불러오는 중입니다.</span>
-                <span aria-hidden="true" className="saving-spinner size-8!" />
-              </>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div ref={more} aria-hidden="true" className="h-px" />
+          ))}
       </div>
       {editing && (
         <Modal title="기록 수정" onClose={() => setEditing(undefined)}>

@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useFishDex, useMenuDex, type DexFish, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
-import { ErrorText, Icon, type IconName } from '@/shared/ui';
-import { buildDex, buildMenuDex, type DexEntry, type MenuDexEntry } from './model';
+import { CardGridSkeleton, ErrorText, Icon, type IconName } from '@/shared/ui';
+import { buildDex, buildMenuDex } from './model';
 import { useBatches } from './use-batches';
 
 const TABS = [
@@ -49,48 +49,28 @@ const DexCard = ({ number, title, icon, photo, to, children }: { number: number;
   );
 };
 
-/** 도감 자료를 받는 동안 카드가 들어올 자리를 보여 줍니다. */
+/** 도감 자료를 받는 동안 카드가 들어올 자리를 보여 줍니다. (탭 아래) */
 const DexSkeleton = () => (
   <div role="status">
     <span className="sr-only">불러오는 중입니다.</span>
-    <div aria-hidden="true" className="cell-head">
-      <span className="skeleton h-6 w-28" />
+    <div aria-hidden="true">
+      <CardGridSkeleton />
     </div>
-    <ol aria-hidden="true" className="dex-grid">
-      {Array.from({ length: 4 }, (_, index) => (
-        <li key={index} className="flex flex-col bg-paper">
-          <span className="skeleton aspect-[4/3] w-full" />
-          <span className="flex flex-col gap-2 p-4">
-            <span className="skeleton h-3.5 w-12" />
-            <span className="skeleton h-5 w-2/5" />
-            <span className="skeleton h-3.5 w-4/5" />
-            <span className="skeleton h-3.5 w-3/5" />
-          </span>
-        </li>
-      ))}
-    </ol>
   </div>
 );
 
 const NO_FISH: DexFish[] = [];
 const NO_MENU: DexMenu[] = [];
-const fishImage = (entry: DexEntry) => entry.big.photo_url;
-const menuImage = (entry: MenuDexEntry) => entry.photo;
 
-/** 끝까지 내리면 이어서 보여 주는 자리. 다음 카드의 사진을 받는 동안 돌아갑니다. */
-const DexEnd = ({ end }: { end: RefObject<HTMLDivElement | null> }) => (
-  <div ref={end} role="status" className="flex min-h-20 items-center justify-center">
-    <span className="sr-only">다음 도감을 불러오는 중입니다.</span>
-    <span aria-hidden="true" className="saving-spinner size-8!" />
-  </div>
-);
+/** 끝까지 내리면 다음 카드를 붙이는 자리 */
+const DexEnd = ({ end }: { end: RefObject<HTMLDivElement | null> }) => <div ref={end} aria-hidden="true" className="h-px" />;
 
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = () => {
   const { data = NO_FISH, isPending, error } = useFishDex();
   const entries = useMemo(() => buildDex(data), [data]);
-  const { visible, ready, more, end } = useBatches(isPending ? undefined : entries, fishImage);
-  if (!ready) return <DexSkeleton />;
+  const { visible, more, end } = useBatches(isPending ? undefined : entries);
+  if (isPending) return <DexSkeleton />;
 
   return (
     <>
@@ -106,7 +86,7 @@ const FishDex = () => {
             photo={
               big.photo_url ? (
                 <a href={big.photo_url} target="_blank" rel="noreferrer">
-                  <img src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} className="aspect-[4/3] w-full bg-surface object-cover" />
+                  <img src={big.photo_url} alt={`${species} 빅원 사진 (새 창에서 크게 보기)`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" />
                 </a>
               ) : undefined
             }
@@ -131,8 +111,8 @@ const FishDex = () => {
 const MenuDex = () => {
   const { data = NO_MENU, isPending, error } = useMenuDex();
   const entries = useMemo(() => buildMenuDex(data), [data]);
-  const { visible, ready, more, end } = useBatches(isPending ? undefined : entries, menuImage);
-  if (!ready) return <DexSkeleton />;
+  const { visible, more, end } = useBatches(isPending ? undefined : entries);
+  if (isPending) return <DexSkeleton />;
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
   return (
@@ -147,7 +127,7 @@ const MenuDex = () => {
             title={name}
             icon="food"
             to={`/schedule?date=${latest.record.visited_on}`}
-            photo={photo ? <img src={photo} alt={`${name} 사진`} className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
+            photo={photo ? <img src={photo} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
           >
             <dt className="mono-label">평점</dt>
             <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
@@ -173,7 +153,7 @@ export const DexPage = () => {
     <div>
       <title>도감 | 낚고먹고</title>
       <h1 className="sr-only">도감</h1>
-      <div role="group" aria-label="도감 고르기" className="grid grid-cols-2 border-b border-line">
+      <div role="group" aria-label="도감 고르기" className="sticky top-0 z-20 grid grid-cols-2 border-b border-line bg-paper">
         {TABS.map(({ value, label }) => (
           <button key={value} type="button" className="tab-button" aria-pressed={tab === value} onClick={() => setTab(value)}>
             {label}

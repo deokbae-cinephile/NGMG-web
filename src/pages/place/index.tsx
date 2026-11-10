@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, navigate } from '@/shared/lib';
-import { ErrorText, Modal, PageSkeleton, Photo } from '@/shared/ui';
+import { ErrorText, Modal, PageSkeleton } from '@/shared/ui';
 
 export const PlacePage = ({ id }: { id: string }) => {
   const places = usePlaces();
@@ -17,7 +17,7 @@ export const PlacePage = ({ id }: { id: string }) => {
   const place = places.data?.find((item) => item.id === id);
   const summary = summarizeRecords(records.data ?? []);
 
-  if (places.isPending) return <PageSkeleton />;
+  if (places.isPending) return <PageSkeleton variant="place" />;
   if (!place) {
     return (
       <div className="cell-body">
@@ -42,7 +42,7 @@ export const PlacePage = ({ id }: { id: string }) => {
         <div className="cell-head">
           <KindBadge kind={place.kind} />
         </div>
-        {place.photo_url && <Photo src={place.photo_url} alt={`${place.name} 사진`} className="aspect-[3/2] w-full border-b border-line object-cover" />}
+        {place.photo_url && <img src={place.photo_url} alt={`${place.name} 사진`} className="aspect-[3/2] w-full border-b border-line object-cover" />}
         <div className="cell-body flex flex-col gap-4">
           <h2 id="place-title" className="title border-b border-line pb-2 text-4xl lg:text-5xl">{place.name}</h2>
           <p className="text-lg">{place.address || '주소 없음'}</p>

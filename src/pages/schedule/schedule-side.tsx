@@ -66,7 +66,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
         <h3 id="recent-title" className="title text-lg px-5 pt-5 pb-3">최근 조과</h3>
         <div className="px-5 pb-5">
           <ErrorText error={recentFish.error} />
-          {recentFish.isPending && <SkeletonRows count={2} />}
+          {recentFish.isPending && <SkeletonRows count={2} variant="fish" />}
           {recentFish.data?.length === 0 && <p className="text-muted">아직 잡은 물고기가 없습니다. 낚시 기록에서 물고기를 추가해 보세요.</p>}
           <ul className="flex flex-col">
             {recentFish.data?.map((fish) => (

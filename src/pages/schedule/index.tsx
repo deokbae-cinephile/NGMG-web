@@ -121,7 +121,7 @@ export const SchedulePage = () => {
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
             <h3 id="events-title" className="sr-only">이날 일정</h3>
             <ErrorText error={dayEvents.error ?? remove.error} />
-            {dayEvents.isPending && <SkeletonRows count={2} />}
+            {dayEvents.isPending && <SkeletonRows count={2} variant="event" />}
             {!dayEvents.isPending && events.length === 0 && <p className="text-muted">일정이 없습니다.</p>}
             <ol className="flex flex-col">
               {events.map((event) => (
@@ -180,7 +180,7 @@ export const SchedulePage = () => {
           <section aria-labelledby="records-of-day" className="flex flex-col gap-2">
             <h3 id="records-of-day" className="title text-lg">기록</h3>
             <ErrorText error={dayRecords.error ?? recorded.error} />
-            {dayRecords.isPending && <SkeletonRows count={1} />}
+            {dayRecords.isPending && <SkeletonRows count={1} variant="record" />}
             {dayRecords.data?.length === 0 && <p className="text-muted">이날 남긴 기록이 없습니다.</p>}
             <div className="flex flex-col">
               {dayRecords.data?.map((record) => (

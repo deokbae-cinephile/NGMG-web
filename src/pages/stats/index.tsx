@@ -39,7 +39,7 @@ export const StatsPage = () => {
   const stats = summarize(records, year);
   const maxMonth = Math.max(1, ...stats.months);
 
-  if (isPending) return <PageSkeleton />;
+  if (isPending) return <PageSkeleton variant="stats" />;
 
   return (
     <div>
