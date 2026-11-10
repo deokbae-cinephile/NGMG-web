@@ -1,7 +1,7 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.29.0-2f7bd8)
+![version](https://img.shields.io/badge/version-1.30.0-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 장비와 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
@@ -17,7 +17,7 @@
 | 통계     | 연도별 출조 횟수, 맛집 방문, 월별 출조, 자주 간 장소, 조사별 마릿수와 최대어, 장비 세트별 출조·마릿수·최대어 |
 | 도감 | 어종 도감(번호, 빅원 길이, 잡은 조사, 마릿수)과 메뉴 도감(사진, 평점, 최근 가격, 장소, 먹은 횟수)을 탭으로 구분, 10개씩 이어 보기 |
 | 장비     | 조사별·분류별(로드, 릴, 라인(원줄·목줄), 채비, 미끼, 기타) 장비 목록, 끌어서 정렬, 브랜드, 사진, 사용 횟수, 장비 세트(만들기·불러와 고치기, 일정·기록에서 불러오기) |
-| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 앱 설치(PWA, 바로가기·설치 미리보기), 라이트·다크 테마(기기 설정을 따르고 버튼으로 전환), 맨 위로 버튼, 첫 화면 스플래시, 오프라인 캐시(신호가 약해도 마지막 화면과 기록 보기) |
+| 함께 쓰기 | 공용 계정 하나로 두 사람이 모든 데이터를 함께 보고 수정, 앱 설치(PWA, 바로가기·설치 미리보기), 라이트·다크 테마(기기 설정을 따르고 버튼으로 전환), 맨 위로 버튼, 첫 화면 스플래시, 오프라인 캐시(신호가 약해도 마지막 화면과 기록 보기), 출조 알림(전날 저녁 일정, 일요일 평점 대기) |
 
 ## 기술 스택
 
@@ -29,7 +29,7 @@
 | UI          | Tailwind CSS, 네이티브 dialog, Embla Carousel, 도현(Do Hyeon)                          |
 | 지도·검색   | Kakao Maps JavaScript SDK                                              |
 | 상태·데이터 | TanStack Query, React Hook Form                                        |
-| 서버        | Supabase (Postgres, RLS, Auth, Storage — postgrest-js, 로그인·사진 요청은 직접 구현) |
+| 서버        | Supabase (Postgres, RLS, Auth, Storage, Edge Functions, pg_cron — postgrest-js, 로그인·사진 요청은 직접 구현), 웹 푸시 |
 | 품질        | ESLint, Playwright, axe                                                |
 | 배포        | GitHub Pages(ngmg.kr), GitHub Actions                                  |
 

@@ -66,6 +66,8 @@ export const supabase = {
   auth,
   from: (table: string) => rest.from(table),
   storage: { from: bucket },
+  /** Edge Function 호출. 로그인 토큰과 공개 키를 붙입니다. */
+  functions: { fetch: (name: string, init?: RequestInit) => authedFetch(`${url}/functions/v1/${name}`, init) },
 };
 export const PHOTO_BUCKET = 'record-photos';
 /** 비공개 사진의 서명 주소 유효 시간(24시간). 탭을 오래 열어 두어도 사진이 깨지지 않고, 탭으로 돌아오면 목록과 함께 새로 받습니다. */

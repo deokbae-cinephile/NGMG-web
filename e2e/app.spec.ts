@@ -186,6 +186,8 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
   await expect(page.getByRole('button', { name: '7 일 (토), 2026년 11월, 일정 1건' })).toBeVisible();
+  // 출조 알림 줄: 서비스 워커가 없어도 버튼이 멈춰 있지 않습니다.
+  await expect(page.getByRole('button', { name: '알림 켜기' })).toBeEnabled();
   await expectFits(page);
   await expectAccessible(page);
 

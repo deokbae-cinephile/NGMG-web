@@ -80,6 +80,38 @@ const cacheFirst = async (event, name, key, request, max) => {
   return response;
 };
 
+// 알림(supabase/functions/notify): { title, body, url, tag }
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? '낚고먹고', {
+      body: data.body ?? '',
+      tag: data.tag,
+      icon: '/icon-192.png',
+      badge: '/favicon.png',
+      data: { url: data.url ?? '/' },
+    }),
+  );
+});
+
+// 알림을 누르면 열린 앱 창으로 가고, 없으면 새로 엽니다.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url ?? '/', self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
+      if (open) {
+        await open.focus();
+        // 이 서비스 워커가 맡지 않은 창은 navigate가 실패하므로 새 창으로 엽니다.
+        return open.navigate(url).catch(() => self.clients.openWindow(url));
+      }
+      return self.clients.openWindow(url);
+    })(),
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;

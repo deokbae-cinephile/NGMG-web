@@ -8,3 +8,7 @@ enable_signup = false
 [auth.email]
 # 이메일 로그인 자체를 켭니다. (예전 이름 enable_signup은 가입이 아니라 이 설정이었습니다.)
 enabled = true
+
+[functions.notify]
+# 예약 호출(pg_cron)은 비밀 값 헤더로, 테스트 알림은 로그인 토큰으로 함수 안에서 직접 확인합니다.
+verify_jwt = false

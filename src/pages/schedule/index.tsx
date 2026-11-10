@@ -4,6 +4,7 @@ import { useGearSets } from '@/entities/gear';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
+import { PushToggle } from '@/features/push-toggle';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
 import { formatDate, formatDayLabel, formatTimeRange, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
@@ -101,6 +102,7 @@ export const SchedulePage = () => {
           />
         </div>
         <ErrorText error={monthEvents.error} />
+        <PushToggle />
       </section>
 
       <section aria-labelledby="day-title" className="pane pane-day">
