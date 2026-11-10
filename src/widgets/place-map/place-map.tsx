@@ -284,6 +284,21 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     return () => overlay.setMap(null);
   }, [map, selected, popupHost]);
 
+  // 말풍선이 나중에 커지면(사진이 뜨거나 긴 주소) 위쪽이 지도 밖으로 잘리지 않게 지도를 그만큼 내립니다.
+  useEffect(() => {
+    const node = popup.current;
+    const area = container.current;
+    if (!map || !selected || !node || !area || typeof ResizeObserver === 'undefined') return;
+    const MARGIN = 8;
+    const fit = () => {
+      const top = node.getBoundingClientRect().top - area.getBoundingClientRect().top;
+      if (top < MARGIN) map.instance.panBy(0, top - MARGIN); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [map, selected]);
+
   // Esc로 팝업을 닫습니다.
   useEffect(() => {
     if (!selectedId) return;
