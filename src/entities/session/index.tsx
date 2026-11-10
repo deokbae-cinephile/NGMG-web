@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { supabase, type Session } from '@/shared/api';
 
 /** undefined는 확인 중, null은 로그아웃 상태입니다. */
@@ -28,9 +28,27 @@ export type Role = 'member' | 'guest' | 'none';
  * 로그인한 계정의 역할. 'guest'는 보기만 할 수 있고, 멤버 행이 없으면 'none'입니다(DB의 RLS가 쓰기를 막습니다).
  * 확인하는 동안(undefined)과 확인하지 못한 동안(error)에는 쓰기 버튼을 보이지 않습니다.
  */
+// 로그인한 사용자 id. 역할을 사용자마다 따로 기억해, 계정을 바꾸면 이전 계정의 역할을 쓰지 않습니다.
+let userId: string | null | undefined;
+const userListeners = new Set<() => void>();
+supabase.auth.onAuthStateChange((_event, session) => {
+  userId = session?.user.id ?? null;
+  userListeners.forEach((listener) => listener());
+});
+const useUserId = () =>
+  useSyncExternalStore(
+    (listener) => {
+      userListeners.add(listener);
+      return () => userListeners.delete(listener);
+    },
+    () => userId,
+  );
+
 export const useRole = () => {
+  const id = useUserId();
   const query = useQuery({
-    queryKey: ['session', 'role'],
+    queryKey: ['session', 'role', id],
+    enabled: Boolean(id),
     staleTime: Infinity,
     queryFn: async (): Promise<Role> => {
       const { data, error } = await supabase.from('members').select('role').limit(1);
