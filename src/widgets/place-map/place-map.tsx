@@ -102,6 +102,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [locateError, setLocateError] = useState('');
   const [locateNotice, setLocateNotice] = useState('');
   const myLocation = useRef<Kakao>(undefined);
+  const locateButton = useRef<HTMLButtonElement>(null);
   const dark = useTheme() === 'dark';
 
   const [popupHost] = useState(() => document.createElement('div'));
@@ -438,7 +439,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       >
         <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
-      <button type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
+      <button ref={locateButton} type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
         <Icon name="locate" size={22} />
       </button>
       <p role="status" className="sr-only">{locating ? '현재 위치를 찾는 중입니다.' : locateNotice}</p>
@@ -446,7 +447,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       {locateError && (
         <div className="map-locate-error">
           <p role="alert" className="min-w-0 flex-1">{locateError}</p>
-          <button type="button" className="map-popup-close" aria-label="위치 안내 닫기" onClick={() => setLocateError('')}>
+          <button type="button" className="map-popup-close" aria-label="위치 안내 닫기" onClick={() => {
+              setLocateError('');
+              locateButton.current?.focus(); // 닫기 단추가 사라지므로 초점을 현재 위치 단추로 돌려 둡니다.
+            }}>
             <Icon name="close" size={16} />
           </button>
         </div>

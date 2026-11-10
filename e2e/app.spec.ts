@@ -947,8 +947,10 @@ test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없�
   await expect(page.getByRole('alert')).toContainText('위치 권한이 꺼져 있습니다');
   await page.waitForTimeout(5500);
   await expect(page.getByRole('alert')).toBeVisible(); // 저절로 사라지지 않습니다.
-  await page.getByRole('button', { name: '위치 안내 닫기' }).click();
+  await page.getByRole('button', { name: '위치 안내 닫기' }).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '현재 위치로 이동' })).toBeFocused(); // 닫은 뒤 초점이 길을 잃지 않습니다.
 });
 
 test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 없다', async ({ page }) => {
