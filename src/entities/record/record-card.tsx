@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
-import { formatDateRange, formatStay } from '@/shared/lib';
+import { formatDateRange } from '@/shared/lib';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
@@ -43,7 +43,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="mono-label">
-            {[formatDateRange(record.visited_on, record.end_date), formatStay(record.visited_on, record.end_date)].filter(Boolean).join(' ')}
+            {formatDateRange(record.visited_on, record.end_date)}
             {record.weather && ` / ${record.weather}`}
           </p>
           {heading}
@@ -79,6 +79,13 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           </ul>
         </section>
       )}
+      {record.memo && (
+        <dl>
+          <dt className="mono-label">메모</dt>
+          <dd className="whitespace-pre-wrap break-words">{record.memo}</dd>
+        </dl>
+      )}
+      {/* 잡은 물고기는 메모 아래에 둡니다(사용자 요청). */}
       {record.fish.length > 0 && (
         <section aria-label={`${record.place.name} ${formatDateRange(record.visited_on, record.end_date)} 잡은 물고기`} className="flex flex-col gap-1.5">
           <p className="mono-label" aria-hidden="true">{`잡은 물고기 ${record.fish.length}마리`}</p>
@@ -90,12 +97,6 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
             ))}
           </ul>
         </section>
-      )}
-      {record.memo && (
-        <dl>
-          <dt className="mono-label">메모</dt>
-          <dd className="whitespace-pre-wrap break-words">{record.memo}</dd>
-        </dl>
       )}
       {record.photos.length > 0 && <RecordPhotos record={record} />}
     </article>

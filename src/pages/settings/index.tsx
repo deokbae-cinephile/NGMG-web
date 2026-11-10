@@ -27,9 +27,10 @@ const PendingRatingList = () => {
     <ul className="flex flex-col">
       {data.map((record) => (
         <li key={record.id} className="panel">
-          <Link to={`/schedule?date=${record.visited_on}`} className="flex flex-col">
+          <Link to={`/schedule?date=${record.visited_on}`} className="flex flex-col gap-0.5">
             <span className="mono-label">{formatDate(record.visited_on)}</span>
             <span className="underline underline-offset-4">{record.place.name}</span>
+            {record.waiting.length > 0 && <span className="text-sm text-muted">{`${record.waiting.join(', ')} 평점 필요`}</span>}
           </Link>
         </li>
       ))}

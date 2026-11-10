@@ -193,6 +193,15 @@ body::after {
     border-top: 0;
     padding-top: 0;
   }
+  /* 지도 목록에서 고른 장소로 옮길 때 위에 붙은 지도(휴대폰)나 칸 위쪽에 가리지 않게 띄웁니다. 휴대폰의 지도 높이는 지도 화면(map/index.tsx)과 같습니다. */
+  .place-item {
+    scroll-margin-top: calc(var(--spacing-topbar) + max(42dvh + 4rem, 16rem) + 0.5rem);
+  }
+  @media (width >= 64rem) {
+    .place-item {
+      scroll-margin-top: 0.5rem;
+    }
+  }
   /* 일정과 기록처럼 내용이 많은 항목은 위아래를 더 띄웁니다. */
   .panel-roomy {
     padding-block: 1.75rem;
@@ -382,12 +391,28 @@ body::after {
     justify-content: center;
     cursor: pointer;
   }
+  /* 도감 찾기 칸: 탭 바로 아래에 붙어 있습니다. */
+  .dex-search {
+    padding: 0.75rem 1.25rem;
+  }
+  /* 휴대폰의 전체 기록 여닫기 단추: 머리 칸 전체를 누를 수 있습니다. */
+  .records-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
   .tab-button + .tab-button {
     border-left: 1px solid var(--color-line);
   }
   .tab-button[aria-pressed='true'] {
     background: var(--color-accent);
     color: var(--color-on-accent);
+    font-weight: 700;
+    font-synthesis: weight; /* 한글 글꼴은 굵은 파일을 받지 않으므로 제목(.title)처럼 브라우저가 굵게 그립니다. */
   }
 
   .result {
@@ -738,6 +763,12 @@ body::after {
     }
   }
 
+  /* 휴대폰: 모아 보기 목록의 아래 선이 전체 기록의 위 선과 겹쳐 두 겹이 되지 않게 합니다. (모아 보기가 비어 있으면 그 칸의 위 선이 경계가 됩니다) */
+  @media (width < 64rem) {
+    .panes-schedule > .pane.pane-records {
+      border-top: 0;
+    }
+  }
   /* 일정 화면의 3칸은 아주 넓은 화면에서만 나란히 놓습니다. */
   /* 창이 좁은 PC: 왼쪽은 달력과 모아 보기, 오른쪽은 고른 날과 전체 기록. 칸마다 따로 스크롤합니다. */
   @media (64rem <= width < 80rem) {
@@ -816,7 +847,7 @@ body::after {
   :root[data-theme='dark'] .map img {
     filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9);
   }
-  /* 위 흑백·반전은 지도 바탕만을 위한 것입니다. 지도 위 정보 창의 물고기 사진은 원래 색으로 보여 줍니다(다크 테마 규칙보다 우선). */
+  /* 위 흑백·반전은 지도 바탕만을 위한 것입니다. 지도 위 정보 창에 그림이 들어가면 원래 색으로 보여 줍니다(다크 테마 규칙보다 우선). */
   .map .map-popup img {
     filter: none !important;
   }
@@ -829,7 +860,7 @@ body::after {
     width: 2.625rem;
     height: 3.25rem;
     justify-content: center;
-    padding-top: 0.77rem; /* 18px 아이콘의 중심을 핀 머리 원의 중심(위에서 약 21px)에 맞춥니다. */
+    padding-top: 0.94rem; /* 18px 아이콘의 중심을 핀 머리 원의 중심(위에서 약 24px)에 맞춥니다. */
     color: var(--color-ink);
     cursor: pointer;
     transform-origin: bottom center;
@@ -998,13 +1029,6 @@ body::after {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
     gap: 1rem 0.75rem;
-  }
-  .fish-photo-strip {
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.25rem;
-    margin-block: 0.25rem;
   }
   .map-popup {
     animation: popup-in 0.18s ease-out;
@@ -1246,16 +1270,22 @@ body::after {
   position: relative;
   width: 100%;
 }
-.photo-slider-viewport {
-  touch-action: pan-y pinch-zoom; /* 확대 여부는 페이지 전체 설정(html)을 그대로 따릅니다. */
-}
 .photo-slider-track {
   display: flex;
   width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain; /* 끝에서 더 밀어도 페이지가 옆으로 끌려가지 않게 합니다. */
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.photo-slider-track::-webkit-scrollbar {
+  display: none;
 }
 .photo-slider-track > li {
   min-width: 0;
   flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 세게 밀어도 한 장씩 넘깁니다. */
 }
 .photo-nav {
   position: absolute;

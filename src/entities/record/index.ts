@@ -12,6 +12,7 @@ export {
   RecordConflictError,
   useStatRecords,
   useFishDex,
+  useSpeciesOptions,
   useMenuDex,
   useSignedPhotos,
   usePlaceFishPhotos,

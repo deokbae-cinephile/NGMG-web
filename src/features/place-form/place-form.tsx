@@ -71,7 +71,7 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
     <form onSubmit={(event) => void handleSubmit(onValid)(event)} noValidate className="flex flex-col gap-5">
       <PlaceSearch onPick={fill} />
       <Field label="이름" error={errors.name?.message} {...register('name', { required: '이름을 입력해 주세요.', maxLength: { value: 100, message: '100자까지 입력할 수 있습니다.' } })} />
-      <KindFieldset register={register('kind')} />
+      <KindFieldset register={register('kind')} current={initial?.kind} />
       <Field label="주소" {...register('address')} />
       <div className="grid grid-cols-2 gap-3">
         <Field label="위도" inputMode="decimal" error={errors.latitude?.message} {...register('latitude', { validate: coordinate(90) })} />

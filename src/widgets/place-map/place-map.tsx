@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
-import { FishPhotoGrid, RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
+import { ALL_KINDS, BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge } from '@/entities/place';
+import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -19,7 +19,8 @@ type Props = {
 const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE.longitude, level: 5 };
 
 /** 물방울 모양 핀의 바탕. 지도 메뉴 아이콘과 같은 모양이고, 그림의 아래 끝이 장소 위치입니다. */
-const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 22" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
+// 그림의 아래 끝(뾰족한 끝, y≈22)을 상자 아래 끝에 맞춰(xMidYMax) 핀 끝이 정확히 장소 위치에 오게 합니다.
+const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 21" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
 
 const createBasePin = () => {
   const pin = document.createElement('div');
@@ -65,6 +66,9 @@ const pinOffsets = (places: Place[]) => {
 const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
   const pin = document.createElement('button');
   pin.type = 'button';
+  // 지도에 올리는 순간 카카오 지도가 핀 크기를 재어 기준점(가운데 아래)을 정하므로, 처음부터 핀 모양 클래스를 붙여 둡니다.
+  // (클래스 없이 올리면 작은 크기로 재어 핀이 오른쪽 아래로 어긋나고, 지도를 움직여 다시 재기 전까지 그대로입니다)
+  pin.className = `pin pin-${place.kind}`;
   pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 18);
   pin.setAttribute('aria-pressed', 'false');
   pin.title = place.name;
@@ -179,7 +183,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const { kakao, instance } = map;
     pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
     // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
-    const clusterers = KINDS.map(
+    const clusterers = ALL_KINDS.map(
       (kind) =>
         new kakao.maps.MarkerClusterer({
           map: instance,
@@ -230,8 +234,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
     // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
     const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
-    // 낚시 장소는 말풍선에 물고기 사진 줄이 붙어 더 내립니다.
-    const lift = selected.kind === 'fishing' ? 150 : 90;
+    // 말풍선 높이만큼 핀을 가운데보다 내립니다. (말풍선의 물고기 사진은 사용자 요청으로 뺐습니다. 사진은 장소 상세에서 봅니다)
+    const lift = 90;
     const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * lift, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
     const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
     const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
@@ -412,7 +416,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
-            {selected.kind === 'fishing' && <FishPhotoGrid placeId={selected.id} limit={3} compact />}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 자세히 보기

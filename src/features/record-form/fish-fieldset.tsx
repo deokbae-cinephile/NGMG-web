@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { ANGLERS, type FishInput } from '@/entities/record';
+import { ANGLERS, useSpeciesOptions, type FishInput } from '@/entities/record';
 import { RemovablePhoto } from '@/shared/ui';
 
 /** 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다. */
@@ -23,9 +23,12 @@ export const fishError = (fish: FishDraft) => {
   return undefined;
 };
 
-type ItemProps = { fish: FishDraft; index: number; showError: boolean; onChange: (fish: FishDraft) => void; onRemove: () => void };
+type ItemProps = { fish: FishDraft; index: number; showError: boolean; species: string[]; listId: string; onChange: (fish: FishDraft) => void; onRemove: () => void };
 
-const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => {
+/** 전에 저장한 어종 가운데 바로 누를 수 있게 보여 줄 개수 */
+const QUICK_SPECIES = 8;
+
+const FishItem = ({ fish, index, showError, species, listId, onChange, onRemove }: ItemProps) => {
   const id = useId();
   const label = `물고기 ${index + 1}`;
   const error = showError ? fishError(fish) : undefined;
@@ -48,7 +51,7 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
         <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${id}-species`} className="mono-label">어종</label>
-            <input id={`${id}-species`} className={control} maxLength={40} placeholder="예: 감성돔" value={fish.species} onChange={(event) => set({ species: event.target.value })} />
+            <input id={`${id}-species`} list={listId} className={control} maxLength={40} placeholder="예: 감성돔" value={fish.species} onChange={(event) => set({ species: event.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${id}-length`} className="mono-label">길이 (cm)</label>
@@ -67,6 +70,19 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
             />
           </div>
         </div>
+        {/* 전에 저장한 어종은 눌러서 고릅니다. 같은 이름으로 모여야 도감의 마릿수와 빅원이 한곳에 쌓입니다. 새 어종은 위 칸에 적습니다. */}
+        {species.length > 0 && (
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mono-label pb-1.5">{`${label} 전에 잡은 어종`}</legend>
+            <div className="flex flex-wrap gap-2">
+              {species.slice(0, QUICK_SPECIES).map((name) => (
+                <button key={name} type="button" className="button" aria-pressed={fish.species.trim() === name} onClick={() => set({ species: name })}>
+                  {name}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
         {error && <p id={`${id}-length-error`} className="text-sm text-danger">{error}</p>}
 
         <div className="flex flex-wrap items-end gap-3">
@@ -100,8 +116,17 @@ const FishItem = ({ fish, index, showError, onChange, onRemove }: ItemProps) => 
 type Props = { value: FishDraft[]; showErrors: boolean; onChange: (value: FishDraft[]) => void };
 
 /** 잡은 물고기: 조사, 어종, 길이, 사진 한 장. 여러 마리를 더할 수 있습니다. */
-export const FishFieldset = ({ value, showErrors, onChange }: Props) => (
+export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
+  const { data: species = [] } = useSpeciesOptions();
+  const listId = useId();
+  return (
   <section aria-labelledby="fish-title" className="flex flex-col gap-2 border-t border-line pt-4">
+    {/* 어종 칸에 적을 때도 전에 저장한 이름을 제안합니다. */}
+    <datalist id={listId}>
+      {species.map((name) => (
+        <option key={name} value={name} />
+      ))}
+    </datalist>
     <h3 id="fish-title" className="title text-lg">잡은 물고기</h3>
     {value.length === 0 && <p className="text-sm text-muted">물고기를 더하면 통계와 어종 도감에 쌓입니다.</p>}
     <ol className="flex flex-col">
@@ -111,6 +136,8 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => (
           fish={fish}
           index={index}
           showError={showErrors}
+          species={species}
+          listId={listId}
           onChange={(next) => onChange(value.map((item) => (item.id === fish.id ? next : item)))}
           onRemove={() => onChange(value.filter((item) => item.id !== fish.id))}
         />
@@ -120,4 +147,5 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => (
       물고기 추가
     </button>
   </section>
-);
+  );
+};

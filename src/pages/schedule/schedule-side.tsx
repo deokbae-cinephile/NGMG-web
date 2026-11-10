@@ -20,11 +20,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
   return (
     <section aria-label="일정과 조과 모아 보기" className="pane pane-side">
       <ErrorText error={upcoming.error ?? past.error ?? recorded.error} />
-      {upcoming.isPending && (
-        <div className="px-5">
-          <SkeletonRows count={3} />
-        </div>
-      )}
+      {upcoming.isPending && <SkeletonRows count={2} variant="upcoming" />}
       {upcoming.data && upcoming.data.length > 0 && (
         <section aria-labelledby="upcoming-title">
           {/* 다른 칸과 같은 머리(높이 61px, 세로 가운데)와 항목 여백(위아래 1rem)을 씁니다. */}

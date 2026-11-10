@@ -21,6 +21,7 @@ const skeletonFor = (pathname: string): PageVariant => {
   if (pathname === '/stats') return 'stats';
   if (pathname === '/dex') return 'dex';
   if (pathname.startsWith('/places/')) return 'place';
+  if (pathname === '/settings') return 'settings';
   return 'default';
 };
 
