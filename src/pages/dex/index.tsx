@@ -125,7 +125,7 @@ const MenuDex = () => {
       <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {visible.map(({ number, name, count, price, rating, latest, photoPath }) => {
+        {visible.map(({ number, name, count, price, rating, latest, photoPath, pending }) => {
           const photo = photoPath ? urls.get(photoPath) : undefined;
           return (
             <DexCard
@@ -137,7 +137,7 @@ const MenuDex = () => {
               photo={photo ? <img src={photo.thumb} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
             >
               <dt className="mono-label">평점</dt>
-              <dd>{rating === null ? '-' : `${rating.toFixed(1)}점`}</dd>
+              <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending ? `${pending} (평점 대기)` : '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
               <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
               <dt className="mono-label">시간 및 장소</dt>

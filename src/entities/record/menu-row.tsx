@@ -1,10 +1,10 @@
 import type { MenuItem } from '@/shared/api';
 import { Icon } from '@/shared/ui';
-import { isPartialRating, missingRaters } from './model';
+import { isPartialRating, missingRaters, ratingDetail } from './model';
 
-/** 메뉴 평점 글: 두 사람 평균, 한 사람만 줬으면 기다리는 사람, 예전 기록은 그때 준 평점 */
+/** 메뉴 평점 글: 두 사람 평균, 한 사람만 줬으면 준 평점과 기다리는 사람('류 조사 3.5점 / 김 조사 평점 대기'), 예전 기록은 그때 준 평점 */
 export const menuRatingText = (item: Pick<MenuItem, 'rating' | 'angler_ratings'>) => {
-  if (isPartialRating(item.angler_ratings)) return `평점 대기 (${missingRaters(item.angler_ratings).join(', ')})`;
+  if (isPartialRating(item.angler_ratings)) return `${ratingDetail(item.angler_ratings)} / ${missingRaters(item.angler_ratings).join(', ')} 평점 대기`;
   return item.rating === null ? '' : `평점 ${Number(item.rating).toFixed(1)}점`;
 };
 

@@ -235,7 +235,7 @@ export const useMenuDex = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('menu_items')
-          .select('id, name, price, rating, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
+          .select('id, name, price, rating, angler_ratings, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('도감을 불러오지 못했습니다.');
