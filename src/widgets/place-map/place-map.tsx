@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge, KINDS } from '@/entities/place';
-import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
+import { FishPhotoGrid, RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -216,7 +216,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
     // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
     const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
-    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * 90, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
+    // 낚시 장소는 말풍선에 물고기 사진 줄이 붙어 더 내립니다.
+    const lift = selected.kind === 'fishing' ? 150 : 90;
+    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * lift, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
     const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
     const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
     const near = selected.latitude <= north && selected.latitude >= south && selected.longitude <= east && selected.longitude >= west;
@@ -350,6 +352,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
+            {selected.kind === 'fishing' && <FishPhotoGrid placeId={selected.id} limit={3} compact />}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 자세히 보기

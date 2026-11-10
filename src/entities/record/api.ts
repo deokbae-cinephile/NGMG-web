@@ -192,6 +192,27 @@ export const useStatRecords = () =>
 
 export type RecentFish = FishCatch & { record: { visited_on: string; place: { name: string } } };
 
+export type PlaceFishPhoto = Pick<FishCatch, 'id' | 'angler' | 'species' | 'length_cm'> & { photo_path: string; visited_on: string };
+
+/** 한 장소에서 잡은 물고기 중 사진이 있는 것 (최근 순). 사진 주소는 보이는 것만 useSignedPhotos로 받습니다. */
+export const usePlaceFishPhotos = (placeId?: string) =>
+  useQuery({
+    queryKey: ['records', 'place-fish-photos', placeId],
+    enabled: Boolean(placeId),
+    queryFn: async (): Promise<PlaceFishPhoto[]> => {
+      const { data, error } = await supabase
+        .from('fish_catches')
+        .select('id, angler, species, length_cm, photo_path, record:records!inner(visited_on, place_id)')
+        .eq('record.place_id', placeId!)
+        .not('photo_path', 'is', null)
+        .limit(200);
+      if (error) throw new Error('물고기 사진을 불러오지 못했습니다.');
+      return (data as unknown as (PlaceFishPhoto & { record: { visited_on: string } })[])
+        .map(({ record, ...fish }) => ({ ...fish, length_cm: Number(fish.length_cm), visited_on: record.visited_on }))
+        .sort((a, b) => b.visited_on.localeCompare(a.visited_on) || b.length_cm - a.length_cm);
+    },
+  });
+
 /** 최근에 남긴 잡은 물고기 */
 export const useRecentFish = (limit = 8) =>
   useQuery({

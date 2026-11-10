@@ -104,7 +104,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         </dl>
       )}
       {menu.length > 0 && (
-        <section aria-label="메뉴" className="flex flex-col gap-1.5">
+        <section aria-label={`${formatDateRange(record.visited_on, record.end_date)} 메뉴`} className="flex flex-col gap-1.5">
           <p className="mono-label" aria-hidden="true">{`메뉴 ${menu.length}개`}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {menu.map((item) => (
@@ -116,7 +116,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         </section>
       )}
       {record.fish.length > 0 && (
-        <section aria-label="잡은 물고기" className="flex flex-col gap-1.5">
+        <section aria-label={`${formatDateRange(record.visited_on, record.end_date)} 잡은 물고기`} className="flex flex-col gap-1.5">
           <p className="mono-label" aria-hidden="true">{`잡은 물고기 ${record.fish.length}마리`}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {record.fish.map((fish) => (

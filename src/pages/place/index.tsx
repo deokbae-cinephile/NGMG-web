@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KindBadge, PlaceActions, useDeletePlace, usePlaces } from '@/entities/place';
-import { RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
+import { FishPhotoGrid, RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
 import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
@@ -59,6 +59,16 @@ export const PlacePage = ({ id }: { id: string }) => {
           </div>
           <ErrorText error={remove.error} />
         </div>
+        {place.kind === 'fishing' && (
+          <section aria-labelledby="place-fish-title" className="border-t border-line">
+            <div className="cell-head">
+              <h2 id="place-fish-title" className="title text-xl">잡은 물고기 사진</h2>
+            </div>
+            <div className="cell-body">
+              <FishPhotoGrid placeId={place.id} />
+            </div>
+          </section>
+        )}
       </section>
 
       <section aria-labelledby="place-records-title" className="pane">
