@@ -644,7 +644,7 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
 });
 
-test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 장소만 보여 준다', async ({ page }) => {
+test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
   // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -675,7 +675,11 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 장소�
 
   // 사용자 요청으로 뺀 통계
   for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: '자주 간 장소' })).toBeVisible();
+  // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나눕니다.
+  const spots = page.getByRole('region', { name: '자주 간 낚시 포인트' });
+  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*2마리\s*2번/, /가거도 갯바위\s*1마리\s*1번/]);
+  const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
+  await expect(restaurants.getByRole('listitem')).toHaveText([/바다횟집\s*평균 평점\s*4\.0\s*1번/]);
   await expectFits(page);
   await expectAccessible(page);
 });
