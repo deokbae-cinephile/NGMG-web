@@ -19,6 +19,15 @@ type AuthError = { status: number; code?: string; message: string };
 /** 갱신 토큰이나 세션을 더는 쓸 수 없다는 오류 코드. 이때만 로그아웃하고, 다른 실패(설정·프록시·일시 오류)는 다시 시도합니다. */
 const REVOKED = new Set(['refresh_token_not_found', 'refresh_token_already_used', 'session_not_found', 'session_expired', 'invalid_grant', 'validation_failed']);
 
+/** 계정에 딸린 서비스 워커 캐시. 앱 화면과 JS·CSS 캐시는 남깁니다. */
+const clearPrivateCaches = () => {
+  if (typeof caches === 'undefined') return;
+  void caches
+    .keys()
+    .then((names) => Promise.all(names.filter((name) => /^ngmg-(data|photos)-/.test(name)).map((name) => caches.delete(name))))
+    .catch(() => undefined);
+};
+
 /** 만료 1분 전부터 새 토큰을 받습니다. */
 const REFRESH_MARGIN = 60;
 const now = () => Math.floor(Date.now() / 1000);
@@ -61,6 +70,8 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
   };
 
   const set = (event: string, session: Session | null, store = true) => {
+    // 로그아웃하거나 다른 계정이 되면 앞 계정의 오프라인 캐시(DB 응답·사진, public/sw.js)를 지웁니다.
+    if (current && current.user.id !== session?.user.id) clearPrivateCaches();
     current = session;
     if (store) write(session);
     schedule();
