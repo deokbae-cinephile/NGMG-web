@@ -200,14 +200,21 @@ export const usePlaceFishPhotos = (placeId?: string) =>
     queryKey: ['records', 'place-fish-photos', placeId],
     enabled: Boolean(placeId),
     queryFn: async (): Promise<PlaceFishPhoto[]> => {
-      const { data, error } = await supabase
-        .from('fish_catches')
-        .select('id, angler, species, length_cm, photo_path, record:records!inner(visited_on, place_id)')
-        .eq('record.place_id', placeId!)
-        .not('photo_path', 'is', null)
-        .limit(200);
-      if (error) throw new Error('물고기 사진을 불러오지 못했습니다.');
-      return (data as unknown as (PlaceFishPhoto & { record: { visited_on: string } })[])
+      // 사진이 많아도 빠지지 않게 1000장씩 모두 받은 뒤 최근 순으로 정렬합니다.
+      const rows: (PlaceFishPhoto & { record: { visited_on: string } })[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from('fish_catches')
+          .select('id, angler, species, length_cm, photo_path, record:records!inner(visited_on, place_id)')
+          .eq('record.place_id', placeId!)
+          .not('photo_path', 'is', null)
+          .order('id')
+          .range(from, from + 999);
+        if (error) throw new Error('물고기 사진을 불러오지 못했습니다.');
+        rows.push(...(data as unknown as typeof rows));
+        if (data.length < 1000) break;
+      }
+      return rows
         .map(({ record, ...fish }) => ({ ...fish, length_cm: Number(fish.length_cm), visited_on: record.visited_on }))
         .sort((a, b) => b.visited_on.localeCompare(a.visited_on) || b.length_cm - a.length_cm);
     },
