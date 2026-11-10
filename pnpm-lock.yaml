@@ -166,8 +166,8 @@ importers:
 
   .:
     dependencies:
-      '@fontsource/do-hyeon':
-        specifier: ^5.3.0
+      '@fontsource/noto-sans-kr':
+        specifier: 5.3.0
         version: 5.3.0
       '@supabase/postgrest-js':
         specifier: 2.119.0
@@ -357,8 +357,8 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@fontsource/do-hyeon@5.3.0':
-    resolution: {integrity: sha512-j3h+Y2OIhTW8Bj+WwZ6g2vFG+2vy2kBN3G93N8FEx1vE1EZkg0+wZvjSjvrPsGt70TLUcr8fflIyRJgqDnEryg==}
+  '@fontsource/noto-sans-kr@5.3.0':
+    resolution: {integrity: sha512-/JnpTjaCOXW7xUoqOyCVYSr05VOkDy5Yla9O+WAEiS7u+yYLsmHoqj6v1W0bf91G8G3XA2+NnRS3CX2Tf/FVZg==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1886,7 +1886,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@fontsource/do-hyeon@5.3.0': {}
+  '@fontsource/noto-sans-kr@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
