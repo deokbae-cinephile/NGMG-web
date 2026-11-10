@@ -68,7 +68,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           ))}
         </nav>
       </header>
-      <main id="main" ref={main} tabIndex={-1} className="min-h-0 flex-1 pb-16 outline-none lg:overflow-y-auto lg:pb-0">
+      <main id="main" ref={main} tabIndex={-1} className="main-area min-h-0 flex-1 outline-none lg:overflow-y-auto">
         <Suspense fallback={<PageSkeleton variant={skeletonFor(pathname)} />}>
           {children}
         </Suspense>
