@@ -21,7 +21,7 @@ const Summary = ({ title, status, error }: { title: string; status: string; erro
 );
 
 /** 도감 한 칸. 사진이 없으면 아이콘을 보여 주고, to가 있으면 칸 전체가 링크입니다. */
-const DexCard = ({ number, title, icon, photo, to, children }: { number: number; title: string; icon: IconName; photo?: ReactNode; to?: string; children: ReactNode }) => {
+const DexCard = ({ number, title, icon, photo, to, children }: { number?: number; title: string; icon: IconName; photo?: ReactNode; to?: string; children: ReactNode }) => {
   const body = (
     <>
       {photo ?? (
@@ -30,7 +30,7 @@ const DexCard = ({ number, title, icon, photo, to, children }: { number: number;
         </span>
       )}
       <span className="flex flex-col gap-2 p-4">
-        <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>
+        {number !== undefined && <span className="mono-label">{`No.${String(number).padStart(3, '0')}`}</span>}
         <h3 className="title text-lg break-words">{title}</h3>
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-8 gap-y-1 text-[0.8125rem]">{children}</dl>
       </span>
@@ -125,12 +125,11 @@ const MenuDex = () => {
       <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
-        {visible.map(({ number, name, count, price, rating, latest, photoPath, pending }) => {
+        {visible.map(({ name, count, price, rating, latest, photoPath, pending }) => {
           const photo = photoPath ? urls.get(photoPath) : undefined;
           return (
             <DexCard
               key={name}
-              number={number}
               title={name}
               icon="food"
               to={`/schedule?date=${latest.record.visited_on}`}

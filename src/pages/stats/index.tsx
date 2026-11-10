@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { fishLabel, useStatRecords } from '@/entities/record';
-import { formatDate, toDateKey } from '@/shared/lib';
+import { formatDate } from '@/shared/lib';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { summarize, yearsOf } from './model';
 
@@ -54,22 +54,19 @@ const TableScroll = ({ label, children }: { label: string; children: ReactNode }
   </div>
 );
 
-const signed = (value: number) => (value > 0 ? `+${value}` : `${value}`);
 
 export const StatsPage = () => {
   const { data: records = [], isPending, error } = useStatRecords();
   const years = yearsOf(records);
   const [year, setYear] = useState(years[0] ?? new Date().getFullYear());
-  const stats = summarize(records, year, toDateKey(new Date()));
+  const stats = summarize(records, year);
   const maxMonth = Math.max(1, ...stats.months);
-  const { current, last, partial } = stats.compare;
-  const lastLabel = partial ? '작년 같은 기간' : '작년';
 
   if (isPending) return <PageSkeleton variant="stats" />;
 
   const tiles = [
-    { label: '출조 횟수', value: `${current.trips}`, unit: '회', note: `${lastLabel} ${last.trips}회 (${signed(current.trips - last.trips)})` },
-    { label: '잡은 물고기', value: `${current.fish}`, unit: '마리', note: `${lastLabel} ${last.fish}마리 (${signed(current.fish - last.fish)})` },
+    { label: '출조 횟수', value: `${stats.trips}`, unit: '회' },
+    { label: '잡은 물고기', value: `${stats.fish}`, unit: '마리' },
   ];
 
   return (
@@ -88,16 +85,15 @@ export const StatsPage = () => {
       </div>
       <ErrorText error={error} />
 
-      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. 올해는 오늘까지, 지난해는 한 해 전체를 작년과 비교합니다. */}
+      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. */}
       <dl className="grid grid-cols-2 gap-px border-b border-line bg-line ">
-        {tiles.map(({ label, value, unit, note }) => (
+        {tiles.map(({ label, value, unit }) => (
           <div key={label} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
             <dt className="mono-label">{label}</dt>
             <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
               <span className="display-number">{value}</span>
               <span>{unit}</span>
             </dd>
-            <dd className="text-sm text-muted">{note}</dd>
           </div>
         ))}
       </dl>

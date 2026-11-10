@@ -344,7 +344,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           setPreference('map-satellite', !satellite);
         }}
       >
-        <Icon name={satellite ? 'map' : 'satellite'} size={18} />
+        <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
       {selected &&
         createPortal(

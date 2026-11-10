@@ -1,6 +1,5 @@
 export * from './concurrency';
 export * from './date';
-export * from './geo';
 export * from './holidays';
 export * from './image';
 export * from './kakao';

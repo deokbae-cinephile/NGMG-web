@@ -56,20 +56,6 @@ export const placeCatchRates = (fishing: StatRecord[]) => {
     .sort((a, b) => b.trips - a.trips || b.average - a.average || a.name.localeCompare(b.name, 'ko'));
 };
 
-/** 작년 같은 기간과 비교. 올해면 오늘 날짜(월-일)까지, 지난해면 한 해 전체를 비교합니다. */
-export const compareLastYear = (records: StatRecord[], year: number, today: string) => {
-  const until = today.startsWith(String(year)) ? today.slice(5) : '12-31';
-  const period = (target: number) => {
-    const list = records.filter((record) => record.visited_on.startsWith(String(target)) && record.visited_on.slice(5) <= until);
-    const fishing = list.filter((record) => record.place.kind === 'fishing');
-    return {
-      trips: new Set(fishing.map((record) => record.visited_on)).size,
-      fish: fishing.reduce((sum, record) => sum + record.fish.length, 0),
-    };
-  };
-  return { current: period(year), last: period(year - 1), partial: until !== '12-31' };
-};
-
 /** 조사별 개인 최대어가 바뀐 기록 (모든 해, 최근 순) */
 export const personalBests = (fish: CaughtFish[]) =>
   ANGLERS.map((angler) => {
@@ -86,7 +72,7 @@ export const personalBests = (fish: CaughtFish[]) =>
   });
 
 /** 고른 해의 통계. 출조는 낚시 장소에 남긴 기록의 날짜 수로 셉니다. */
-export const summarize = (records: StatRecord[], year: number, today: string) => {
+export const summarize = (records: StatRecord[], year: number) => {
   const inYear = records.filter((record) => record.visited_on.startsWith(String(year)));
   const fishing = inYear.filter((record) => record.place.kind === 'fishing');
   const tripDays = new Set(fishing.map((record) => record.visited_on));
@@ -104,7 +90,6 @@ export const summarize = (records: StatRecord[], year: number, today: string) =>
     species: speciesStats(fish, before),
     monthSpecies: monthSpecies(fish),
     placeRates: placeCatchRates(fishing),
-    compare: compareLastYear(records, year, today),
     bests: personalBests(caught(records.filter((record) => record.place.kind === 'fishing'))),
   };
 };
