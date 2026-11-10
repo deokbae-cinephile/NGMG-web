@@ -26,13 +26,15 @@ export const removePhotos = async (paths: (string | null | undefined)[]) => {
 
 /**
  * 비공개 버킷이라 서명 주소를 받아 표시합니다. 썸네일이 없는 예전 사진은 썸네일 자리에도 원본 주소를 씁니다.
- * 원본과 썸네일 주소를 한 번의 요청으로 받습니다.
+ * 원본과 썸네일 주소를 한 번의 요청으로 받습니다. throwOnError면 서명 요청이 실패했을 때 오류를 던집니다.
  */
-export const signPhotos = async (paths: string[]) => {
+export const signPhotos = async (paths: string[], { throwOnError = false } = {}) => {
   const urls = new Map<string, PhotoUrls>();
   const unique = [...new Set(paths)];
   if (!unique.length) return urls;
-  const { data } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls([...unique, ...unique.map(thumbPath)], SIGNED_URL_SECONDS);
+  const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls([...unique, ...unique.map(thumbPath)], SIGNED_URL_SECONDS);
+  // 목록은 사진 없이도 보이므로 그대로 두고, 사진 주소만 따로 받는 곳(도감)은 실패를 알려 다시 받게 합니다.
+  if (error && throwOnError) throw error;
   const signed = new Map(data?.flatMap((item) => (item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : [])));
   unique.forEach((path) => {
     const url = signed.get(path);

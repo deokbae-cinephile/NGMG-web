@@ -14,7 +14,10 @@ export type Session = {
 };
 
 type Listener = (event: string, session: Session | null) => void;
-type AuthError = { status: number; message: string };
+type AuthError = { status: number; code?: string; message: string };
+
+/** 갱신 토큰이나 세션을 더는 쓸 수 없다는 오류 코드. 이때만 로그아웃하고, 다른 실패(설정·프록시·일시 오류)는 다시 시도합니다. */
+const REVOKED = new Set(['refresh_token_not_found', 'refresh_token_already_used', 'session_not_found', 'session_expired', 'invalid_grant', 'validation_failed']);
 
 /** 만료 1분 전부터 새 토큰을 받습니다. */
 const REFRESH_MARGIN = 60;
@@ -69,7 +72,7 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
       body: JSON.stringify(body),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) return { error: { status: response.status, message: data.msg ?? data.error_description ?? data.message ?? '' } };
+    if (!response.ok) return { error: { status: response.status, code: data.error_code ?? data.error, message: data.msg ?? data.error_description ?? data.message ?? '' } };
     return { session: { ...data, expires_at: data.expires_at ?? now() + data.expires_in } };
   };
 
@@ -87,7 +90,7 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
         const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: current.refresh_token });
         if (session) set('TOKEN_REFRESHED', session);
         // 갱신 토큰이 없어졌거나 이미 쓴 것이면 다시 로그인해야 합니다. 그 밖의 실패(요청 과다, 서버 오류)는 다시 시도합니다.
-        else if (error && [400, 401, 403].includes(error.status)) set('SIGNED_OUT', null);
+        else if (error && REVOKED.has(error.code ?? '')) set('SIGNED_OUT', null);
         else retryLater();
         return current;
       } catch {

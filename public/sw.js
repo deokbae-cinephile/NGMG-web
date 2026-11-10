@@ -2,11 +2,11 @@
  * 오프라인 캐시. 신호가 약한 바닷가에서도 앱이 뜨고, 마지막으로 본 기록과 사진을 볼 수 있게 합니다.
  * - 앱 화면(HTML): 네트워크 먼저, 늦거나 끊기면 저장해 둔 화면
  * - /assets/ (이름에 해시가 붙은 JS·CSS·글꼴): 저장해 둔 것 먼저
- * - DB 조회(GET /rest/v1/): 네트워크 먼저, 늦거나 끊기면 마지막 응답
+ * - DB 조회(GET /rest/v1/): 네트워크 먼저, 늦거나 끊기면 같은 계정의 마지막 응답
  * - 사진(서명 주소): 토큰을 뺀 경로로 저장해 두고 먼저 씀 (서명 주소는 받을 때마다 토큰이 바뀝니다)
  * 로그인, 저장(POST·PATCH·DELETE), 카카오 지도는 건드리지 않습니다.
  */
-const VERSION = 'v1';
+const VERSION = 'v2'; // v2: DB 응답을 계정별로 저장
 const SHELL = `ngmg-shell-${VERSION}`;
 const ASSETS = `ngmg-assets-${VERSION}`;
 const DATA = `ngmg-data-${VERSION}`;
@@ -14,6 +14,17 @@ const PHOTOS = `ngmg-photos-${VERSION}`;
 const KEEP = [SHELL, ASSETS, DATA, PHOTOS];
 /** 네트워크를 기다리는 최대 시간. 넘으면 저장해 둔 응답을 먼저 보여 줍니다. */
 const TIMEOUT = 3500;
+
+/** 요청 토큰(JWT)의 사용자 id. 로그인 전 요청(공개 키)은 'anon'입니다. 키를 나누는 데만 쓰고 검증은 서버가 합니다. */
+const account = (request) => {
+  try {
+    const token = (request.headers.get('Authorization') ?? '').replace(/^Bearer /, '');
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.sub ?? 'anon';
+  } catch {
+    return 'anon';
+  }
+};
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -84,7 +95,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.pathname.includes('/rest/v1/')) {
-    event.respondWith(networkFirst(event, DATA, request.url, 150));
+    // 다른 계정의 응답을 받지 않도록 요청 토큰의 사용자 id를 키에 넣습니다. 늦게 온 응답도 그 요청의 계정 자리에만 저장됩니다.
+    // Cache API는 주소의 # 뒤를 무시하므로 쿼리 값으로 붙입니다.
+    const key = new URL(request.url);
+    key.searchParams.set('__account', account(request));
+    event.respondWith(networkFirst(event, DATA, key.href, 150));
     return;
   }
   if (url.pathname.includes('/storage/v1/object/sign/')) {

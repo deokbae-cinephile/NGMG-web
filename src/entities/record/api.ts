@@ -227,7 +227,7 @@ export const useSignedPhotos = (paths: string[]) =>
   useQueries({
     queries: Array.from({ length: Math.ceil(paths.length / SIGN_BATCH) }, (_, index) => {
       const batch = paths.slice(index * SIGN_BATCH, (index + 1) * SIGN_BATCH);
-      return { queryKey: ['photo-urls', ...batch], queryFn: () => signPhotos(batch), staleTime: 3_600_000 };
+      return { queryKey: ['photo-urls', ...batch], queryFn: () => signPhotos(batch, { throwOnError: true }), staleTime: 3_600_000 };
     }),
     combine: (results) => new Map(results.flatMap((result) => [...(result.data ?? [])])),
   });
