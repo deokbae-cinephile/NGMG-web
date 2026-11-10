@@ -12,6 +12,7 @@ export {
   useStatRecords,
   useFishDex,
   useMenuDex,
+  useSignedPhotos,
   usePendingRatings,
   type DexFish,
   type FishInput,

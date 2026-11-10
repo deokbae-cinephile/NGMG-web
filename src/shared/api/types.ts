@@ -12,10 +12,12 @@ export type Place = {
   created_at?: string;
   /** 화면에 보여 줄 서명된 사진 주소 (저장하지 않습니다) */
   photo_url?: string;
+  /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
+  photo_thumb_url?: string;
 };
 
 /** 아직 저장하지 않았을 수 있는 장소. id가 있으면 저장된 장소입니다. */
-export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'photo_path' | 'photo_url' | 'created_at'> & { id?: string; memo?: string; photo_path?: string | null };
+export type PlaceDraft = Omit<Place, 'id' | 'memo' | 'photo_path' | 'photo_url' | 'photo_thumb_url' | 'created_at'> & { id?: string; memo?: string; photo_path?: string | null };
 
 export type RecordPhoto = { id: string; storage_path: string; position: number; url: string };
 
@@ -28,6 +30,8 @@ export type FishCatch = {
   photo_path: string | null;
   position: number;
   photo_url?: string;
+  /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
+  photo_thumb_url?: string;
 };
 
 /** 조사별 평점 (0.5점 단위, 0.5~5점). 준 사람만 들어 있습니다. */
@@ -44,6 +48,8 @@ export type MenuItem = {
   photo_path: string | null;
   position: number;
   photo_url?: string;
+  /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
+  photo_thumb_url?: string;
 };
 
 /** 조사의 장비 세트. items는 세트에 넣은 장비입니다. */
@@ -78,6 +84,8 @@ export type Gear = {
   position: number;
   created_at: string;
   photo_url?: string;
+  /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
+  photo_thumb_url?: string;
 };
 
 /** 기록의 자세한 항목. 낚시는 인원부터 수온까지, 맛집은 메뉴와 가격을 씁니다. */

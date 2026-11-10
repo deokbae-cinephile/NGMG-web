@@ -3,7 +3,7 @@ import type { PlaceRecord, RecordGearSet } from '@/shared/api';
 import { formatDateRange, formatStay } from '@/shared/lib';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
-import { RecordPhotos } from './photo-slider';
+import { RecordPhotos } from './record-photos';
 import { formatBait, formatGear, isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };

@@ -3,15 +3,11 @@ import { useEffect, useState } from 'react';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
+import { PhotoLink, photoAlt } from './photo-link';
 
-const PhotoLink = ({ url, alt }: { url: string; alt: string }) => (
-  <a href={url} target="_blank" rel="noreferrer" className="block">
-    <img src={url} alt={alt} loading="lazy" className="aspect-[4/3] w-full border border-line bg-surface object-cover" />
-  </a>
-);
 
-/** 사진이 한 장이면 그대로, 여러 장이면 끌거나 버튼으로 넘겨 봅니다. 사진을 누르면 새 창에서 크게 봅니다. */
-export const RecordPhotos = ({ record }: { record: PlaceRecord }) => {
+/** 여러 장의 사진을 끌거나 버튼으로 넘겨 봅니다. 슬라이드 코드(Embla)는 사진이 두 장 이상일 때만 받습니다(record-photos.tsx). */
+export const PhotoSlider = ({ record }: { record: PlaceRecord }) => {
   const date = formatDate(record.visited_on);
   const count = record.photos.length;
   const [viewport, slider] = useEmblaCarousel({ align: 'start' });
@@ -26,14 +22,7 @@ export const RecordPhotos = ({ record }: { record: PlaceRecord }) => {
     };
   }, [slider]);
 
-  const alt = (index: number) => `${date} 기록 사진 ${index + 1} (새 창에서 크게 보기)`;
-  if (count === 1) {
-    return (
-      <div className="w-full">
-        <PhotoLink url={record.photos[0]!.url} alt={alt(0)} />
-      </div>
-    );
-  }
+  const alt = (index: number) => photoAlt(date, index);
   return (
     <section aria-label={`${date} 기록 사진 ${count}장`} className="photo-slider">
       <div ref={viewport} className="overflow-hidden">

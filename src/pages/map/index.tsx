@@ -145,7 +145,7 @@ export const MapPage = () => {
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                       {distance !== null && <span className="text-sm">{`직선거리 ${formatDistance(distance)}`}</span>}
                     </span>
-                    {place.photo_url && <img src={place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />}
+                    {place.photo_url && <img src={place.photo_thumb_url ?? place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />}
                   </button>
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">

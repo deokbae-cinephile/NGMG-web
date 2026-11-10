@@ -1,6 +1,5 @@
-import type { Session } from '@supabase/auth-js';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/shared/api';
+import { supabase, type Session } from '@/shared/api';
 
 /** undefined는 확인 중, null은 로그아웃 상태입니다. */
 export const useSession = () => {

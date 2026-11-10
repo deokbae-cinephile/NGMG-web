@@ -22,7 +22,15 @@ const PlacePage = lazy(pages.place);
 const GearPage = lazy(pages.gear);
 const DexPage = lazy(pages.dex);
 
-const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
+// 조회는 offlineFirst: 오프라인이어도 한 번은 요청해 서비스 워커(public/sw.js)에 저장된 마지막 응답을 받습니다.
+// 오프라인에서 저장된 응답도 없으면 재시도를 연결이 돌아올 때까지 미뤄 로딩에 머무르므로, 오프라인이면 다시 시도하지 않고 오류로 끝냅니다.
+// 저장은 always: 오프라인에서 저장을 멈춰 두면 저장 중 화면이 잠기므로, 바로 보내 실패를 알립니다.
+const client = new QueryClient({
+  defaultOptions: {
+    queries: { retry: (count) => navigator.onLine && count < 1, staleTime: 30_000, networkMode: 'offlineFirst' },
+    mutations: { networkMode: 'always' },
+  },
+});
 
 const NotFound = () => (
   <div className="cell-body">
