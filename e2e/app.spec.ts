@@ -792,3 +792,27 @@ test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보�
   await expect(page.getByText('평점을 불러오는 중이라 이름순으로 보여 줍니다.')).toBeVisible({ timeout: 6000 });
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);
 });
+
+test('장비를 뺀 뒤에도 기록·일정을 고쳐 저장하면 예전 장비 값은 그대로 남는다', async ({ page }) => {
+  const base = seed();
+  const oldGear = { gear: '[다이와] 레가리스', rig: '구멍찌', bait: '크릴', gear_sets: [{ angler: '김 조사', name: '찌낚시 세트', items: [] }] };
+  base.records![0] = { ...base.records![0]!, ...oldGear };
+  base.events = [{ ...base.events![0]!, gear_set_ids: ['set-1'] }];
+  const db = await fakeBackend(page, base);
+
+  await page.goto('./records');
+  await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
+  const record = page.getByRole('dialog', { name: '기록 수정' });
+  await record.getByLabel('메모').fill('장비 칸 없이 고침');
+  await record.getByRole('button', { name: '저장' }).click();
+  await expect(record).toBeHidden();
+  expect(db.records!.find((row) => row.id === 'r00')).toMatchObject({ memo: '장비 칸 없이 고침', ...oldGear });
+
+  await page.goto('./schedule?date=2026-11-07');
+  await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
+  const event = page.getByRole('dialog', { name: '일정 수정' });
+  await event.getByLabel('메모').fill('고친 일정');
+  await event.getByRole('button', { name: '저장' }).click();
+  await expect(event).toBeHidden();
+  expect(db.events!.find((row) => row.id === 'e1')).toMatchObject({ memo: '고친 일정', gear_set_ids: ['set-1'] });
+});

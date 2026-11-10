@@ -500,12 +500,11 @@ body::after {
 
   /* 테마 전환 버튼: 넓은 화면은 머리글에서 메뉴 왼쪽에 놓입니다. 휴대폰은 설정에서 고릅니다. */
   .theme-toggle {
-    display: none !important;
+    display: none;
     position: fixed;
     bottom: calc(4.25rem + env(safe-area-inset-bottom));
     left: 0.75rem;
     z-index: 30;
-    display: flex;
     width: 2.75rem;
     height: 2.75rem;
     align-items: center;
@@ -523,7 +522,7 @@ body::after {
   }
   @media (width >= 64rem) {
     .theme-toggle {
-      display: flex !important;
+      display: flex;
       position: static;
       align-self: center;
       margin-left: auto;

@@ -1,36 +1,6 @@
-import { useSyncExternalStore } from 'react';
 import { Icon } from '@/shared/ui';
 
-type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
-
-// 설치 제안은 화면이 그려지기 전에 올 수 있어 모듈을 불러오는 즉시 받아 둡니다.
-let deferred: InstallPromptEvent | null = null;
-const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((listener) => listener());
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault(); // 브라우저의 기본 안내 대신 머리글의 설치 버튼으로 보여 줍니다.
-    deferred = event as InstallPromptEvent;
-    notify();
-  });
-  window.addEventListener('appinstalled', () => {
-    deferred = null;
-    notify();
-  });
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
-
-const install = async (prompt: InstallPromptEvent) => {
-  await prompt.prompt();
-  await prompt.userChoice;
-  deferred = null; // 한 번 쓴 제안은 다시 쓸 수 없습니다.
-  notify();
-};
+import { install, useInstallPrompt } from './install-prompt';
 
 /** 설치된 앱으로 열었는지 */
 const standalone = () =>
@@ -44,7 +14,7 @@ const apple = () => typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(
  * 아이폰은 공유 메뉴 안내를, 이미 설치한 앱에서는 그 사실을 보여 줍니다.
  */
 export const InstallSection = () => {
-  const prompt = useSyncExternalStore(subscribe, () => deferred, () => null);
+  const prompt = useInstallPrompt();
   if (standalone()) return <p className="text-sm text-muted">설치한 앱으로 보고 있습니다.</p>;
   if (prompt) {
     return (
