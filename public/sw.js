@@ -104,7 +104,8 @@ self.addEventListener('notificationclick', (event) => {
       const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
       if (open) {
         await open.focus();
-        return open.navigate(url);
+        // 이 서비스 워커가 맡지 않은 창은 navigate가 실패하므로 새 창으로 엽니다.
+        return open.navigate(url).catch(() => self.clients.openWindow(url));
       }
       return self.clients.openWindow(url);
     })(),

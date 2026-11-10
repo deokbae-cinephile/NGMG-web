@@ -48,7 +48,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 - 구독: `push_subscriptions` 표(멤버만 읽고 씀)
 - 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
-- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 11시에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. 둘 중 하나라도 없으면 부르지 않습니다.
+- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 11시에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. `notify_url`이 없으면 부르지 않고, `notify_cron_secret`이 없거나 함수의 `CRON_SECRET`과 다르면 함수가 403으로 거절합니다.
 
 새 프로젝트에서는 한 번만 준비합니다. 키와 비밀 값은 저장소에 넣지 않습니다.
 

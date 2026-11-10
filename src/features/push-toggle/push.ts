@@ -29,10 +29,15 @@ export const enablePush = async () => {
   const { publicKey } = (await keyResponse.json().catch(() => ({}))) as { publicKey?: string };
   if (!keyResponse.ok || !publicKey) throw new Error('알림 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   const reg = await registration();
-  const subscription = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
+  const existing = await reg.pushManager.getSubscription();
+  const subscription = existing ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
   const { endpoint, keys } = subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
   const { error } = await supabase.from('push_subscriptions').upsert({ endpoint, p256dh: keys.p256dh, auth: keys.auth });
-  if (error) throw new Error('알림 구독을 저장하지 못했습니다.');
+  if (error) {
+    // 서버에 없는 구독이 브라우저에만 남으면 '받는 중'으로 보이지만 알림이 오지 않으므로, 이번에 만든 구독은 되돌립니다.
+    if (!existing) await subscription.unsubscribe().catch(() => undefined);
+    throw new Error('알림 구독을 저장하지 못했습니다.');
+  }
   await supabase.functions.fetch('notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test: endpoint }) });
 };
 
