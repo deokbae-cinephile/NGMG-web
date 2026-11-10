@@ -585,6 +585,7 @@ body::after {
     gap: 0.5rem;
     border: 1px solid var(--color-ink);
     padding: 0 0.875rem;
+    font-size: 0.9375rem; /* 다른 버튼(.button)과 같은 크기 */
     cursor: pointer;
   }
   .choice:has(input:checked) {

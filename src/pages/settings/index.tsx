@@ -21,7 +21,7 @@ const PendingRatingList = () => {
   const { data = [], isPending, error } = usePendingRatings();
   if (isPending) return <SkeletonRows count={2} variant="list" />;
   if (error) return <ErrorText error={error} />;
-  if (!data.length) return <p className="text-muted">평점을 기다리는 기록이 없습니다.</p>;
+  if (!data.length) return <p className="text-sm text-muted">평점을 기다리는 기록이 없습니다.</p>;
   return (
     <ul className="flex flex-col">
       {data.map((record) => (
@@ -55,7 +55,7 @@ export const SettingsPage = () => (
       <InstallSection />
     </Section>
     <Section id="settings-about" title="앱 정보">
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2">
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2">
         <dt className="mono-label">버전</dt>
         <dd>{`v${APP_VERSION}`}</dd>
         <dt className="mono-label">배포</dt>

@@ -45,7 +45,7 @@ const apple = () => typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(
  */
 export const InstallSection = () => {
   const prompt = useSyncExternalStore(subscribe, () => deferred, () => null);
-  if (standalone()) return <p>설치한 앱으로 보고 있습니다.</p>;
+  if (standalone()) return <p className="text-sm text-muted">설치한 앱으로 보고 있습니다.</p>;
   if (prompt) {
     return (
       <div className="flex flex-col items-start gap-2">
@@ -57,6 +57,6 @@ export const InstallSection = () => {
       </div>
     );
   }
-  if (apple()) return <p>사파리의 공유 버튼을 누르고 '홈 화면에 추가'를 고르면 앱으로 설치됩니다.</p>;
-  return <p className="text-muted">이 브라우저에서는 바로 설치할 수 없습니다. 이미 설치했거나, 크롬·엣지·삼성 인터넷에서 열면 설치할 수 있습니다.</p>;
+  if (apple()) return <p className="text-sm text-muted">사파리의 공유 버튼을 누르고 '홈 화면에 추가'를 고르면 앱으로 설치됩니다.</p>;
+  return <p className="text-sm text-muted">이 브라우저에서는 바로 설치할 수 없습니다. 이미 설치했거나, 크롬·엣지·삼성 인터넷에서 열면 설치할 수 있습니다.</p>;
 };
