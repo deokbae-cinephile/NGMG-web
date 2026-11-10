@@ -87,7 +87,15 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
           return stored;
         }
         if (!current) return null;
-        const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: current.refresh_token });
+        const used = current.refresh_token;
+        const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: used });
+        // 기다리는 동안 새 로그인이나 다른 탭이 세션을 바꿨으면 이 응답은 버리고 바뀐 세션을 씁니다.
+        // 저장소를 못 읽으면(null) 이 탭의 세션만 봅니다.
+        const latest = read();
+        if (current?.refresh_token !== used || (latest && latest.refresh_token !== used)) {
+          if (latest && latest.refresh_token !== current?.refresh_token) set('TOKEN_REFRESHED', latest, false);
+          return current;
+        }
         if (session) set('TOKEN_REFRESHED', session);
         // 갱신 토큰이 없어졌거나 이미 쓴 것이면 다시 로그인해야 합니다. 그 밖의 실패(요청 과다, 서버 오류)는 다시 시도합니다.
         else if (error && REVOKED.has(error.code ?? '')) set('SIGNED_OUT', null);
