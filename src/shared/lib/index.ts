@@ -1,3 +1,4 @@
+export * from './concurrency';
 export * from './date';
 export * from './geo';
 export * from './holidays';

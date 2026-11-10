@@ -17,9 +17,22 @@ const demo = (): Plugin => ({
   },
 });
 
+// 글꼴 CSS의 옛 형식(woff) 대체 경로를 뺍니다. 지원하는 모든 브라우저가 woff2를 읽어 쓰이지 않고 CSS만 커집니다.
+const woff2Only = (): Plugin => ({
+  name: 'ngmg-woff2-only',
+  apply: 'build',
+  generateBundle(_, bundle) {
+    for (const [name, file] of Object.entries(bundle)) {
+      if (file.type !== 'asset') continue;
+      if (name.endsWith('.woff')) delete bundle[name];
+      else if (name.endsWith('.css')) file.source = String(file.source).replace(/,\s*url\([^)]*\.woff\)\s*format\(["']woff["']\)/g, '');
+    }
+  },
+});
+
 export default defineConfig(({ mode }) => ({
   base: '/', // GitHub Pages 사용자 도메인(ngmg.kr)의 루트
-  plugins: [react(), tailwindcss(), mode === 'demo' && demo()],
+  plugins: [woff2Only(), react(), tailwindcss(), mode === 'demo' && demo()],
   define:
     mode === 'demo'
       ? {
