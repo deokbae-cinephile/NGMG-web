@@ -25,7 +25,8 @@ export const PhotoSlider = ({ record }: { record: PlaceRecord }) => {
   const alt = (index: number) => photoAlt(date, index);
   return (
     <section aria-label={`${date} 기록 사진 ${count}장`} className="photo-slider">
-      <div ref={viewport} className="overflow-hidden">
+      {/* 옆으로 미는 동작은 슬라이드가 받고 세로 스크롤만 브라우저에 맡깁니다. (html의 touch-action: manipulation이 옆으로 미는 동작을 가져가 넘어가지 않았습니다) */}
+      <div ref={viewport} className="photo-slider-viewport overflow-hidden">
         <ul className="photo-slider-track">
           {record.photos.map((photo, index) => (
             // 보이지 않는 사진의 링크에는 키보드 초점이 가지 않게 합니다.

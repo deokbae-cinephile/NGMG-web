@@ -1246,6 +1246,9 @@ body::after {
   position: relative;
   width: 100%;
 }
+.photo-slider-viewport {
+  touch-action: pan-y pinch-zoom; /* 확대 여부는 페이지 전체 설정(html)을 그대로 따릅니다. */
+}
 .photo-slider-track {
   display: flex;
   width: 100%;

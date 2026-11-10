@@ -528,7 +528,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
     menu_items: [{ id: 'x1', record_id: 'm1', name: '모둠회', price: 30000, rating: 4, position: 0 }, { id: 'x2', record_id: 'm1', name: '매운탕', position: 1, angler_ratings: { '류 조사': 3.5 } }],
   });
   await page.goto('./dex');
-  await expect(page.getByRole('status').filter({ hasText: '2종 발견' })).toHaveText('2종 발견 / 총 4마리');
+  await expect(page.getByRole('heading', { name: '어종 도감' })).toBeVisible();
+  await expect(page.getByText(/종 발견|총 \d+마리/)).toHaveCount(0); // 집계 문구는 사용자 요청으로 뺐습니다.
   const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '감성돔' }) });
   await expect(card.getByText('42.5cm')).toBeVisible();
   await expect(card.getByText('류 조사')).toBeVisible();
@@ -539,7 +540,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expectFits(page);
   await expectAccessible(page);
   await page.getByRole('button', { name: '메뉴 도감' }).click();
-  await expect(page.getByRole('status').filter({ hasText: '2종 수집' })).toHaveText('2종 수집 / 총 2개');
+  await expect(page.getByRole('heading', { name: '메뉴 도감' })).toBeVisible();
+  await expect(page.getByText(/종 수집|총 \d+개/)).toHaveCount(0);
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
   // 메뉴 도감은 번호 없이 평점 높은 순입니다.
@@ -626,6 +628,33 @@ test('기록 사진 여러 장은 슬라이드로 넘긴다', async ({ page }) =
   await expect(slider.getByText('2 / 2')).toBeVisible();
   await expect(page.getByText('옆으로 넘겨 보기')).toHaveCount(0);
   await expectAccessible(page);
+});
+
+test.describe('터치 화면', () => {
+  test.use({ hasTouch: true });
+  test('기록 사진은 손가락으로 밀어 넘긴다', async ({ page }) => {
+    // 화면 확대를 막는 touch-action: manipulation 아래에서도 옆으로 미는 동작을 브라우저가 가져가지 않아야 합니다.
+    await fakeBackend(page, {
+      ...seed(),
+      record_photos: [
+        { id: 'a', record_id: 'r00', storage_path: 'r00/1.jpg', position: 0 },
+        { id: 'b', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },
+      ],
+    });
+    await page.goto('./places/p1');
+    const slider = page.getByRole('region', { name: /기록 사진 2장/ });
+    await expect(slider.getByText('1 / 2')).toBeVisible();
+    await slider.scrollIntoViewIfNeeded();
+    const box = (await slider.boundingBox())!;
+    const y = box.y + box.height / 2;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x?: number) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: x === undefined ? [] : [{ x, y }] });
+    const start = box.x + box.width * 0.8;
+    await touch('touchStart', start);
+    for (let step = 1; step <= 10; step += 1) await touch('touchMove', start - box.width * 0.06 * step);
+    await touch('touchEnd');
+    await expect(slider.getByText('2 / 2')).toBeVisible();
+  });
 });
 
 test('일정 및 기록: 넓은 화면은 페이지 전체가 아니라 칸마다 스크롤한다', async ({ page }, testInfo) => {

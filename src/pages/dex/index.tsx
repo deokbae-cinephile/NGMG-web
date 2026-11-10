@@ -10,11 +10,11 @@ const TABS = [
   { value: 'menu', label: '메뉴 도감' },
 ] as const;
 
-const Summary = ({ title, status, error }: { title: string; status: string; error: unknown }) => (
+/** 도감 머리. 몇 종·몇 마리 같은 집계는 사용자 요청으로 보여 주지 않습니다. */
+const Summary = ({ title, error }: { title: string; error: unknown }) => (
   <>
     <div className="cell-head">
       <h2 className="title text-xl">{title}</h2>
-      {!error && <p role="status" className="mono-label">{status}</p>}
     </div>
     <ErrorText error={error as Error | null} />
   </>
@@ -75,7 +75,7 @@ const FishDex = () => {
 
   return (
     <>
-      <Summary title="어종 도감" status={`${entries.length}종 발견 / 총 ${data.length}마리`} error={error} />
+      <Summary title="어종 도감" error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 낚시 기록에 잡은 물고기를 추가하면 어종이 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
         {visible.map(({ number, species, count, big }) => {
@@ -120,11 +120,10 @@ const MenuDex = () => {
   const { visible, more, end } = useBatches(isPending ? undefined : entries);
   const urls = useSignedPhotos(visible.flatMap(({ photoPath }) => photoPath ?? []));
   if (isPending) return <DexSkeleton />;
-  const total = entries.reduce((sum, entry) => sum + entry.count, 0);
 
   return (
     <>
-      <Summary title="메뉴 도감" status={`${entries.length}종 수집 / 총 ${total}개`} error={error} />
+      <Summary title="메뉴 도감" error={error} />
       {!error && entries.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 메뉴를 추가하면 하나씩 등록됩니다.</p>}
       <ol className="dex-grid">
         {visible.map(({ name, count, price, rating, latest, photoPath, pending }) => {
