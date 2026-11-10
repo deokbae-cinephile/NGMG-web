@@ -42,6 +42,24 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 무료 플랜은 오랫동안 접속이 없으면 프로젝트가 일시 중지될 수 있습니다. 그때는 대시보드에서 다시 시작합니다.
 
+## 알림 (웹 푸시)
+
+출조 전날 20시(내일 일정이 있을 때)와 일요일 20시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 일정 화면의 **출조 알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
+
+- 구독: `push_subscriptions` 표(멤버만 읽고 씀)
+- 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
+- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 11시에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. 둘 중 하나라도 없으면 부르지 않습니다.
+
+새 프로젝트에서는 한 번만 준비합니다. 키와 비밀 값은 저장소에 넣지 않습니다.
+
+```bash
+# VAPID 키(P-256)와 예약 호출 비밀 값을 만들어 함수 비밀 값으로 넣습니다.
+supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:관리자@도메인 CRON_SECRET=...
+supabase functions deploy notify --use-api
+# 예약 호출이 쓸 주소와 비밀 값(위 CRON_SECRET과 같은 값)을 Vault에 넣습니다.
+supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_cron_secret'); select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/notify', 'notify_url')"
+```
+
 ## Kakao 지도 준비
 
 1. [Kakao Developers](https://developers.kakao.com)에서 앱을 만들고 **카카오맵** 사용을 켭니다.
