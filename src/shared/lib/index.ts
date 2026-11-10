@@ -7,5 +7,6 @@ export * from './kakao';
 export * from './outbox';
 export * from './preferences';
 export * from './share';
+export * from './submit-lock';
 export * from './router';
 export * from './theme';

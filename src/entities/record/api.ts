@@ -437,15 +437,21 @@ export const useRecordOutbox = () => {
   const flush = useCallback(async () => {
     if (flushing || !navigator.onLine) return;
     flushing = true;
+    // 한 항목이 계속 실패해도(예: 그 사이 장소가 지워짐) 뒤 항목은 이어서 올립니다.
+    let failed = 0;
     try {
       for (const item of await outboxList<RecordInput>(OUTBOX_KIND)) {
-        await saveRecord({ ...item.payload, force: true });
-        await outboxRemove(item.id);
+        try {
+          await saveRecord({ ...item.payload, force: true });
+          await outboxRemove(item.id);
+        } catch {
+          failed += 1;
+        }
       }
-      setError('');
     } catch {
-      setError('저장 대기 중인 기록을 올리지 못했습니다. 잠시 뒤 다시 시도합니다.');
+      failed += 1; // 기기 저장소를 읽지 못했습니다.
     } finally {
+      setError(failed ? `저장 대기 중인 기록 ${failed}건을 올리지 못했습니다. 잠시 뒤 다시 시도합니다.` : '');
       flushing = false;
       void client.invalidateQueries({ queryKey: ['records'] });
     }

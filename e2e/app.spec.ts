@@ -860,3 +860,25 @@ test('기록: 오프라인에서 저장하면 대기열에 두었다가 연결�
   expect(db.records).toHaveLength(26);
   expect(db.records!.at(-1)!.memo).toBe('바다에서 쓴 기록');
 });
+
+test('기록: 저장을 빠르게 두 번 눌러도 한 번만 저장하고 가짜 충돌 안내가 뜨지 않는다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, updated_at: '2026-11-01T00:00:00+00:00' };
+  await fakeBackend(page, base);
+  const saves: string[] = [];
+  page.on('request', (request) => request.method() === 'POST' && request.url().includes('/rest/v1/records') && saves.push(request.url()));
+  const messages: string[] = [];
+  page.on('dialog', (dialog) => messages.push(dialog.message()));
+  await page.goto('./records');
+  await page.getByRole('button', { name: /2026년 10월 30일 .* 기록 수정/ }).click();
+  const dialog = page.getByRole('dialog', { name: '기록 수정' });
+  await dialog.getByLabel('메모').fill('한 번만');
+  // 화면이 다시 그려지기 전에 두 번 누릅니다(사람의 빠른 연속 클릭과 같음).
+  await dialog.getByRole('button', { name: '저장' }).evaluate((button: HTMLButtonElement) => {
+    button.click();
+    button.click();
+  });
+  await expect(dialog).toBeHidden();
+  expect(saves).toHaveLength(1);
+  expect(messages).toEqual([]);
+});

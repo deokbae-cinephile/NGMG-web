@@ -17,14 +17,18 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'method' }, 405);
   if (!env('CRON_SECRET') || request.headers.get('x-cron-secret') !== env('CRON_SECRET')) return json({ error: 'forbidden' }, 403);
 
-  const tables = await sql<{ name: string }[]>`
-    select table_name as name from information_schema.tables
-    where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name`;
-  const data: Record<string, unknown[]> = {};
-  for (const { name } of tables) {
-    const [row] = await sql<{ rows: unknown[] | null }[]>`select json_agg(t) as rows from ${sql('public.' + name)} t`;
-    data[name] = row?.rows ?? [];
-  }
+  // 모든 표를 같은 시점(한 읽기 전용 트랜잭션의 스냅샷)으로 읽어, 백업 중에 바뀐 표끼리 어긋나지 않게 합니다.
+  const { tables, data } = await sql.begin('isolation level repeatable read read only', async (tx) => {
+    const tables = await tx<{ name: string }[]>`
+      select table_name as name from information_schema.tables
+      where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name`;
+    const data: Record<string, unknown[]> = {};
+    for (const { name } of tables) {
+      const [row] = await tx<{ rows: unknown[] | null }[]>`select json_agg(t) as rows from ${tx('public.' + name)} t`;
+      data[name] = row?.rows ?? [];
+    }
+    return { tables, data };
+  });
   const createdAt = new Date().toISOString();
   const path = `${createdAt.slice(0, 10)}.json`;
   const body = JSON.stringify({ createdAt, tables: data });
@@ -34,7 +38,10 @@ Deno.serve(async (request) => {
   // 오래된 백업은 지웁니다.
   const old = await sql<{ name: string }[]>`
     select name from storage.objects where bucket_id = ${BUCKET} order by created_at desc offset ${KEEP}`;
-  if (old.length) await storage(`/object/${BUCKET}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: old.map((item) => item.name) }) });
+  if (old.length) {
+    const removal = await storage(`/object/${BUCKET}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: old.map((item) => item.name) }) });
+    if (!removal.ok) return json({ error: 'cleanup failed', path, status: removal.status, detail: await removal.text() }, 500);
+  }
 
   return json({ path, tables: tables.length, rows: Object.values(data).reduce((sum, rows) => sum + rows.length, 0), bytes: body.length, removed: old.length });
 });

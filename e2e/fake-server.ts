@@ -241,6 +241,7 @@ export const createFakeServer = (seed: Seed = {}) => {
       const created = [body].flat().map((value: Row) => {
         const defaults = DEFAULTS[table] ?? {};
         const row = withEndDate(table, { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` } as Row);
+        if (table === 'records') row.updated_at = new Date(Date.now() + nextId++).toISOString(); // DB 트리거처럼 저장할 때마다 바뀝니다.
         const index = rows.findIndex((item) => item.id === row.id || (item.storage_path && item.storage_path === value.storage_path));
         if (index >= 0) rows[index] = row;
         else rows.push(row);
