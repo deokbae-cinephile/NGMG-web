@@ -86,32 +86,43 @@ const cacheFirst = async (event, name, key, request, max) => {
 self.addEventListener('message', (event) => {
   const { type, urls } = event.data ?? {};
   if (type !== 'cache-assets' || !Array.isArray(urls)) return;
-  event.waitUntil(
-    (async () => {
-      const shell = await caches.open(SHELL);
-      if (!(await shell.match('/'))) {
-        try {
-          const response = await fetch('/', { cache: 'no-cache' });
-          if (response.ok) await shell.put('/', response);
-        } catch {
-          // 연결이 없으면 다음 기회에 저장합니다.
-        }
-      }
-      const cache = await caches.open(ASSETS);
-      for (const raw of urls) {
-        const url = new URL(raw, self.location.origin);
-        if (url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) continue;
-        if (await cache.match(url.href, { ignoreVary: true })) continue;
-        try {
-          const response = await fetch(url.href);
-          if (response.ok) await put(ASSETS, url.href, response, 400);
-        } catch {
-          // 연결이 없으면 다음 기회에 저장합니다.
-        }
-      }
-    })(),
-  );
+  // 앱 화면 저장과 코드 저장은 따로 진행합니다(앱 화면 요청이 늦어도 코드 저장을 막지 않게).
+  event.waitUntil(Promise.all([cacheShell(), cacheAssets(urls)]));
 });
+
+/** 앱 화면(HTML)을 저장합니다. 한 번에 5초까지 기다리고, 실패(오류 응답 포함)하면 2초·8초 뒤 다시 시도합니다. */
+const cacheShell = async () => {
+  const shell = await caches.open(SHELL);
+  for (const delay of [0, 2000, 8000]) {
+    if (delay) await new Promise((done) => setTimeout(done, delay));
+    if (await shell.match('/')) return;
+    try {
+      const response = await fetch('/', { cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+      if (response.ok) {
+        await shell.put('/', response);
+        return;
+      }
+    } catch {
+      // 연결이 없거나 늦으면 잠시 뒤 다시 시도합니다.
+    }
+  }
+};
+
+/** 아직 저장하지 않은 /assets/ 코드만 받아 저장합니다. 받지 못한 것은 건너뜁니다. */
+const cacheAssets = async (urls) => {
+  const cache = await caches.open(ASSETS);
+  for (const raw of urls) {
+    const url = new URL(raw, self.location.origin);
+    if (url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) continue;
+    if (await cache.match(url.href, { ignoreVary: true })) continue;
+    try {
+      const response = await fetch(url.href);
+      if (response.ok) await put(ASSETS, url.href, response, 400);
+    } catch {
+      // 연결이 없으면 다음 기회에 저장합니다.
+    }
+  }
+};
 
 // 알림(supabase/functions/notify): { title, body, url, tag }
 self.addEventListener('push', (event) => {
