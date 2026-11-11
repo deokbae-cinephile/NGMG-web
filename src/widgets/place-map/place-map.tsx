@@ -97,6 +97,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [error, setError] = useState(false);
   const [tilesReady, setTilesReady] = useState(false);
   const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
+  const [legendOpen, setLegendOpen] = useState(() => getPreference('map-legend-open', true));
   // 현재 위치: 누를 때만 위치를 묻고, 지도에 파란 점으로 표시한 뒤 그곳으로 옮깁니다.
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState('');
@@ -421,11 +422,26 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 지도를 감춘 동안에는 바탕색이 보입니다.
     <div className="relative h-full w-full bg-surface">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-loading'}`} />
+      {/* 평점 색 안내는 '평점' 단추로 여닫습니다. 고른 상태는 기억합니다. */}
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
-        <strong className="font-normal">평점</strong>
-        {[1, 2, 3, 4, 5].map((score) => (
-          <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
-        ))}
+        <button
+          type="button"
+          className="map-legend-toggle"
+          aria-expanded={legendOpen}
+          aria-controls="map-legend-scale"
+          onClick={() => {
+            setLegendOpen(!legendOpen);
+            setPreference('map-legend-open', !legendOpen);
+          }}
+        >
+          평점
+          <Icon name={legendOpen ? 'chevronLeft' : 'chevronRight'} size={16} />
+        </button>
+        <span id="map-legend-scale" className="map-legend-scale" hidden={!legendOpen}>
+          {[1, 2, 3, 4, 5].map((score) => (
+            <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
+          ))}
+        </span>
       </div>
       <button
         type="button"

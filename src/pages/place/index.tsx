@@ -47,7 +47,6 @@ export const PlacePage = ({ id }: { id: string }) => {
         <div className="cell-body flex flex-col gap-4">
           <h2 id="place-title" className="title border-b border-line pb-2 text-4xl lg:text-5xl">{place.name}</h2>
           <p className="text-lg">{place.address || '주소 없음'}</p>
-          <p className="mono-label">{`${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`}</p>
           {place.memo && <p className="whitespace-pre-wrap break-words">{place.memo}</p>}
           <PlaceActions place={place} />
           <Writable>

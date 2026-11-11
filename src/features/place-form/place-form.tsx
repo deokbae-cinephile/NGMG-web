@@ -16,8 +16,9 @@ type Values = {
 
 type Props = { initial?: Partial<PlaceDraft> & { photo_url?: string }; onDone: () => void };
 
+/** 위도·경도는 화면에 보이지 않고, 장소 검색이나 지도에서 위치를 고르면 채워집니다. 비었으면 위치를 고르라고 안내합니다. */
 const coordinate = (max: number) => (value: string) =>
-  (value.trim() !== '' && Math.abs(Number(value)) <= max) || `-${max}에서 ${max} 사이의 숫자를 입력해 주세요.`;
+  (value.trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= max) || '위치가 없습니다. 위에서 장소를 검색해 고르거나, 지도에서 위치를 지정해 주세요.';
 
 export const PlaceForm = ({ initial, onDone }: Props) => {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
@@ -40,8 +41,8 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
     setValue('name', place.name);
     setValue('kind', place.kind);
     setValue('address', place.address);
-    setValue('latitude', String(place.latitude));
-    setValue('longitude', String(place.longitude));
+    setValue('latitude', String(place.latitude), { shouldValidate: true });
+    setValue('longitude', String(place.longitude), { shouldValidate: true });
   };
 
   const onValid = (values: Values) => {
@@ -73,10 +74,14 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
       <Field label="이름" error={errors.name?.message} {...register('name', { required: '이름을 입력해 주세요.', maxLength: { value: 100, message: '100자까지 입력할 수 있습니다.' } })} />
       <KindFieldset register={register('kind')} current={initial?.kind} />
       <Field label="주소" {...register('address')} />
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="위도" inputMode="decimal" error={errors.latitude?.message} {...register('latitude', { validate: coordinate(90) })} />
-        <Field label="경도" inputMode="decimal" error={errors.longitude?.message} {...register('longitude', { validate: coordinate(180) })} />
-      </div>
+      {/* 위도·경도는 화면에 보이지 않게 둡니다(사용자 요청). */}
+      <input type="hidden" {...register('latitude', { validate: coordinate(90) })} />
+      <input type="hidden" {...register('longitude', { validate: coordinate(180) })} />
+      {(errors.latitude ?? errors.longitude) && (
+        <p role="alert" className="text-sm text-danger">
+          {(errors.latitude ?? errors.longitude)?.message}
+        </p>
+      )}
       <TextareaField label="메모" {...register('memo')} />
       {initial?.photo_url && !photo && !removePhoto && (
         <RemovablePhoto src={initial.photo_url} alt="지금 장소 사진" removeLabel="장소 사진 삭제" onRemove={() => setRemovePhoto(true)} />
