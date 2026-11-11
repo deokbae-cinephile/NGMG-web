@@ -106,7 +106,14 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 1.1.0부터 [시맨틱 버저닝](https://semver.org/lang/ko/)을 따릅니다. 버그 수정은 PATCH, 기능 추가는 MINOR, 호환이 깨지는 변경은 MAJOR를 올립니다.
 
 1. PR 안에서 `package.json`의 `version`, README 배지·상태 줄, `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다. 설정의 앱 정보는 `package.json` 버전을 그대로 보여 줍니다.
-2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다(`gh release create vX.Y.Z --notes-file`).
+2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다.
+
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   # CHANGELOG에서 '## X.Y.Z' 절만 잘라 임시 파일로 만든 뒤 릴리스 노트로 씁니다.
+   awk '/^## X\.Y\.Z/{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > /tmp/release-notes.md
+   gh release create vX.Y.Z --title vX.Y.Z --notes-file /tmp/release-notes.md --latest
+   ```
 3. Edge Function(`notify`, `backup`)을 고쳤으면 merge 뒤 `supabase functions deploy <이름> --use-api`로 함께 배포합니다.
 
 ## 테스트
