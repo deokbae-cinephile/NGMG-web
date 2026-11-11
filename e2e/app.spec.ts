@@ -153,6 +153,7 @@ test('아이콘 단추: 모든 화면에서 아이콘이 실제 크기로 보인
     for (const [url, ready] of [['./', '장소 추가'], ['./schedule?date=2026-11-07', '오늘'], ['./items', '물품 추가'], ['./places/p1', '장소 수정']] as const) {
       await page.goto(url);
       await expect(page.getByRole('button', { name: ready, exact: true }).first()).toBeAttached();
+      await expect.poll(() => page.locator('.icon-only, .map-tool').count(), { message: `${url}에 검사할 아이콘 단추가 없습니다` }).toBeGreaterThan(0);
       const broken = await page.locator('.icon-only, .map-tool').evaluateAll((buttons) =>
         buttons
           .filter((button) => (button as HTMLElement).offsetParent !== null)

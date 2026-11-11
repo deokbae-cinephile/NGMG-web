@@ -84,13 +84,14 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label={`${label} 가격 (원)`}
-                  // 숫자 칸(type=number)은 초점이 있을 때 마우스 휠로 값이 바뀌므로 글자 칸에 숫자 키패드만 띄웁니다. 숫자 외 글자는 지웁니다.
+                  // 숫자 칸(type=number)은 초점이 있을 때 마우스 휠로 값이 바뀌므로 글자 칸에 숫자 키패드만 띄웁니다.
+                  // 쉼표·공백·'원'만 지우고, 소수점·음수 같은 잘못된 값은 바꾸지 않고 저장할 때 오류로 알립니다.
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
                   value={row.price}
                   error={showErrors ? priceError(row) : undefined}
-                  onChange={(event) => set(row.id, { price: event.target.value.replace(/\D/g, '') })}
+                  onChange={(event) => set(row.id, { price: event.target.value.replace(/[,\s원]/g, '') })}
                 />
               </div>
               <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />
