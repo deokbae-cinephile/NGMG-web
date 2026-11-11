@@ -54,11 +54,7 @@ export const expectAccessible = async (page: Page) => {
   await page.waitForTimeout(200);
   // 화면 확대 막기(meta-viewport)는 사용자 결정이라 검사에서 뺍니다(WCAG 1.4.4 위반임을 알고 정함, 2026-11-10).
   const { violations } = await new AxeBuilder({ page }).disableRules(['meta-viewport']).analyze();
-  // 빼기 단추의 포인트 색 글자는 CI 색(#b8e994)을 그대로 쓰는 사용자 결정이라 명도 대비 위반에서만 뺍니다(2026-11-12).
-  const found = violations.flatMap((item) => {
-    const nodes = item.id === 'color-contrast' ? item.nodes.filter((node) => !node.html.includes('text-action-accent')) : item.nodes;
-    return nodes.length ? [`${item.id}: ${nodes.map((node) => node.target).join(' | ')}`] : [];
-  });
+  const found = violations.flatMap((item) => (item.nodes.length ? [`${item.id}: ${item.nodes.map((node) => node.target).join(' | ')}`] : []));
   expect(found).toEqual([]);
 };
 
