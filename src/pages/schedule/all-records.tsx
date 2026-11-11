@@ -92,7 +92,7 @@ export const AllRecords = () => {
       <div className="cell-body flex flex-col">
         {/* 입력하는 대로 찾으므로, 찾기를 마치면 결과를 화면 읽기 프로그램에 알립니다(늘 있는 상태 영역). */}
         <p role="status" className="sr-only">
-          {!keyword || isFetching
+          {!keyword || isFetching || error // 실패는 오류 문구가 알리므로 '없습니다'로 알리지 않습니다.
             ? ''
             : records.length
               ? `'${keyword}'이(가) 들어간 기록 ${records.length}건${hasNextPage ? ' 이상' : ''}을 찾았습니다.`
