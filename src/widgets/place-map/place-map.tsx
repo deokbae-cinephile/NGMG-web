@@ -469,13 +469,14 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           <button
             type="button"
             className="button button-primary map-pick-center"
+            disabled={!map} // 지도를 받기 전에는 가운데를 알 수 없어 누를 수 없게 하고, 글자로 기다리라고 알립니다.
             onClick={() => {
               if (!map) return;
               const center = map.instance.getCenter();
               latest.current.onPick(center.getLat(), center.getLng());
             }}
           >
-            가운데로 위치 지정
+            {map ? '가운데로 위치 지정' : '지도를 불러오는 중'}
           </button>
         </>
       )}

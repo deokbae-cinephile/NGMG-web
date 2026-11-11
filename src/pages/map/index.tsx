@@ -30,6 +30,7 @@ export const MapPage = () => {
   const [picking, setPicking] = useState(false);
   // 지도에서 위치 옮기기: 고른 장소의 새 위치를 지도에서 누르면, 좌표와 주소를 바꾼 수정 창을 엽니다(좌표는 화면에 쓰지 않음).
   const [moving, setMoving] = useState<Place>();
+  const pickRequest = useRef(0);
   const [editDraft, setEditDraft] = useState<{ place: Partial<PlaceDraft>; addressHint?: string }>();
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
@@ -67,10 +68,13 @@ export const MapPage = () => {
 
   const onPick = async (latitude: number, longitude: number) => {
     setPicking(false);
+    // 위치를 고를 때마다 번호를 매겨, 주소 조회가 늦게 끝나도 가장 최근 고른 것만 창에 씁니다.
+    const request = ++pickRequest.current;
     if (moving) {
       const place = moving;
       setMoving(undefined);
       const found = await findAddress(latitude, longitude);
+      if (request !== pickRequest.current) return;
       setEditDraft({
         place: { ...place, latitude, longitude, address: found || place.address },
         // 새 위치의 주소를 못 찾으면 이전 주소를 그대로 두고, 확인하거나 고치라고 알립니다.
@@ -78,7 +82,9 @@ export const MapPage = () => {
       });
       return;
     }
-    setDraft({ latitude, longitude, address: await findAddress(latitude, longitude) });
+    const address = await findAddress(latitude, longitude);
+    if (request !== pickRequest.current) return;
+    setDraft({ latitude, longitude, address });
   };
 
   return (

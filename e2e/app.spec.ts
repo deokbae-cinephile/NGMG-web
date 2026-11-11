@@ -1137,3 +1137,20 @@ test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데�
   expect(db.places!.at(-1)).toMatchObject({ name: '가운데 포인트', latitude: 36, longitude: 127 }); // 지도 가운데 좌표
   await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
 });
+
+test('입력 칸 안내는 칸의 설명으로 읽힌다(위치 옮기기에서 이전 주소 안내)', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  // 새 위치의 주소를 찾지 못하는 경우를 흉내 냅니다.
+  await page.evaluate(() => {
+    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (lng: number, lat: number, done: (result: unknown[], status: string) => void) => void } } } } } };
+    w.kakao.maps.services.Geocoder.prototype.coord2Address = (_lng, _lat, done) => done([], 'ZERO_RESULT');
+  });
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
+  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
+  await page.getByRole('button', { name: '가운데로 위치 지정' }).click();
+  const address = page.getByRole('dialog', { name: '장소 수정' }).getByLabel('주소');
+  await expect(address).toHaveValue('전남 여수시 삼산면');
+  await expect(address).toHaveAccessibleDescription(/이전 주소를 그대로 두었습니다/);
+});
