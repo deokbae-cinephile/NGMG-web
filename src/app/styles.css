@@ -1247,6 +1247,12 @@ body::after {
   .main-area {
     padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
   }
+  /* 휴대폰 일정 화면에서 '일정 추가' 알림창이 떠 있으면 그 높이(약 4rem)만큼 더 비워 마지막 내용이 가리지 않게 합니다. */
+  @media (width < 64rem) {
+    .main-area:has(.day-sheet) {
+      padding-bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    }
+  }
   @media (width >= 64rem) {
     .main-area {
       padding-bottom: 0;

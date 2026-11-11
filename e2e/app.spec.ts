@@ -1015,6 +1015,14 @@ test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창
     await expect(head).toBeHidden();
     await expect(sheet).toBeVisible();
     await expect(sheet).toContainText('11월 9일 (월)');
+    // 알림창 높이만큼 아래를 더 비웁니다: 하단 탭 + 알림창 + 그 위로 올린 맨 위로 단추(44px)까지 가리지 않게.
+    await sheet.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished))); // 올라오는 움직임이 끝난 뒤 잽니다.
+    const space = await page.evaluate(() => {
+      const main = document.querySelector('.main-area')!;
+      const sheetBox = document.querySelector('.day-sheet')!.getBoundingClientRect();
+      return { padding: parseFloat(getComputedStyle(main).paddingBottom), cover: innerHeight - sheetBox.top + 44 };
+    });
+    expect(space.padding).toBeGreaterThanOrEqual(space.cover);
     await expectAccessible(page);
     await sheet.getByRole('button', { name: '일정 추가', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '새 일정' })).toBeVisible();
