@@ -151,9 +151,15 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending ? `${pending} (평점 대기)` : '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
               <dd>
-                {price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}
-                {/* 지난번 가격과 다르면 오르내린 금액을 덧붙입니다. 색이 아니라 +·- 기호로 구분합니다. */}
-                {priceChange ? <span className="text-muted">{` (${priceChange > 0 ? '+' : '-'}${Math.abs(priceChange).toLocaleString('ko-KR')}원)`}</span> : null}
+                <span className="whitespace-nowrap">{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</span>
+                {/* 지난번 가격과 다르면 오르내린 금액을 덧붙입니다. 색이 아니라 +·- 기호로 구분합니다.
+                    좁으면 가격과 증감이 각각 통째로 줄을 바꿉니다('17,000원' / '(+2,000원)'). */}
+                {priceChange ? (
+                  <>
+                    {' '}
+                    <span className="whitespace-nowrap text-muted">{`(${priceChange > 0 ? '+' : '-'}${Math.abs(priceChange).toLocaleString('ko-KR')}원)`}</span>
+                  </>
+                ) : null}
               </dd>
               <dt className="mono-label">시간</dt>
               <dd>{formatDate(latest.record.visited_on)}</dd>

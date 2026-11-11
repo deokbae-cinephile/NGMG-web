@@ -1073,4 +1073,7 @@ test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 
   await expect(card('매운탕')).toContainText('18,000원 (-2,000원)');
   await expect(card('전복죽')).toContainText('15,000원');
   await expect(card('전복죽')).not.toContainText('(+');
+  // 좁아서 줄이 바뀌면 가격과 증감이 각각 통째로 나뉩니다.
+  const pieces = card('모둠회').locator('dd span.whitespace-nowrap');
+  await expect(pieces).toHaveText(['55,000원', '(+5,000원)']);
 });
