@@ -303,3 +303,22 @@ test('지도 날씨: 모든 핀의 날씨를 한 번에 미리 받아, 핀마다
   await expect(badge).toContainText('21°');
   expect(requests).toHaveLength(1); // 핀을 눌러도 다시 받지 않습니다(미리 받은 값).
 });
+
+test('장소 추가 창: 폼 코드를 받지 못하면(오프라인 등) 앱 전체가 아니라 창 안에서 알리고, 창은 닫을 수 있다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.route(/\/assets\/place-form-[^/]+\.js$/, (route) => route.abort());
+  await page.goto('./');
+  await page.getByRole('button', { name: '장소 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  await expect(dialog.getByRole('alert')).toContainText('창 내용을 불러오지 못했습니다.');
+  await expect(page.getByRole('heading', { name: '내 장소 지도' })).toBeAttached(); // 지도 화면은 그대로입니다.
+  await dialog.getByRole('button', { name: '닫기' }).click();
+  await expect(dialog).toBeHidden();
+});
+
+test('지도: 위치 지정 중에는 키보드 사용자에게 장소 추가의 찾기를 안내한다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).click();
+  await expect(page.getByText("키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다.", { exact: false })).toBeVisible();
+});

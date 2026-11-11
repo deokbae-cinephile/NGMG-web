@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "./e2e/demo-setup.ts"
   ],
   "packageManager": "pnpm@12.16.1",
   "scripts": {

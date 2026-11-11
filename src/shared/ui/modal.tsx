@@ -1,5 +1,6 @@
 import { useIsMutating } from '@tanstack/react-query';
 import { Suspense, useEffect, useId, useRef, type ReactNode } from 'react';
+import { ErrorBoundary } from './error-boundary';
 import { Icon } from './icon';
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
@@ -68,7 +69,17 @@ export const Modal = ({ title, onClose, children }: Props) => {
           <Icon name="close" size={24} />
         </button>
       </div>
-      {/* 폼 코드는 창을 열 때 받으므로, 받는 동안 안내를 보여 줍니다. */}
+      {/* 폼 코드는 창을 열 때 받으므로, 받는 동안 안내를 보여 줍니다. 못 받으면(예: 오프라인) 앱 전체가 아니라 창 안에서만 알립니다. */}
+      <ErrorBoundary
+        fallback={
+          <div role="alert" className="flex flex-col items-start gap-3 py-6">
+            <p>창 내용을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.</p>
+            <button type="button" className="button" onClick={() => location.reload()}>
+              새로고침
+            </button>
+          </div>
+        }
+      >
       <Suspense
         fallback={
           <p role="status" className="py-6 text-muted">
@@ -78,6 +89,7 @@ export const Modal = ({ title, onClose, children }: Props) => {
       >
         {children}
       </Suspense>
+      </ErrorBoundary>
       </div>
       {/* dialog는 맨 위 층에 그려지므로 저장 중 화면도 그 안에 둡니다. */}
       {saving && (
