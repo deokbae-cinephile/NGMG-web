@@ -1047,3 +1047,30 @@ test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창
   await page.reload();
   await expect(page.getByRole('button', { name: '평점', exact: true })).toHaveAttribute('aria-expanded', 'false'); // 고른 상태를 기억합니다.
 });
+
+test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    records: [
+      ...seed().records!,
+      { id: 'm1', place_id: 'p2', visited_on: '2026-09-01', catches: '' },
+      { id: 'm2', place_id: 'p2', visited_on: '2026-10-01', catches: '' },
+      { id: 'm3', place_id: 'p2', visited_on: '2026-11-01', catches: '' },
+    ],
+    menu_items: [
+      { id: 'a1', record_id: 'm1', name: '모둠회', price: 50000, position: 0 },
+      { id: 'a2', record_id: 'm2', name: '모둠회', price: 50000, position: 0 },
+      { id: 'a3', record_id: 'm3', name: '모둠회', price: 55000, position: 0 },
+      { id: 'b1', record_id: 'm2', name: '매운탕', price: 20000, position: 1 },
+      { id: 'b2', record_id: 'm3', name: '매운탕', price: 18000, position: 1 },
+      { id: 'c1', record_id: 'm3', name: '전복죽', price: 15000, position: 2 },
+    ],
+  });
+  await page.goto('./dex');
+  await page.getByRole('button', { name: '음식 도감' }).click();
+  const card = (name: string) => page.getByRole('listitem').filter({ has: page.getByRole('heading', { name }) });
+  await expect(card('모둠회')).toContainText('55,000원 (+5,000원)');
+  await expect(card('매운탕')).toContainText('18,000원 (-2,000원)');
+  await expect(card('전복죽')).toContainText('15,000원');
+  await expect(card('전복죽')).not.toContainText('(+');
+});

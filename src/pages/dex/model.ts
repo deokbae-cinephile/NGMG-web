@@ -22,7 +22,8 @@ export const buildDex = (fish: DexFish[]): DexEntry[] => {
   }));
 };
 
-export type MenuDexEntry = { name: string; count: number; price: number | null; rating: number | null; latest: DexMenu; photoPath?: string; pending: string };
+/** priceChange: 가장 최근 가격에서 그 전에 적은 가격을 뺀 값(가격이 두 번 이상 있을 때만). 0이면 그대로입니다. */
+export type MenuDexEntry = { name: string; count: number; price: number | null; priceChange: number | null; rating: number | null; latest: DexMenu; photoPath?: string; pending: string };
 
 /** 맛집 메뉴를 이름별로 묶습니다. 평균 평점이 높은 순(평점이 없으면 뒤, 같으면 이름순)이고, 가격·장소·사진은 가장 최근 기록 기준입니다. */
 export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
@@ -34,10 +35,12 @@ export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
   const entries = [...groups].map(([name, list]) => {
     const ratings = list.flatMap((item) => item.rating ?? []);
     const newest = [...list].reverse();
+    const prices = newest.flatMap((item) => (item.price === null ? [] : [item.price]));
     return {
       name,
       count: list.length,
-      price: newest.find((item) => item.price !== null)?.price ?? null,
+      price: prices[0] ?? null,
+      priceChange: prices.length >= 2 ? prices[0]! - prices[1]! : null,
       rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null,
       // 평균을 낼 평점이 없고 한 사람만 준 것이 있으면 그 평점을 보여 줍니다(가장 최근 것).
       pending: newest.find((item) => isPartialRating(item.angler_ratings)) ? ratingDetail(newest.find((item) => isPartialRating(item.angler_ratings))!.angler_ratings) : '',
