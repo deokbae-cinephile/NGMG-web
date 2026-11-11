@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ALL_KINDS, BASE_PLACE, ClosedToday, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
@@ -20,9 +20,11 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
   /** 같은 장소를 다시 골라도 지도를 그 장소로 옮기도록, 고를 때마다 바뀌는 값 */
   focusKey?: number;
+  /** 현재 위치 단추 바로 위에 붙일 지도 단추 묶음(화면 쪽에서 넘김) */
+  tools?: ReactNode;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -254,6 +256,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
       {/* 다시 받는 중(isFetching)에도 예전 기온을 지금 날씨처럼 보이지 않게 아이콘만 둡니다. */}
       <WeatherBadge place={selected?.name} weather={selected && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError && !weather.isFetching} />
+      {tools}
       <LocateControl map={map} onMove={onClose} />
       {selected &&
         createPortal(
