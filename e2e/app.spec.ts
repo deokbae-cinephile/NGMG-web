@@ -1141,7 +1141,8 @@ test('지도 날씨: 고른 뒤 받기에 실패하면 그 장소의 날씨를 �
   await fakeBackend(page, seed());
   await page.route('https://api.open-meteo.com/**', (route) => route.fulfill({ status: 500, body: '' }));
   await page.goto('./');
-  const badge = page.locator('.weather-badge');
+  // 날씨 안내는 상태 영역(role=status)이라 바뀌면 화면 읽기 프로그램이 알립니다.
+  const badge = page.getByRole('status').filter({ hasText: '날씨' });
   await expect(badge).toContainText('장소를 고르면 그곳의 지금 날씨를 보여 줍니다.');
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('거문도 방파제의 날씨를 불러오지 못했습니다.', { timeout: 10000 });

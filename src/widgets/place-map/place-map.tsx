@@ -443,7 +443,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         </span>
       </div>
       {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
-      <WeatherBadge place={selected?.name} weather={selected && !weather.isError ? weather.data : undefined} failed={weather.isError} />
+      {/* 다시 받는 중(isFetching)에도 예전 기온을 지금 날씨처럼 보이지 않게 아이콘만 둡니다. */}
+      <WeatherBadge place={selected?.name} weather={selected && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError} />
       {/* 위치 지정 중: 가운데 십자 표시와, 그 자리로 정하는 단추(키보드·화면 읽기 사용자도 위치를 고를 수 있게). */}
       {picking && (
         <>

@@ -7,7 +7,8 @@ import type { CurrentWeather } from '../api';
  * 화면 읽기 프로그램에는 날씨 이름까지 한 문장으로 알립니다.
  */
 export const WeatherBadge = ({ place, weather, failed = false }: { place?: string; weather?: CurrentWeather; failed?: boolean }) => (
-  <p className="weather-badge">
+  // 바뀐 안내(받는 중, 실패, 날씨)를 화면 읽기 프로그램이 알리도록 상태 영역으로 둡니다.
+  <p role="status" className="weather-badge">
     {/* 고르기 전, 받는 중, 받기 실패, 받음에 맞춰 화면 읽기 프로그램에 알립니다. */}
     <span className="sr-only">
       {!place
