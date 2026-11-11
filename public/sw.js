@@ -80,6 +80,29 @@ const cacheFirst = async (event, name, key, request, max) => {
   return response;
 };
 
+// 처음 설치하면 서비스 워커가 페이지를 맡기 전에 받은 화면·폼 코드(/assets/)는 저장되지 않습니다.
+// 맡은 뒤 페이지가 그 목록을 보내면 아직 없는 것만 받아 저장해, 오프라인에서도 창과 화면이 열리게 합니다.
+self.addEventListener('message', (event) => {
+  const { type, urls } = event.data ?? {};
+  if (type !== 'cache-assets' || !Array.isArray(urls)) return;
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(ASSETS);
+      for (const raw of urls) {
+        const url = new URL(raw, self.location.origin);
+        if (url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) continue;
+        if (await cache.match(url.href, { ignoreVary: true })) continue;
+        try {
+          const response = await fetch(url.href);
+          if (response.ok) await put(ASSETS, url.href, response, 400);
+        } catch {
+          // 연결이 없으면 다음 기회에 저장합니다.
+        }
+      }
+    })(),
+  );
+});
+
 // 알림(supabase/functions/notify): { title, body, url, tag }
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
