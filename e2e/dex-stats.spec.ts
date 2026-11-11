@@ -87,7 +87,7 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
   // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나누고, 둘 다 평균 평점을 보여 줍니다(평점이 없으면 생략).
   const spots = page.getByRole('region', { name: '자주 간 낚시 포인트' });
   await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*평균 평점\s*4\.5\s*2번$/, /가거도 갯바위\s*1번$/]);
-  await expect(spots.getByText(/마리/)).toHaveCount(0); // 마릿수는 사용자 요청으로 뺐습니다.
+  await expect(spots).not.toContainText(/마리/); // 마릿수는 사용자 요청으로 뺐습니다.
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
   await expect(restaurants.getByRole('listitem')).toHaveText([/바다횟집\s*평균 평점\s*4\.0\s*1번/]);
   await expectFits(page);

@@ -1,5 +1,5 @@
 // E2E: 지도·장소
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { acceptDialogs, expectAccessible, expectFits, fakeBackend, LONG_NAME, place, seed } from './support';
 
 acceptDialogs();
@@ -133,8 +133,10 @@ test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 맨 위 단�
   await page.getByRole('button', { name: '위치 지정', exact: true }).click();
   const cancel = page.getByRole('button', { name: '위치 지정 취소' });
   await expect(cancel).toHaveText('지정 취소');
-  const picking = await page.locator('.map-actions .button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect()));
-  expect(new Set(picking.map((box) => Math.round(box.y))).size).toBe(1);
+  const picking = await Promise.all(
+    [cancel, page.getByRole('button', { name: '지도 확대' }), page.getByRole('button', { name: '목록 확대' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()),
+  );
+  expect(new Set(picking.map((box) => Math.round(box!.y))).size).toBe(1);
   expect(picking[0]!.width).toBeLessThan(100);
   await cancel.click();
   await base.click();
@@ -351,8 +353,18 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   await expect(page.getByRole('button', { name: '지도 확대' })).toBeFocused();
   await expect.poll(async () => Math.round((await map.boundingBox())!.height)).toBeLessThan(viewport.height);
   await page.getByRole('button', { name: '지도 확대' }).click();
-  // 확대한 지도가 머리글과 하단 메뉴까지 덮습니다.
-  expect(await page.evaluate(() => [...document.querySelectorAll('.topbar, .main-nav')].every((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !hit || Boolean(hit.closest('.map-expanded')); }))).toBe(true);
+  // 확대한 지도가 머리글과 하단 메뉴까지 덮습니다. inert는 elementFromPoint에서 건너뛰므로 잠시 풀고 실제로 그려진 맨 위 요소를 봅니다.
+  const covered = async (target: Locator) =>
+    target.evaluate((element) => {
+      const blocked = [...document.querySelectorAll('[inert]')];
+      blocked.forEach((node) => node.removeAttribute('inert'));
+      const box = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      blocked.forEach((node) => node.setAttribute('inert', ''));
+      return Boolean(hit?.closest('.map-expanded'));
+    });
+  expect(await covered(page.getByRole('navigation', { name: '주요 메뉴' }))).toBe(true);
+  expect(await covered(page.getByRole('banner'))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
   expect((await map.boundingBox())!.height).toBeLessThan(viewport.height);
