@@ -11,7 +11,7 @@ const MENU: { to: string; label: string; icon: IconName }[] = [
   { to: '/schedule', label: '일정 및 기록', icon: 'calendar' },
   { to: '/stats', label: '통계', icon: 'stats' },
   { to: '/dex', label: '도감', icon: 'dex' },
-  { to: '/gear', label: '장비', icon: 'tackleBox' },
+  { to: '/gear', label: '물품', icon: 'tackleBox' },
   { to: '/settings', label: '설정', icon: 'settings' },
 ];
 

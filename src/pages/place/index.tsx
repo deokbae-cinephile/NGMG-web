@@ -6,7 +6,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, navigate } from '@/shared/lib';
-import { ErrorText, Modal, PageSkeleton } from '@/shared/ui';
+import { ErrorText, IconButton, Modal, PageSkeleton } from '@/shared/ui';
 
 export const PlacePage = ({ id }: { id: string }) => {
   const places = usePlaces();
@@ -57,12 +57,8 @@ export const PlacePage = ({ id }: { id: string }) => {
           <PlaceActions place={place} />
           <Writable>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="button" onClick={() => setEditing(true)}>
-                장소 수정
-              </button>
-              <button type="button" className="button button-accent" disabled={remove.isPending} onClick={onDelete}>
-                장소 삭제
-              </button>
+              <IconButton icon="pencil" label="장소 수정" onClick={() => setEditing(true)} />
+              <IconButton icon="trash" label="장소 삭제" className="button-accent" disabled={remove.isPending} onClick={onDelete} />
             </div>
           </Writable>
           <ErrorText error={remove.error} />
@@ -85,9 +81,7 @@ export const PlacePage = ({ id }: { id: string }) => {
             <h2 id="place-records-title" className="title text-xl">기록</h2>
           </div>
           <Writable>
-            <button type="button" className="button button-primary" onClick={() => setRecordForm({})}>
-              기록 추가
-            </button>
+            <IconButton icon="notePlus" label="기록 추가" primary onClick={() => setRecordForm({})} />
           </Writable>
         </div>
         <div className="cell-body flex flex-col gap-4">
@@ -114,9 +108,7 @@ export const PlacePage = ({ id }: { id: string }) => {
                 record={record}
                 actions={
                   <Writable>
-                    <button type="button" className="button" onClick={() => setRecordForm({ record })}>
-                      기록 수정
-                    </button>
+                    <IconButton icon="pencil" label={`${formatDate(record.visited_on)} 기록 수정`} onClick={() => setRecordForm({ record })} />
                   </Writable>
                 }
               />

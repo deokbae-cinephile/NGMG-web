@@ -4,8 +4,8 @@ import { BASE_PLACE, ClosedToday, KindBadge, KindFilter, type KindFilterValue, P
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft } from '@/shared/api';
-import { findAddress, Link } from '@/shared/lib';
-import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
+import { findAddress } from '@/shared/lib';
+import { ErrorText, Icon, IconLink, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = KindFilterValue;
@@ -172,21 +172,36 @@ export const MapPage = () => {
       <title>지도 | 낚고먹고</title>
       <h1 className="sr-only">내 장소 지도</h1>
       {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
-      <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
+      <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:relative lg:top-auto lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
         <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} focusKey={focusKey} />
-        {expanded === 'map' && (
-          // 확대한 지도에서도 위치를 지정합니다. 고르면 지도를 줄이고 새 장소 창을 엽니다.
-          <div role="group" aria-label="확대한 지도" className="expanded-actions">
-            <Writable>
-              <button type="button" className="button map-icon-button" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
-                <Icon name="mapPinPlus" size={20} />
-              </button>
-            </Writable>
-            <button ref={shrinkButton} type="button" className="button button-primary map-icon-button" aria-label="지도 작게" title="지도 작게" onClick={() => collapse()}>
-              <Icon name="minimize" size={20} />
+        {/* 지도 위 단추(오른쪽 아래, 현재 위치 단추 위): 위치 지정, 무악재역, 지도 확대·작게(한 단추로 토글). 확대해도 같은 자리에 있습니다. */}
+        <div role="group" aria-label="지도 단추" className="map-tools">
+          <Writable>
+            <button type="button" className="map-tool" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
+              <Icon name="mapPinPlus" size={20} />
             </button>
-          </div>
-        )}
+          </Writable>
+          <button
+            type="button"
+            className="map-tool"
+            aria-label={BASE_PLACE.name}
+            title={BASE_PLACE.name}
+            aria-pressed={selectedId === BASE_PLACE.id}
+            onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}
+          >
+            <Icon name="train" size={20} />
+          </button>
+          <button
+            ref={mapToggle}
+            type="button"
+            className="map-tool"
+            aria-label={expanded === 'map' ? '지도 작게' : '지도 확대'}
+            title={expanded === 'map' ? '지도 작게' : '지도 확대'}
+            onClick={() => (expanded === 'map' ? collapse() : expand('map'))}
+          >
+            <Icon name={expanded === 'map' ? 'minimize' : 'maximize'} size={20} />
+          </button>
+        </div>
       </div>
 
       <section ref={expanded === 'list' ? setExpandedPane : undefined} aria-labelledby="places-title" className={`pane ${expanded === 'list' ? 'list-expanded' : ''}`}>
@@ -201,25 +216,6 @@ export const MapPage = () => {
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
-            <Writable>
-              {/* 아이콘 단추: 이름은 aria-label, 켜짐은 aria-pressed로 알립니다. 다시 누르면 취소합니다. */}
-              <button
-                type="button"
-                className="button map-icon-button"
-                aria-label="위치 지정"
-                title={picking ? '위치 지정 취소' : '위치 지정'}
-                aria-pressed={picking}
-                onClick={() => {
-                  togglePicking();
-                  if (expanded === 'list') collapse(false); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
-                }}
-              >
-                <Icon name="mapPinPlus" size={20} />
-              </button>
-            </Writable>
-            <button ref={mapToggle} type="button" className="button map-icon-button" aria-label="지도 확대" title="지도 확대" onClick={() => expand('map')}>
-              <Icon name="maximize" size={20} />
-            </button>
             <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
               <Icon name="list" size={20} />
             </button>
@@ -238,19 +234,6 @@ export const MapPage = () => {
                 <Icon name="plus" size={20} />
               </button>
             </Writable>
-            <button
-              type="button"
-              className="button map-icon-button"
-              aria-label={BASE_PLACE.name}
-              title={BASE_PLACE.name}
-              aria-pressed={selectedId === BASE_PLACE.id}
-              onClick={() => {
-                setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id);
-                if (expanded === 'list') collapse(false); // 지도에서 무악재역을 보여 줍니다.
-              }}
-            >
-              <Icon name="train" size={20} />
-            </button>
           </div>
         </div>
 
@@ -301,9 +284,7 @@ export const MapPage = () => {
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">
                       <PlaceActions place={place} />
-                      <Link to={`/places/${place.id}`} className="button button-primary self-start" aria-label={`${place.name} 자세히 보기`}>
-                        자세히 보기
-                      </Link>
+                      <IconLink to={`/places/${place.id}`} icon="arrowRight" label={`${place.name} 자세히 보기`} primary className="self-start" />
                     </div>
                   )}
                 </li>

@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
 import { signIn } from '@/entities/session';
-import { ErrorText, Field } from '@/shared/ui';
+import { ErrorText, Field, IconButton } from '@/shared/ui';
 
 type Errors = { email?: string; password?: string };
 
@@ -31,9 +31,7 @@ export const SignInForm = () => {
       <Field label="이메일" name="email" type="email" autoComplete="username" error={errors.email} />
       <Field label="비밀번호" name="password" type="password" autoComplete="current-password" error={errors.password} />
       <ErrorText error={error} />
-      <button type="submit" className="button button-primary" disabled={isPending}>
-        {isPending ? '로그인하는 중' : '로그인'}
-      </button>
+      <IconButton type="submit" icon="logIn" label={isPending ? '로그인하는 중' : '로그인'} primary disabled={isPending} className="self-start" />
     </form>
   );
 };

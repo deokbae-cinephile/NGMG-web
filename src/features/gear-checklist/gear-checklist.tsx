@@ -1,15 +1,16 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GearTag, gearLabel, sortGear, useGear } from '@/entities/gear';
 import { useSetPacked } from '@/entities/event';
 import { useCanWrite } from '@/entities/session';
 import type { CalendarEvent } from '@/shared/api';
-import { ErrorText } from '@/shared/ui';
+import { ErrorText, IconButton } from '@/shared/ui';
 
 /**
  * 일정의 챙길 장비 체크리스트: 아이콘 + '[브랜드] 제품명' 태그를 한눈에 보고, 챙긴 것을 체크합니다.
  * 체크 상태는 두 사람이 함께 봅니다. 게스트는 보기만 합니다. 지운 장비는 건너뜁니다.
  */
-export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'title' | 'gear_ids' | 'packed_gear_ids'> }) => {
+/** reveal: 출조 알림을 눌러 왔을 때 이 체크리스트를 화면 가운데로 옮겨 바로 보여 줍니다. */
+export const GearChecklist = ({ event, reveal = false }: { event: Pick<CalendarEvent, 'id' | 'title' | 'gear_ids' | 'packed_gear_ids'>; reveal?: boolean }) => {
   const gear = useGear();
   const canWrite = useCanWrite();
   const setPacked = useSetPacked();
@@ -18,14 +19,22 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
   const [pending, setPending] = useState<string[]>([]);
   const [failed, setFailed] = useState<string[]>([]); // 저장에 실패한 장비(요청마다 기록)
   const gearIds = event.gear_ids ?? [];
+  const box = useRef<HTMLFieldSetElement>(null);
+  const shown = (gear.data ?? []).some((item) => gearIds.includes(item.id));
+  useEffect(() => {
+    if (!reveal || !shown) return;
+    const frame = requestAnimationFrame(() => {
+      box.current?.scrollIntoView({ block: 'center' });
+      box.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [reveal, shown]);
   if (!gearIds.length) return null;
   if (gear.error) {
     return (
       <div className="mt-2 flex flex-col items-start gap-2">
-        <ErrorText error={new Error('챙길 장비를 불러오지 못했습니다.')} />
-        <button type="button" className="button" onClick={() => void gear.refetch()}>
-          다시 불러오기
-        </button>
+        <ErrorText error={new Error('챙길 물품을 불러오지 못했습니다.')} />
+        <IconButton icon="refresh" label="다시 불러오기" onClick={() => void gear.refetch()} />
       </div>
     );
   }
@@ -48,8 +57,8 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
   };
 
   return (
-    <fieldset className="mt-2 flex flex-col gap-2">
-      <legend className="mono-label pb-1.5">{`챙길 장비 ${items.length}개 중 ${packed.length}개 챙김`}</legend>
+    <fieldset ref={box} tabIndex={-1} className="mt-2 flex flex-col gap-2">
+      <legend className="mono-label pb-1.5">{`챙길 물품 ${items.length}개 중 ${packed.length}개 챙김`}</legend>
       <ul className="flex flex-wrap gap-2">
         {items.map((item) => (
           <li key={item.id}>

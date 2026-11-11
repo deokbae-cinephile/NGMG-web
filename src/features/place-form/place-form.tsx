@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { PlaceSearch, useSavePlace } from '@/entities/place';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
-import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { KindFieldset } from './kind-fieldset';
 
 type Values = {
@@ -137,9 +137,7 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
       {photo && <RemovablePhoto file={photo} alt="올릴 장소 사진 미리보기" removeLabel="올릴 장소 사진 빼기" inputBefore onRemove={() => setPhoto(null)} />}
       <ErrorText error={save.error} />
       <div className="flex flex-wrap justify-end gap-2">
-        <button type="submit" className="button button-primary" disabled={save.isPending}>
-          {save.isPending ? '저장하는 중' : '저장'}
-        </button>
+        <IconButton type="submit" icon="check" label={save.isPending ? '저장하는 중' : '저장'} primary disabled={save.isPending} />
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { ANGLERS, useSpeciesOptions, type FishInput } from '@/entities/record';
-import { RemovablePhoto } from '@/shared/ui';
+import { IconButton, RemovablePhoto } from '@/shared/ui';
 
 /** 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다. */
 export type FishDraft = Omit<FishInput, 'length_cm' | 'position'> & { length: string; photo_url?: string };
@@ -112,9 +112,7 @@ const FishItem = ({ fish, index, showError, species, listId, onChange, onPhotos,
           </div>
         </div>
         <div className="flex justify-end">
-          <button type="button" className="text-action text-action-accent" onClick={onRemove}>
-            {`${label} 빼기`}
-          </button>
+          <IconButton icon="trash" label={`${label} 빼기`} onClick={onRemove} />
         </div>
       </fieldset>
     </li>
@@ -154,9 +152,7 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
         />
       ))}
     </ol>
-    <button type="button" className="button self-start" onClick={() => onChange([...value, newFish(value.at(-1)?.angler)])}>
-      물고기 추가
-    </button>
+    <IconButton icon="plus" label="물고기 추가" className="self-start" onClick={() => onChange([...value, newFish(value.at(-1)?.angler)])} />
   </section>
   );
 };

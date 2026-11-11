@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRecordOutbox } from '@/entities/record';
+import { IconButton } from '@/shared/ui';
 
 /** 오프라인에서 저장해 아직 올리지 못한 기록. 연결되면 자동으로 올리고, 눌러서 바로 올릴 수도 있습니다. */
 export const SaveOutbox = () => {
@@ -23,9 +24,7 @@ export const SaveOutbox = () => {
             ))}
           </ul>
           <div className="px-3 py-2">
-            <button type="button" className="button w-full" onClick={() => void flush()}>
-              지금 올리기
-            </button>
+            <IconButton icon="upload" label="지금 올리기" onClick={() => void flush()} />
           </div>
         </div>
       )}

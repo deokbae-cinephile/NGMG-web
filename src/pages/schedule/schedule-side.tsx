@@ -5,7 +5,7 @@ import { useRecordedEventIds } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent } from '@/shared/api';
 import { formatDate, formatDateRange, formatDday, formatStay, toDateKey } from '@/shared/lib';
-import { ErrorText, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, IconButton, Modal, SkeletonRows } from '@/shared/ui';
 
 /** 왼쪽 아래 칸: 다가오는 일정, 기록을 기다리는 지난 일정. selected는 고른 날짜입니다. */
 export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (date: string) => void }) => {
@@ -56,9 +56,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
                   <span className="text-sm text-muted">{event.place?.name}</span>
                 </span>
                 <Writable>
-                  <button type="button" className="button shrink-0" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)}>
-                    기록 남기기
-                  </button>
+                  <IconButton icon="notePlus" label={`${event.title} 기록 남기기`} onClick={() => setRecordEvent(event)} />
                 </Writable>
               </li>
             ))}

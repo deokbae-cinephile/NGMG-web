@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Place } from '@/shared/api';
 import { copyText, sharePlace } from '@/shared/lib';
-import { Icon } from '@/shared/ui';
+import { Icon, IconButton } from '@/shared/ui';
 import { directionsUrl } from '../model/route-origin';
 
 /** 길찾기, 주소 복사, 공유 버튼. 결과는 바로 아래에 읽어 줍니다. */
@@ -20,23 +20,11 @@ export const PlaceActions = ({ place }: { place: Pick<Place, 'name' | 'address' 
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap gap-2">
-        <a
-          className="button"
-          target="_blank"
-          rel="noreferrer"
-          href={directionsUrl(place)}
-        >
-          <Icon name="map" size={16} />
-          길찾기 (새 창)
+        <a className="button icon-only" target="_blank" rel="noreferrer" href={directionsUrl(place)} aria-label="길찾기 (새 창)" title="길찾기 (새 창)">
+          <Icon name="map" size={20} />
         </a>
-        <button type="button" className="button" onClick={() => void copy()}>
-          <Icon name="copy" size={16} />
-          주소 복사
-        </button>
-        <button type="button" className="button" onClick={() => void share()}>
-          <Icon name="share" size={16} />
-          공유
-        </button>
+        <IconButton icon="copy" label="주소 복사" onClick={() => void copy()} />
+        <IconButton icon="share" label="공유" onClick={() => void share()} />
       </div>
       <p role="status" className="text-sm text-muted">
         {message}

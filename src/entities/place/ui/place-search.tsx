@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import type { Place, PlaceDraft } from '@/shared/api';
 import { searchKakaoPlaces, type KakaoPlace } from '@/shared/lib';
-import { ErrorText } from '@/shared/ui';
+import { ErrorText, IconButton } from '@/shared/ui';
 import { KindBadge } from './kind-badge';
 
 type Props = { saved?: Place[]; onPick: (place: PlaceDraft) => void };
@@ -62,9 +62,7 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="button" className="button shrink-0" disabled={pending} onClick={() => void search()}>
-          검색
-        </button>
+        <IconButton icon="search" label="검색" disabled={pending} onClick={() => void search()} />
       </div>
       <ErrorText error={error} />
       <p role="status" className="text-sm text-muted">

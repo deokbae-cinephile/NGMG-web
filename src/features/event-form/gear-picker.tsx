@@ -8,12 +8,12 @@ export const GearPicker = ({ value, onChange }: { value: string[]; onChange: (id
   const toggle = (id: string, checked: boolean) => onChange(checked ? [...value, id] : value.filter((item) => item !== id));
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mono-label pb-1.5">챙길 장비</legend>
-      {isPending && <p className="text-sm text-muted">장비를 불러오는 중입니다.</p>}
-      {error && <p className="text-sm text-danger">장비를 불러오지 못했습니다.</p>}
+      <legend className="mono-label pb-1.5">챙길 물품</legend>
+      {isPending && <p className="text-sm text-muted">물품을 불러오는 중입니다.</p>}
+      {error && <p className="text-sm text-danger">물품을 불러오지 못했습니다.</p>}
       {!isPending && !error && data.length === 0 && (
         <p className="text-sm text-muted">
-          등록한 장비가 없습니다. <Link to="/gear" className="underline underline-offset-4">장비</Link>에서 등록하면 여기서 고를 수 있습니다.
+          등록한 물품이 없습니다. <Link to="/gear" className="underline underline-offset-4">물품</Link>에서 등록하면 여기서 고를 수 있습니다.
         </p>
       )}
       {ANGLERS.map((angler) => {

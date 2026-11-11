@@ -5,7 +5,7 @@ import { RecordCard, useRecordPages } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
-import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, IconButton, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 
 type Filter = KindFilterValue;
 
@@ -99,9 +99,7 @@ export const AllRecords = () => {
             record={record}
             actions={
               <Writable>
-                <button type="button" className="text-action" aria-label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)}>
-                  수정
-                </button>
+                <IconButton icon="pencil" label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)} />
               </Writable>
             }
             heading={
@@ -118,9 +116,7 @@ export const AllRecords = () => {
         {hasNextPage &&
           (isFetchNextPageError ? (
             <div ref={more} className="flex justify-center py-4">
-              <button type="button" className="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                다시 불러오기
-              </button>
+              <IconButton icon="refresh" label="다시 불러오기" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()} />
             </div>
           ) : (
             <div ref={more} aria-hidden="true" className="h-px" />

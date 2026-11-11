@@ -2,6 +2,7 @@ import { useIsMutating } from '@tanstack/react-query';
 import { Suspense, useEffect, useId, useRef, type ReactNode } from 'react';
 import { ErrorBoundary } from './error-boundary';
 import { Icon } from './icon';
+import { IconButton } from './icon-button';
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
 
@@ -74,9 +75,7 @@ export const Modal = ({ title, onClose, children }: Props) => {
         fallback={
           <div role="alert" className="flex flex-col items-start gap-3 py-6">
             <p>창 내용을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.</p>
-            <button type="button" className="button" onClick={() => location.reload()}>
-              새로고침
-            </button>
+            <IconButton icon="refresh" label="새로고침" onClick={() => location.reload()} />
           </div>
         }
       >

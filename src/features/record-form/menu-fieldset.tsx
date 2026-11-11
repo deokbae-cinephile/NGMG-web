@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { MenuItem } from '@/shared/api';
-import { Field, RemovablePhoto, TextareaField } from '@/shared/ui';
+import { Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, type RatingDraft } from './angler-rating-fields';
 
 export type MenuRow = {
@@ -124,34 +124,31 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
               </div>
               {value.length > 1 && (
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="text-action text-action-accent"
+                  <IconButton
+                    icon="trash"
+                    label={`${label} 빼기`}
                     onClick={() => {
                       onChange(value.filter((item) => item.id !== row.id));
                       add.current?.focus();
                     }}
-                  >
-                    {`${label} 빼기`}
-                  </button>
+                  />
                 </div>
               )}
             </li>
           );
         })}
       </ul>
-      <button
+      <IconButton
         ref={add}
-        type="button"
-        className="button self-start"
+        icon="plus"
+        label="음식 추가"
+        className="self-start"
         onClick={() => {
           const row = newMenuRow();
           focusId.current = row.id;
           onChange([...value, row]);
         }}
-      >
-        음식 추가
-      </button>
+      />
     </fieldset>
   );
 };
