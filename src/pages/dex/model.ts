@@ -28,10 +28,18 @@ export type MenuDexEntry = { name: string; count: number; price: number | null; 
 /** 맛집 메뉴를 이름별로 묶습니다. 평균 평점이 높은 순(평점이 없으면 뒤, 같으면 이름순)이고, 가격·장소·사진은 가장 최근 기록 기준입니다. */
 export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
   const groups = new Map<string, DexMenu[]>();
-  [...items].sort((a, b) => a.record.visited_on.localeCompare(b.record.visited_on)).forEach((item) => {
-    const name = speciesName(item.name);
-    if (name) groups.set(name, [...(groups.get(name) ?? []), item]);
-  });
+  // 방문일 순, 같은 날이면 기록을 남긴 순, 같은 기록 안에서는 줄 순서로 놓아 '가장 최근 가격'과 그 전 가격이 늘 같게 정해지게 합니다.
+  [...items]
+    .sort(
+      (a, b) =>
+        a.record.visited_on.localeCompare(b.record.visited_on) ||
+        (a.record.created_at ?? '').localeCompare(b.record.created_at ?? '') ||
+        a.position - b.position,
+    )
+    .forEach((item) => {
+      const name = speciesName(item.name);
+      if (name) groups.set(name, [...(groups.get(name) ?? []), item]);
+    });
   const entries = [...groups].map(([name, list]) => {
     const ratings = list.flatMap((item) => item.rating ?? []);
     const newest = [...list].reverse();

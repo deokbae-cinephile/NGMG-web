@@ -28,6 +28,9 @@ export const MapPage = () => {
   const [selectedId, setSelectedId] = useState<string>();
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
+  // 지도에서 위치 옮기기: 고른 장소의 새 위치를 지도에서 누르면, 좌표와 주소를 바꾼 수정 창을 엽니다(좌표는 화면에 쓰지 않음).
+  const [moving, setMoving] = useState<Place>();
+  const [editDraft, setEditDraft] = useState<Partial<PlaceDraft>>();
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
   const items = useRef(new Map<string, HTMLLIElement>());
@@ -64,6 +67,12 @@ export const MapPage = () => {
 
   const onPick = async (latitude: number, longitude: number) => {
     setPicking(false);
+    if (moving) {
+      const place = moving;
+      setMoving(undefined);
+      setEditDraft({ ...place, latitude, longitude, address: (await findAddress(latitude, longitude)) || place.address });
+      return;
+    }
     setDraft({ latitude, longitude, address: await findAddress(latitude, longitude) });
   };
 
@@ -81,7 +90,15 @@ export const MapPage = () => {
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
             <Writable>
-              <button type="button" className="button" aria-pressed={picking} onClick={() => setPicking(!picking)}>
+              <button
+                type="button"
+                className="button"
+                aria-pressed={picking}
+                onClick={() => {
+                  setPicking(!picking);
+                  setMoving(undefined);
+                }}
+              >
                 {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
               </button>
             </Writable>
@@ -98,7 +115,7 @@ export const MapPage = () => {
 
         <div className="cell-body flex flex-col gap-5">
           <p role="status" className="text-sm text-muted empty:hidden">
-            {picking ? '지도에서 저장할 위치를 눌러 주세요.' : ''}
+            {picking ? (moving ? `지도에서 '${moving.name}'의 새 위치를 눌러 주세요.` : '지도에서 저장할 위치를 눌러 주세요.') : ''}
           </p>
 
           <fieldset>
@@ -150,6 +167,20 @@ export const MapPage = () => {
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">
                       <PlaceActions place={place} />
+                      <Writable>
+                        <button
+                          type="button"
+                          className="button self-start"
+                          aria-pressed={moving?.id === place.id}
+                          onClick={() => {
+                            const start = moving?.id !== place.id;
+                            setMoving(start ? place : undefined);
+                            setPicking(start);
+                          }}
+                        >
+                          {moving?.id === place.id ? '위치 옮기기 취소' : '지도에서 위치 옮기기'}
+                        </button>
+                      </Writable>
                       <Link to={`/places/${place.id}`} className="button button-primary self-start" aria-label={`${place.name} 자세히 보기`}>
                         자세히 보기
                       </Link>
@@ -165,6 +196,11 @@ export const MapPage = () => {
       {draft && (
         <Modal title="새 장소" onClose={() => setDraft(undefined)}>
           <PlaceForm initial={draft} onDone={() => setDraft(undefined)} />
+        </Modal>
+      )}
+      {editDraft && (
+        <Modal title="장소 수정" onClose={() => setEditDraft(undefined)}>
+          <PlaceForm initial={editDraft} onDone={() => setEditDraft(undefined)} />
         </Modal>
       )}
     </div>

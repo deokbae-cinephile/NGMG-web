@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Writable } from '@/entities/session';
 import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
@@ -26,11 +26,22 @@ export const SchedulePage = () => {
   const date = normalizeDateKey(params.get('date'));
   const selected = parseDateKey(date);
   const [month, setMonth] = useState(selected);
-  const [form, setForm] = useState<{ event?: CalendarEvent }>();
+  // from: 어디서 일정 창을 열었는지. 알림창에서 열었으면 저장 뒤 달력의 날짜로 초점을 옮깁니다.
+  const [form, setForm] = useState<{ event?: CalendarEvent; from?: 'sheet' }>();
   // 휴대폰: 달력에서 날짜를 누르면 아래에서 '일정 추가' 알림창이 올라옵니다. 저절로 닫히지 않고 닫기 단추로 닫습니다.
   const [sheet, setSheet] = useState(false);
   // 일정 창을 여는 동안 알림창은 그대로 두어, 창을 닫으면 키보드 초점이 알림창의 단추로 돌아옵니다. 저장하면 알림창도 닫습니다.
-  const openForm = () => setForm({});
+  const openForm = (from?: 'sheet') => setForm({ from });
+
+  // 화면을 넓혀 휴대폰 배치가 아니게 되면 (보이지 않는) 알림창을 닫습니다.
+  useEffect(() => {
+    const wide = window.matchMedia('(width >= 64rem)');
+    const close = () => {
+      if (wide.matches) setSheet(false);
+    };
+    wide.addEventListener('change', close);
+    return () => wide.removeEventListener('change', close);
+  }, []);
   const [recordForm, setRecordForm] = useState<{ event?: CalendarEvent; record?: PlaceRecord }>();
 
   const monthEvents = useMonthEvents(month);
@@ -125,7 +136,7 @@ export const SchedulePage = () => {
           </div>
           {/* 휴대폰에서는 감추고, 날짜를 누르면 올라오는 알림창에서 추가합니다. */}
           <Writable>
-            <button type="button" className="button button-primary max-lg:hidden" onClick={openForm}>
+            <button type="button" className="button button-primary max-lg:hidden" onClick={() => openForm()}>
               일정 추가
             </button>
           </Writable>
@@ -239,7 +250,7 @@ export const SchedulePage = () => {
               <span className="truncate">{formatDate(date).replace(/^\d+년 /, '')}</span> {/* 좁은 화면에서 잘리지 않게 연도는 뺍니다. */}
               {holiday && <span className="truncate text-sm text-sun">{holiday}</span>}
             </p>
-            <button type="button" className="button button-primary shrink-0" onClick={openForm}>
+            <button type="button" className="button button-primary shrink-0" onClick={() => openForm('sheet')}>
               일정 추가
             </button>
             <button type="button" className="day-sheet-close" aria-label="일정 추가 알림창 닫기" onClick={() => setSheet(false)}>
@@ -255,13 +266,15 @@ export const SchedulePage = () => {
             date={date}
             event={form.event}
             onDone={(saved) => {
+              const fromSheet = form.from === 'sheet';
               setForm(undefined);
-              if (sheet) {
-                // 휴대폰: 알림창을 닫고, 사라진 단추 대신 달력에서 고른 날짜로 초점을 옮깁니다(날짜 머리는 휴대폰에서 감춰져 있음).
-                setSheet(false);
-                requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.cal-day.is-selected')?.focus());
+              setSheet(false); // 저장하면 알림창은 늘 닫습니다.
+              // 저장한 날의 달을 펴고 그 날로 갑니다(다른 달을 보고 있었어도 고른 날짜가 달력에 보이게).
+              goTo(saved);
+              if (fromSheet) {
+                // 알림창에서 열었으면 사라진 단추 대신 달력의 그 날짜로 초점을 옮깁니다(휴대폰은 날짜 머리가 감춰져 있음). 그린 뒤에 옮깁니다.
+                requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.cal-day.is-selected')?.focus()));
               }
-              if (saved !== date) goTo(saved); // 날짜를 옮겼으면 그 날로 따라갑니다.
             }}
           />
         </Modal>

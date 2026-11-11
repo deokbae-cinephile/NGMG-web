@@ -1005,13 +1005,21 @@ test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창
   const head = page.getByRole('region', { name: /2026년 11월 7일/ }).getByRole('button', { name: '일정 추가', exact: true });
   await page.getByRole('button', { name: /^9 일 \(월\)/ }).click();
   const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
-  const dayHead = page.locator('.pane-day > div').first();
   if (testInfo.project.name === 'desktop') {
     await expect(sheet).toBeHidden(); // 넓은 화면은 머리의 단추를 씁니다.
   } else {
     // 휴대폰은 고른 날짜·공휴일 머리를 감춥니다(알림창과 겹침). 제목은 화면 읽기 프로그램에만 남깁니다.
-    expect(await dayHead.evaluate((node) => node.getBoundingClientRect().height)).toBeLessThanOrEqual(1);
-    await expect(page.getByRole('heading', { name: '2026년 11월 9일 (월)' })).toBeAttached();
+    // 제목은 남아 있지만, 그 제목을 담은 머리가 1px로 잘려 화면에는 보이지 않습니다.
+    const dayTitle = page.getByRole('heading', { name: '2026년 11월 9일 (월)' });
+    await expect(dayTitle).toBeAttached();
+    const clipped = await dayTitle.evaluate((node) => {
+      for (let element: Element | null = node; element; element = element.parentElement) {
+        const box = element.getBoundingClientRect();
+        if (box.width <= 1 && box.height <= 1 && getComputedStyle(element).overflow === 'hidden') return true;
+      }
+      return false;
+    });
+    expect(clipped).toBe(true);
     await expect(head).toBeHidden();
     await expect(sheet).toBeVisible();
     await expect(sheet).toContainText('11월 9일 (월)');
@@ -1092,4 +1100,23 @@ test('지도: 핀을 고르면 왼쪽 아래에 그곳의 날씨와 기온을 �
   // 무악재역도 같은 방식입니다.
   await page.getByRole('button', { name: '무악재역', exact: true }).click();
   await expect(badge).toContainText('무악재역 지금 날씨');
+});
+
+test('지도: 고른 장소를 지도에서 새 위치로 옮긴다(좌표는 보이지 않음)', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  // 휴대폰은 위에 붙은 지도와 하단 탭 사이라 자동 스크롤이 가리므로 눌림 이벤트를 바로 보냅니다.
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
+  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
+  await expect(page.getByText("지도에서 '거문도 방파제'의 새 위치를 눌러 주세요.")).toBeVisible();
+  const box = (await page.getByTestId('map').boundingBox())!;
+  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } });
+  const dialog = page.getByRole('dialog', { name: '장소 수정' });
+  await expect(dialog.getByLabel('이름')).toHaveValue('거문도 방파제');
+  await expect(dialog.getByLabel('위도')).toHaveCount(0);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  const moved = db.places!.find((item) => item.id === 'p1')!;
+  expect(moved.latitude).not.toBe(34.03); // 같은 장소(기록은 그대로)의 좌표만 바뀝니다.
+  expect(db.places).toHaveLength(3);
 });

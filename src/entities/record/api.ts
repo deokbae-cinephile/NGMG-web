@@ -260,7 +260,7 @@ export const useFishDex = () =>
     },
   });
 
-export type DexMenu = MenuItem & { record: { visited_on: string; place: { name: string } } };
+export type DexMenu = MenuItem & { record: { visited_on: string; created_at?: string; place: { name: string } } };
 
 /** 도감용으로 맛집 메뉴를 모두 받습니다. */
 export const useMenuDex = () =>
@@ -271,7 +271,7 @@ export const useMenuDex = () =>
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('menu_items')
-          .select('id, name, price, rating, angler_ratings, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
+          .select('id, name, price, rating, angler_ratings, photo_path, position, record:records!inner(visited_on, created_at, place:places!inner(name))')
           .order('id')
           .range(from, from + 999);
         if (error) throw new Error('도감을 불러오지 못했습니다.');
