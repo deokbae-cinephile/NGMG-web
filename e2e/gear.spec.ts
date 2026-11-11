@@ -44,12 +44,15 @@ test('물품: 메뉴(도감과 설정 사이)에서 물품 화면으로 가서 �
   await expect(page.getByRole('region', { name: '목줄' }).getByText('[선라인] 1.5호')).toBeVisible();
 });
 
-test('일정: 챙길 물품를 고르면 그날 일정에 체크리스트로 보이고, 챙긴 것을 체크한다', async ({ page }) => {
+test('일정: 챙길 물품을 고르면 그날 일정에 체크리스트로 보이고, 챙긴 것을 체크한다', async ({ page }) => {
   const db = await fakeBackend(page, { ...seed(), angler_gear: gear });
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
   await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
   const dialog = page.getByRole('dialog', { name: '일정 수정' });
+  // 일정 수정에서는 챙길 물품이 닫혀 있어 머리 단추로 엽니다.
+  await expect(dialog.getByRole('button', { name: /챙길 물품/ })).toHaveAttribute('aria-expanded', 'false');
+  await dialog.getByRole('button', { name: /챙길 물품/ }).click();
   const picker = dialog.getByRole('group', { name: '챙길 물품' });
   await picker.getByRole('checkbox', { name: /레가리스/ }).check();
   await picker.getByRole('checkbox', { name: /스텔라/ }).check();
@@ -87,6 +90,7 @@ test('일정: 챙길 물품를 고르면 그날 일정에 체크리스트로 보
   // 수정 창을 연 뒤 다른 사람이 체크해도, 장비만 바꿔 저장하면 그 체크는 남고 뺀 장비의 챙김만 지워집니다.
   await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
   db.events![0]!.packed_gear_ids = ['g1', 'g2', 'g3'];
+  await dialog.getByRole('button', { name: /챙길 물품/ }).click();
   await picker.getByRole('checkbox', { name: /스텔라/ }).uncheck();
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
@@ -119,7 +123,7 @@ test('출조 알림을 누르고 들어오면(?focus=gear) 그날 챙길 물품 
 
 test('추가·수정·삭제 단추는 글자 없는 아이콘 단추다(이름은 화면 읽기 프로그램용)', async ({ page }) => {
   await fakeBackend(page, { ...seed(), angler_gear: gear });
-  await page.goto('./gear');
+  await page.goto('./items');
   for (const name of ['물품 추가', /레가리스 수정/, /레가리스 삭제/]) {
     const button = page.getByRole('button', { name }).first();
     await expect(button).toHaveText('');

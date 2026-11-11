@@ -100,11 +100,64 @@
     opacity: 0.45;
   }
   /* 글자 없는 아이콘 단추(IconButton): 누르는 면적 44px */
-  .icon-only {
+  /* .button-primary(가로 여백 1.5rem)보다 뒤에 와도 이기도록 .button과 함께 겁니다. 여백이 남으면 아이콘이 0px로 찌그러집니다. */
+  /* 켜고 끄는 스위치(화면 테마). 글자와 함께 켜짐은 손잡이 위치와 바탕색으로 보입니다. */
+  .switch {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .switch-track {
+    position: relative;
+    display: inline-block;
+    width: 3rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border: 1px solid var(--color-ink);
+    border-radius: 999px;
+    background: var(--color-surface);
+    transition: background-color 0.15s;
+  }
+  .switch-thumb {
+    position: absolute;
+    top: 0.1875rem;
+    left: 0.1875rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1px solid var(--color-ink);
+    border-radius: 999px;
+    background: var(--color-paper);
+    transition: translate 0.15s;
+  }
+  .switch[aria-checked='true'] .switch-track {
+    background: var(--color-accent);
+  }
+  .switch[aria-checked='true'] .switch-thumb {
+    translate: 1.25rem 0;
+  }
+  /* 여닫기 머리 단추(챙길 물품 등): 한 줄 전체를 누를 수 있습니다. */
+  .disclosure {
+    display: flex;
+    min-height: 2.75rem;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--color-soft);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .button.icon-only {
     width: 2.75rem;
     flex-shrink: 0;
     justify-content: center;
     padding-inline: 0;
+  }
+  .button svg {
+    flex-shrink: 0; /* 단추가 좁아도 아이콘은 줄지 않습니다. */
   }
   .button[aria-pressed='true'] {
     background: var(--color-accent);

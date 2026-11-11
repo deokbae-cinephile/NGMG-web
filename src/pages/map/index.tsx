@@ -216,9 +216,6 @@ export const MapPage = () => {
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
-            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
-              <Icon name="list" size={20} />
-            </button>
             <Writable>
               <button
                 type="button"
@@ -234,6 +231,9 @@ export const MapPage = () => {
                 <Icon name="plus" size={20} />
               </button>
             </Writable>
+            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
+              <Icon name="list" size={20} />
+            </button>
           </div>
         </div>
 

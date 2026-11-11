@@ -4,8 +4,8 @@ import { acceptDialogs, expectAccessible, expectFits, fakeBackend, seed } from '
 
 acceptDialogs();
 
-test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }, testInfo) => {
-  const db = await fakeBackend(page, seed());
+test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다. 새 일정은 챙길 물품을 하나 이상 골라야 저장된다', async ({ page }, testInfo) => {
+  const db = await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
   await expect(page.getByRole('button', { name: '7 일 (토), 2026년 11월, 일정 1건' })).toBeVisible();
@@ -44,6 +44,18 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('백도');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
   await dialog.getByRole('button', { name: /백도 횟집/ }).click();
+  // 새 일정은 챙길 물품이 열려 있고, 하나도 고르지 않으면 저장하지 않고 안내합니다.
+  await expect(dialog.getByRole('button', { name: /챙길 물품/ })).toHaveAttribute('aria-expanded', 'true');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog.getByText('챙길 물품을 하나 이상 골라 주세요.')).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: /레가리스/ })).toBeFocused();
+  // 머리 단추로 여닫습니다.
+  await dialog.getByRole('button', { name: /챙길 물품/ }).click();
+  await expect(dialog.getByRole('checkbox', { name: /레가리스/ })).toBeHidden();
+  await dialog.getByRole('button', { name: /챙길 물품/ }).click();
+  await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
+  await expect(dialog.getByText('챙길 물품을 하나 이상 골라 주세요.')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '챙길 물품 (1개 고름)' })).toBeVisible();
   await dialog.getByRole('button', { name: '저장' }).click();
 
   await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();

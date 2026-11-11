@@ -345,3 +345,18 @@ test('전체 기록: 분류 필터는 지도와 같은 붙인 아이콘 단추�
   await group.getByRole('button', { name: '맛집' }).click();
   await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 바뀌지 않고, 숫자만 받는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const price = page.getByRole('dialog', { name: '새 기록' }).getByLabel('음식 1 가격 (원)');
+  await price.fill('12,000원');
+  await expect(price).toHaveValue('12000');
+  await price.focus();
+  await price.hover();
+  await page.mouse.wheel(0, -300);
+  await page.mouse.wheel(0, 300);
+  await expect(price).toHaveValue('12000');
+  await expect(price).toHaveAttribute('inputmode', 'numeric');
+});
