@@ -563,12 +563,17 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
   expect(menus).toEqual(['모둠회', '매운탕']);
   // 한 사람만 준 평점도 보여 줍니다.
-  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('김 조사 평점을 기다리는 중 (류 조사 3.5점)')).toBeVisible();
+  await expect(
+    page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByRole('definition').filter({ hasText: '김 조사 평점을 기다리는 중 (류 조사 3.5점)' }),
+  ).toBeVisible();
 
   // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
   await page.goto('./places/p2');
-  await expect(page.getByText('김 조사 평점을 기다리는 중 (류 조사 3.5점)')).toBeVisible(); // 음식 줄
-  await expect(page.getByText('김 조사 평점을 기다리는 중', { exact: true }).first()).toBeVisible(); // 기록 평점 줄도 누구를 기다리는지 씁니다.
+  // 음식 줄: 화면 읽기 프로그램에도 노출되는지(접근성 트리) 확인합니다.
+  const menuLine = page.getByRole('listitem').filter({ hasText: '매운탕' }).first();
+  expect(await menuLine.ariaSnapshot()).toContain('김 조사 평점을 기다리는 중 (류 조사 3.5점)');
+  // 기록의 평점 줄은 기록 평점과 음식 평점의 대기를 나눠 씁니다.
+  await expect(page.getByRole('definition').filter({ hasText: /^김 조사 음식 평점을 기다리는 중$/ }).first()).toBeVisible();
   await page.getByRole('button', { name: /기록 수정/ }).first().click();
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
@@ -1159,4 +1164,13 @@ test('찾기 칸은 지도·전체 기록·도감 모두 같은 모양이다(안
     expect(await box.getAttribute('placeholder')).toBeTruthy(); // 이름표 대신 칸 안의 안내 글자
     await expect(page.getByRole('search').getByRole('button')).toHaveCount(0);
   }
+});
+
+test('전체 기록: 입력하는 대로 찾고, 결과를 상태 영역으로 알린다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await openRecords(page);
+  await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('없는말');
+  await expect(page.getByRole('status').filter({ hasText: "'없는말'이(가) 들어간 기록이 없습니다." })).toBeAttached();
+  await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('감성돔');
+  await expect(page.getByRole('status').filter({ hasText: /'감성돔'이\(가\) 들어간 기록 \d+건( 이상)?을 찾았습니다\./ })).toBeAttached();
 });

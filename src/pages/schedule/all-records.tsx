@@ -90,6 +90,14 @@ export const AllRecords = () => {
           />
       </div>
       <div className="cell-body flex flex-col">
+        {/* 입력하는 대로 찾으므로, 찾기를 마치면 결과를 화면 읽기 프로그램에 알립니다(늘 있는 상태 영역). */}
+        <p role="status" className="sr-only">
+          {!keyword || isFetching
+            ? ''
+            : records.length
+              ? `'${keyword}'이(가) 들어간 기록 ${records.length}건${hasNextPage ? ' 이상' : ''}을 찾았습니다.`
+              : `'${keyword}'이(가) 들어간 기록이 없습니다.`}
+        </p>
         <ErrorText error={error} />
         {isPending && <SkeletonRows count={3} variant="record" />}
         {!isPending && !error && records.length === 0 && (

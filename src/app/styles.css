@@ -1000,6 +1000,15 @@ body::after {
     font-size: 0.9375rem; /* 평점 안내와 같은 글자 크기 */
     pointer-events: none; /* 보기만 하는 상자라, 위치 지정 중에도 아래 지도를 누를 수 있게 합니다. */
   }
+  /* 지도 폭이 좁아(평점 안내를 펼친 너비 + 날씨 상자) 둘이 겹치면 날씨 상자를 평점 안내 아래로 내립니다. */
+  .map-frame {
+    container-type: inline-size;
+  }
+  @container (width < 21.5rem) {
+    .weather-badge {
+      top: 3.75rem;
+    }
+  }
   /* 위치 지정 중 지도 가운데 십자 표시와, 그 자리로 정하는 단추(왼쪽 아래) */
   .map-crosshair {
     position: absolute;

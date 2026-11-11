@@ -417,7 +417,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
 
   return (
     // 지도를 감춘 동안에는 바탕색이 보입니다.
-    <div className="relative h-full w-full bg-surface">
+    <div className="map-frame relative h-full w-full bg-surface">
       {/* 위치 지정 중에는 지도가 초점을 받아 방향키로 옮길 수 있게 합니다(스크롤 영역에 초점을 주는 것과 같은 이유). */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={picking ? 0 : -1} className={`map-view map h-full w-full ${tilesReady ? '' : 'map-loading'}`} />
