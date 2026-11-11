@@ -1120,3 +1120,20 @@ test('지도: 고른 장소를 지도에서 새 위치로 옮긴다(좌표는 �
   expect(moved.latitude).not.toBe(34.03); // 같은 장소(기록은 그대로)의 좌표만 바뀝니다.
   expect(db.places).toHaveLength(3);
 });
+
+test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데로 위치 지정)', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤/)).toBeVisible();
+  await expect(page.getByRole('region', { name: '장소 지도' })).toHaveAttribute('tabindex', '0'); // 방향키로 옮기도록 초점을 받을 수 있습니다.
+  await page.getByRole('button', { name: '가운데로 위치 지정' }).focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  await dialog.getByLabel('이름').fill('가운데 포인트');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.places!.at(-1)).toMatchObject({ name: '가운데 포인트', latitude: 36, longitude: 127 }); // 지도 가운데 좌표
+  await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
+});

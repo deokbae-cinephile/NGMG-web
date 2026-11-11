@@ -1107,6 +1107,27 @@ body::after {
     padding: 0.375rem 0.75rem 0.375rem 0.5rem;
     color: var(--color-ink);
   }
+  /* 위치 지정 중 지도 가운데 십자 표시와, 그 자리로 정하는 단추(왼쪽 아래) */
+  .map-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 10;
+    width: 2rem;
+    height: 2rem;
+    translate: -50% -50%;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--color-ink), var(--color-ink)) center / 2px 100% no-repeat,
+      linear-gradient(var(--color-ink), var(--color-ink)) center / 100% 2px no-repeat;
+    filter: drop-shadow(0 0 1px var(--color-paper)) drop-shadow(0 0 1px var(--color-paper));
+  }
+  .map-pick-center {
+    position: absolute;
+    bottom: 2.25rem;
+    left: 0.75rem;
+    z-index: 10;
+  }
   /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
   .my-location {
     width: 1.125rem;

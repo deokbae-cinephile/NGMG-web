@@ -147,6 +147,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
         const instance = new kakao.maps.Map(container.current, {
           center: new kakao.maps.LatLng(view.latitude, view.longitude),
           level: view.level,
+          keyboardShortcuts: true, // 지도에 초점이 있으면 방향키로 옮기고 +, -로 확대·축소합니다.
         });
         kakao.maps.event.addListener(instance, 'click', (event: Kakao) => {
           if (!latest.current.picking) return;
@@ -424,7 +425,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   return (
     // 지도를 감춘 동안에는 바탕색이 보입니다.
     <div className="relative h-full w-full bg-surface">
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-loading'}`} />
+      {/* 위치 지정 중에는 지도가 초점을 받아 방향키로 옮길 수 있게 합니다(스크롤 영역에 초점을 주는 것과 같은 이유). */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={picking ? 0 : -1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-loading'}`} />
       {/* 평점 색 안내는 '평점' 단추로 여닫습니다. 고른 상태는 기억합니다. */}
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
         <button
@@ -458,7 +461,24 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       >
         <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
-      {selected && weather.data && <WeatherBadge place={selected.name} weather={weather.data} />}
+      {selected && weather.data && !picking && <WeatherBadge place={selected.name} weather={weather.data} />}
+      {/* 위치 지정 중: 가운데 십자 표시와, 그 자리로 정하는 단추(키보드·화면 읽기 사용자도 위치를 고를 수 있게). */}
+      {picking && (
+        <>
+          <span aria-hidden="true" className="map-crosshair" />
+          <button
+            type="button"
+            className="button button-primary map-pick-center"
+            onClick={() => {
+              if (!map) return;
+              const center = map.instance.getCenter();
+              latest.current.onPick(center.getLat(), center.getLng());
+            }}
+          >
+            가운데로 위치 지정
+          </button>
+        </>
+      )}
       <button ref={locateButton} type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
         <Icon name="locate" size={22} />
       </button>

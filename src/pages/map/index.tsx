@@ -30,7 +30,7 @@ export const MapPage = () => {
   const [picking, setPicking] = useState(false);
   // 지도에서 위치 옮기기: 고른 장소의 새 위치를 지도에서 누르면, 좌표와 주소를 바꾼 수정 창을 엽니다(좌표는 화면에 쓰지 않음).
   const [moving, setMoving] = useState<Place>();
-  const [editDraft, setEditDraft] = useState<Partial<PlaceDraft>>();
+  const [editDraft, setEditDraft] = useState<{ place: Partial<PlaceDraft>; addressHint?: string }>();
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
   const items = useRef(new Map<string, HTMLLIElement>());
@@ -70,7 +70,12 @@ export const MapPage = () => {
     if (moving) {
       const place = moving;
       setMoving(undefined);
-      setEditDraft({ ...place, latitude, longitude, address: (await findAddress(latitude, longitude)) || place.address });
+      const found = await findAddress(latitude, longitude);
+      setEditDraft({
+        place: { ...place, latitude, longitude, address: found || place.address },
+        // 새 위치의 주소를 못 찾으면 이전 주소를 그대로 두고, 확인하거나 고치라고 알립니다.
+        addressHint: found ? undefined : '새 위치의 주소를 찾지 못해 이전 주소를 그대로 두었습니다. 맞는지 확인하고 필요하면 고쳐 주세요.',
+      });
       return;
     }
     setDraft({ latitude, longitude, address: await findAddress(latitude, longitude) });
@@ -115,7 +120,9 @@ export const MapPage = () => {
 
         <div className="cell-body flex flex-col gap-5">
           <p role="status" className="text-sm text-muted empty:hidden">
-            {picking ? (moving ? `지도에서 '${moving.name}'의 새 위치를 눌러 주세요.` : '지도에서 저장할 위치를 눌러 주세요.') : ''}
+            {picking
+              ? `${moving ? `지도에서 '${moving.name}'의 새 위치를 눌러 주세요.` : '지도에서 저장할 위치를 눌러 주세요.'} 키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤 '가운데로 위치 지정'을 누릅니다.`
+              : ''}
           </p>
 
           <fieldset>
@@ -200,7 +207,7 @@ export const MapPage = () => {
       )}
       {editDraft && (
         <Modal title="장소 수정" onClose={() => setEditDraft(undefined)}>
-          <PlaceForm initial={editDraft} onDone={() => setEditDraft(undefined)} />
+          <PlaceForm initial={editDraft.place} addressHint={editDraft.addressHint} onDone={() => setEditDraft(undefined)} />
         </Modal>
       )}
     </div>
