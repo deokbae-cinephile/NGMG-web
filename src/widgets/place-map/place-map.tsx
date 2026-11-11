@@ -152,7 +152,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       startMoving();
       instance.setCenter(target);
       fallback = window.setTimeout(reveal, 1200);
-    }, 220); // styles.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
+    }, 220); // styles/components-map.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
     return () => {
       window.clearTimeout(timer);
       reveal();

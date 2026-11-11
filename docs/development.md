@@ -115,7 +115,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 ## 디자인 토큰
 
-`src/app/styles.css`의 `@theme`에 있습니다.
+`src/app/styles/base.css`의 `@theme`에 있습니다(스타일은 `src/app/styles/`에 영역별로 나뉘어 있고, `src/app/styles.css`가 순서대로 불러옵니다).
 
 | 토큰 | 값 | 쓰임 |
 | --- | --- | --- |

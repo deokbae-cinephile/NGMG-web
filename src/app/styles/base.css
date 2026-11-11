@@ -1,0 +1,142 @@
+/* 기본: 색·글꼴 토큰, 다크 테마, 문서 기본값, 입력칸 꺾쇠, 초점 표시 */
+/*
+ * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 주황 포인트 하나.
+ * 주황(accent)은 흰 바탕 위 글자로는 대비가 모자라 칠하는 데만 쓰고 그 위 글자는 검정입니다(검정과 약 9:1).
+ * 선택 상태는 검정 선을 함께 둘러 색 없이도 구분되게 합니다.
+ */
+@theme {
+  --color-paper: #fafafa;
+  --color-surface: #f0f0f0;
+  --color-ink: #0a0a0a;
+  --color-muted: #595959;
+  --color-line: #0a0a0a;
+  --color-soft: #d9d9d9;
+  --color-field: #8c8c8c;
+  --color-accent: #f0932b;
+  --color-on-accent: #0a0a0a; /* 포인트 색 위의 글자. 어두운 화면에서도 검정입니다. */
+  --color-sun: #d4271b;
+  --color-sat: #1f5fb4;
+  --color-danger: #b3221e;
+  --font-sans: 'Nanum Gothic', system-ui, sans-serif;
+  --spacing-topbar: 4rem;
+}
+
+/* 다크 테마: 버튼으로 고르거나, 고르지 않았으면 기기의 화면 모드가 어두울 때 같은 구조를 반전해 씁니다. 포인트 색과 평점 색은 그대로입니다. */
+:root {
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%230a0a0a' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+      --color-paper: #121212;
+      --color-surface: #1e1e1e;
+      --color-ink: #f2f2f2;
+      --color-muted: #b3b3b3;
+      --color-line: #e6e6e6;
+      --color-soft: #3b3b3b;
+      --color-field: #8c8c8c;
+      --color-sun: #ff7a6e;
+      --color-sat: #7db1ff;
+      --color-danger: #ff8a80;
+      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+    --color-paper: #121212;
+    --color-surface: #1e1e1e;
+    --color-ink: #f2f2f2;
+    --color-muted: #b3b3b3;
+    --color-line: #e6e6e6;
+    --color-soft: #3b3b3b;
+    --color-field: #8c8c8c;
+    --color-sun: #ff7a6e;
+    --color-sat: #7db1ff;
+    --color-danger: #ff8a80;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+html {
+  touch-action: manipulation; /* 두 번 눌러 확대하지 않게 합니다(사용자 요청). */
+  -webkit-tap-highlight-color: transparent; /* 누를 때 생기는 회색 반짝임 대신 각 버튼의 상태로 보여 줍니다. */
+  background: var(--color-paper);
+  color-scheme: light dark;
+  font-synthesis: none; /* 제목(.title) 밖에서는 브라우저가 가짜 굵게를 만들지 않게 합니다. */
+}
+
+body {
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--color-accent);
+}
+
+/* 넓은 화면은 본문 영역만 스크롤하므로(앱 틀 참고) 스크롤바가 생겨도 메뉴가 밀리지 않고, 메뉴는 화면 오른쪽 끝에 붙습니다. */
+
+/* 셀렉트 화살표. 왼쪽 글자 시작점(안쪽 여백 0.75rem)과 같은 간격으로 오른쪽에서 들여 둡니다. */
+select {
+  appearance: none;
+  background-image: var(--select-arrow);
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem !important;
+}
+
+/* 날짜·시간 입력칸도 셀렉트와 같은 꺾쇠를 같은 자리(오른쪽 0.75rem)에 그립니다.
+   브라우저의 선택창 단추는 글자 길이에 따라 자리가 바뀌므로 투명하게 칸 전체에 펼쳐, 칸 어디를 눌러도 날짜·시간 선택창이 열리게 합니다.
+   아이폰 사파리는 단추가 없고 글자를 가운데 놓으므로 왼쪽으로 붙입니다. */
+input[type='date'],
+input[type='time'] {
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--select-arrow);
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem !important;
+  text-align: left;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: left;
+}
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: transparent;
+  cursor: pointer;
+  opacity: 0;
+}
+
+/* 화면 전체를 본문의 선과 같은 색과 두께로 감쌉니다. */
+body::after {
+  content: '';
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  border: 1px solid var(--color-line);
+  pointer-events: none;
+}
+
+/* 휴대폰은 머리글을 숨기고(메뉴는 하단 탭) 그만큼 내용 영역을 넓게 씁니다. */
+@media (width < 64rem) {
+  :root {
+    --spacing-topbar: 0rem;
+  }
+}

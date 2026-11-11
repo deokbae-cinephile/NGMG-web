@@ -1,0 +1,48 @@
+/* 기록 사진 넘기기 */
+.photo-slider {
+  position: relative;
+  width: 100%;
+}
+.photo-slider-track {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain; /* 끝에서 더 밀어도 페이지가 옆으로 끌려가지 않게 합니다. */
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.photo-slider-track::-webkit-scrollbar {
+  display: none;
+}
+.photo-slider-track > li {
+  min-width: 0;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 세게 밀어도 한 장씩 넘깁니다. */
+}
+.photo-nav {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  background: rgb(10 10 10 / 0.65);
+  color: #fafafa;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.photo-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.photo-count {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  background: rgb(10 10 10 / 0.65);
+  padding: 0 0.375rem;
+  color: #fafafa;
+  font-size: 0.8125rem;
+}

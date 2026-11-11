@@ -1,0 +1,39 @@
+/* 움직임: 키프레임과 움직임 줄이기 설정 */
+@keyframes saving-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+@keyframes skeleton-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+  .saving-spinner {
+    animation: none;
+  }
+  .day-sheet {
+    animation: none;
+  }
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
