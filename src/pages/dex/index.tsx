@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useFishDex, useMenuDex, useSignedPhotos, type DexFish, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
-import { CardGridSkeleton, ErrorText, Field, Icon, type IconName } from '@/shared/ui';
+import { CardGridSkeleton, ErrorText, Icon, SearchField, type IconName } from '@/shared/ui';
 import { buildDex, buildMenuDex } from './model';
 import { useBatches } from './use-batches';
 
@@ -9,13 +9,6 @@ const TABS = [
   { value: 'fish', label: '어종 도감' },
   { value: 'menu', label: '음식 도감' },
 ] as const;
-
-/** 도감 안 찾기. 탭마다 따로 찾고, 탭 아래에 붙어 스크롤해도 보입니다. 입력하는 대로 걸러 냅니다. */
-const DexSearch = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
-  <div role="search" className="dex-search">
-    <Field label={label} hideLabel placeholder={label} type="search" value={value} onChange={(event) => onChange(event.target.value)} />
-  </div>
-);
 
 const matches = (keyword: string, ...values: string[]) => {
   const query = keyword.trim().toLowerCase();
@@ -148,7 +141,7 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               photo={photo ? <img src={photo.thumb} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
             >
               <dt className="mono-label">평점</dt>
-              <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending ? `${pending} (평점 대기)` : '-'}</dd>
+              <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending || '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
               <dd>
                 <span className="whitespace-nowrap">{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</span>
@@ -195,12 +188,16 @@ export const DexPage = () => {
             </button>
           ))}
         </div>
-        <DexSearch
-          key={tab}
-          label={tab === 'fish' ? '어종 찾기 (어종·조사·장소)' : '음식 찾기 (음식·장소)'}
-          value={keywords[tab]}
-          onChange={(value) => setKeywords((current) => ({ ...current, [tab]: value }))}
-        />
+        {/* 탭마다 따로 찾고, 탭 아래에 붙어 스크롤해도 보입니다. */}
+        <div className="dex-search">
+          <SearchField
+            key={tab}
+            label={tab === 'fish' ? '어종 찾기 (어종·조사·장소)' : '음식 찾기 (음식·장소)'}
+            placeholder={tab === 'fish' ? '어종·조사·장소로 찾기' : '음식·장소로 찾기'}
+            value={keywords[tab]}
+            onChange={(value) => setKeywords((current) => ({ ...current, [tab]: value }))}
+          />
+        </div>
       </div>
       {tab === 'fish' ? <FishDex keyword={keywords.fish} /> : <MenuDex keyword={keywords.menu} />}
     </div>

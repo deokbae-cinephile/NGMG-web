@@ -8,7 +8,7 @@ export const copyText = async (text: string) => {
   }
 };
 
-export const kakaoMapLink = (place: { name: string; latitude: number; longitude: number }) =>
+const kakaoMapLink = (place: { name: string; latitude: number; longitude: number }) =>
   `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.latitude},${place.longitude}`;
 
 /** 휴대폰 공유 창을 열고, 지원하지 않는 브라우저에서는 내용을 복사합니다. */

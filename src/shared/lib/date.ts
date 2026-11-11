@@ -19,7 +19,7 @@ export const normalizeDateKey = (key: string | null) => {
   const date = key ? parseDateKey(key) : new Date();
   return toDateKey(isValid(date) ? date : new Date());
 };
-export const daysFromToday = (key: string) => {
+const daysFromToday = (key: string) => {
   const day = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
   return Math.round((day(parseDateKey(key)) - day(new Date())) / 86_400_000);
 };

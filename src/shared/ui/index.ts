@@ -7,3 +7,4 @@ export * from './modal';
 export * from './skeleton';
 export * from './file-preview';
 export * from './weather-icon';
+export * from './search-field';

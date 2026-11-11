@@ -49,7 +49,7 @@ const Row = ({ variant }: { variant: RowVariant }) => {
       );
     case 'record': // 기록 카드: 날짜, 장소와 분류, 평점, 메모
       return (
-        <div className="panel panel-roomy flex flex-col gap-3">
+        <div className="panel panel-roomy flex flex-col gap-4">
           <Bar className="h-3.5 w-36" />
           <span className="flex items-center gap-2">
             <Bar className="h-5 w-1/3" />
@@ -68,7 +68,7 @@ const Row = ({ variant }: { variant: RowVariant }) => {
       );
     case 'fish': // 잡은 물고기: 사진, 어종과 조사
       return (
-        <div className="panel flex items-center gap-3">
+        <div className="panel flex items-center gap-4">
           <Bar className="size-16 shrink-0" />
           <span className="flex min-w-0 flex-1 flex-col gap-2">
             <Bar className="h-5 w-28" />

@@ -323,6 +323,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await dialog.getByLabel('이름').fill('새 포인트');
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByRole('alert')).toContainText('위치가 없습니다');
+  await expect(page.getByRole('button', { name: '지도에서 위치 옮기기' })).toHaveCount(0); // 위치 옮기기 기능은 없앴습니다.
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   // 지도를 눌러 위치를 지정하면 위도·경도가 채워진 새 장소 창이 열립니다.
@@ -342,8 +343,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await page.keyboard.press('Escape');
   await expect(popup).toBeHidden();
 
-  await page.getByRole('button', { name: '위성 지도' }).click();
-  await expect(page.getByRole('button', { name: '일반 지도' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /위성 지도|일반 지도/ })).toHaveCount(0); // 지도 종류 단추는 없앴습니다(사용자 요청).
 });
 
 test('달력: 연도와 월을 골라 이동한다', async ({ page }) => {
@@ -432,14 +432,13 @@ test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) =>
   const pane = page.locator('.pane-records');
   const search = page.getByRole('searchbox', { name: /기록 찾기/ });
   await expect(page.getByText('장소·조과·어종·메뉴·메모에서 찾기')).toHaveCount(0); // 안내 문구는 화면에 없습니다.
+  await expect(page.getByRole('button', { name: '찾기', exact: true })).toHaveCount(0); // 찾기 단추 없이 입력하는 대로 찾습니다.
   await search.fill('망둥어');
-  await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
   await expect(pane.getByText('감성돔 1마리')).toBeHidden();
 
   // 장소 이름으로도 찾습니다.
   await search.fill('바다횟');
-  await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('모둠회')).toBeVisible();
   await expect(pane.getByText('감성돔 2마리')).toBeHidden();
   await search.fill('');
@@ -564,11 +563,17 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
   expect(menus).toEqual(['모둠회', '매운탕']);
   // 한 사람만 준 평점도 보여 줍니다.
-  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('류 조사 3.5점 (평점 대기)')).toBeVisible();
+  await expect(
+    page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByRole('definition').filter({ hasText: '김 조사 평점을 기다리는 중 (류 조사 3.5점)' }),
+  ).toBeVisible();
 
   // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
   await page.goto('./places/p2');
-  await expect(page.getByText('류 조사 3.5점 / 김 조사 평점 대기')).toBeVisible();
+  // 음식 줄: 화면 읽기 프로그램에도 노출되는지(접근성 트리) 확인합니다.
+  const menuLine = page.getByRole('listitem').filter({ hasText: '매운탕' }).first();
+  expect(await menuLine.ariaSnapshot()).toContain('김 조사 평점을 기다리는 중 (류 조사 3.5점)');
+  // 기록의 평점 줄은 기록 평점과 음식 평점의 대기를 나눠 씁니다.
+  await expect(page.getByRole('definition').filter({ hasText: /^김 조사 음식 평점을 기다리는 중$/ }).first()).toBeVisible();
   await page.getByRole('button', { name: /기록 수정/ }).first().click();
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
@@ -1086,39 +1091,26 @@ test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 
   await expect(pieces).toHaveText(['55,000원', '(+5,000원)']);
 });
 
-test('지도: 핀을 고르면 왼쪽 아래에 그곳의 날씨와 기온을 보여 준다', async ({ page }) => {
+test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 기온만 보여 주고, 고르기 전에는 날씨 아이콘만 둔다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
-  await expect(page.locator('.weather-badge')).toHaveCount(0); // 고르기 전에는 없습니다.
-  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   const badge = page.locator('.weather-badge');
+  // 고르기 전: 날씨 상징 아이콘만 있고 기온은 없습니다.
   await expect(badge).toBeVisible();
+  await expect(badge.locator('svg')).toHaveCount(1);
+  await expect(badge).not.toContainText('°');
+  // 높이는 평점 안내와 같고 가로는 두 배입니다.
+  const [legend, box] = [await page.locator('.map-legend').boundingBox(), await badge.boundingBox()];
+  expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
+  expect(Math.round(box!.width)).toBe(Math.round(box!.height * 2));
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('14°');
-  await expect(badge).toContainText('구름'); // 기록의 날씨 선택지 이름을 씁니다.
-  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도');
+  await expect(badge.locator('[aria-hidden="true"]').filter({ hasText: '구름' })).toHaveCount(0); // 날씨 이름은 화면에 쓰지 않습니다.
+  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도'); // 화면 읽기 프로그램용 문장
   await expectAccessible(page);
   // 무악재역도 같은 방식입니다.
   await page.getByRole('button', { name: '무악재역', exact: true }).click();
   await expect(badge).toContainText('무악재역 지금 날씨');
-});
-
-test('지도: 고른 장소를 지도에서 새 위치로 옮긴다(좌표는 보이지 않음)', async ({ page }) => {
-  const db = await fakeBackend(page, seed());
-  await page.goto('./');
-  // 휴대폰은 위에 붙은 지도와 하단 탭 사이라 자동 스크롤이 가리므로 눌림 이벤트를 바로 보냅니다.
-  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
-  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
-  await expect(page.getByText("지도에서 '거문도 방파제'의 새 위치를 눌러 주세요.")).toBeVisible();
-  const box = (await page.getByTestId('map').boundingBox())!;
-  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } });
-  const dialog = page.getByRole('dialog', { name: '장소 수정' });
-  await expect(dialog.getByLabel('이름')).toHaveValue('거문도 방파제');
-  await expect(dialog.getByLabel('위도')).toHaveCount(0);
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  const moved = db.places!.find((item) => item.id === 'p1')!;
-  expect(moved.latitude).not.toBe(34.03); // 같은 장소(기록은 그대로)의 좌표만 바뀝니다.
-  expect(db.places).toHaveLength(3);
 });
 
 test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데로 위치 지정)', async ({ page }) => {
@@ -1138,23 +1130,6 @@ test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데�
   await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
 });
 
-test('입력 칸 안내는 칸의 설명으로 읽힌다(위치 옮기기에서 이전 주소 안내)', async ({ page }) => {
-  await fakeBackend(page, seed());
-  await page.goto('./');
-  await expect(page.locator('.pin').first()).toBeVisible();
-  // 새 위치의 주소를 찾지 못하는 경우를 흉내 냅니다.
-  await page.evaluate(() => {
-    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (lng: number, lat: number, done: (result: unknown[], status: string) => void) => void } } } } } };
-    w.kakao.maps.services.Geocoder.prototype.coord2Address = (_lng, _lat, done) => done([], 'ZERO_RESULT');
-  });
-  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
-  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
-  await page.getByRole('button', { name: '가운데로 위치 지정' }).click();
-  const address = page.getByRole('dialog', { name: '장소 수정' }).getByLabel('주소');
-  await expect(address).toHaveValue('전남 여수시 삼산면');
-  await expect(address).toHaveAccessibleDescription(/이전 주소를 그대로 두었습니다/);
-});
-
 test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'desktop');
   await fakeBackend(page, { ...seed(), members: [{ id: 'm-u1', user_id: 'u1', role: 'guest' }] });
@@ -1165,4 +1140,37 @@ test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 �
   await expect(sheet).toContainText('성탄절');
   await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
   await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
+});
+
+test('지도 날씨: 고른 뒤 받기에 실패하면 그 장소의 날씨를 못 불러왔다고 알린다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.route('https://api.open-meteo.com/**', (route) => route.fulfill({ status: 500, body: '' }));
+  await page.goto('./');
+  // 날씨 안내는 상태 영역(role=status)이라 바뀌면 화면 읽기 프로그램이 알립니다.
+  const badge = page.getByRole('status').filter({ hasText: '날씨' });
+  await expect(badge).toContainText('장소를 고르면 그곳의 지금 날씨를 보여 줍니다.');
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  await expect(badge).toContainText('거문도 방파제의 날씨를 불러오지 못했습니다.', { timeout: 10000 });
+  await expect(badge).not.toContainText('°');
+});
+
+test('찾기 칸은 지도·전체 기록·도감 모두 같은 모양이다(안내 글자, 찾기 단추 없음, 입력하는 대로)', async ({ page }) => {
+  await fakeBackend(page, seed());
+  for (const [url, name] of [['./', '이름·주소로 찾기'], ['./schedule', '기록 찾기 (장소·조과·어종·음식·메모)'], ['./dex', '어종 찾기 (어종·조사·장소)']]) {
+    if (url === './schedule') await openRecords(page);
+    else await page.goto(url);
+    const box = page.getByRole('search').getByRole('searchbox', { name, exact: true });
+    await expect(box).toBeAttached();
+    expect(await box.getAttribute('placeholder')).toBeTruthy(); // 이름표 대신 칸 안의 안내 글자
+    await expect(page.getByRole('search').getByRole('button')).toHaveCount(0);
+  }
+});
+
+test('전체 기록: 입력하는 대로 찾고, 결과를 상태 영역으로 알린다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await openRecords(page);
+  await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('없는말');
+  await expect(page.getByRole('status').filter({ hasText: "'없는말'이(가) 들어간 기록이 없습니다." })).toBeAttached();
+  await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('감성돔');
+  await expect(page.getByRole('status').filter({ hasText: /'감성돔'이\(가\) 들어간 기록 \d+건( 이상)?을 찾았습니다\./ })).toBeAttached();
 });

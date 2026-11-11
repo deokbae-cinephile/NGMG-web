@@ -1,4 +1,4 @@
-import { isPartialRating, ratingDetail, type DexFish, type DexMenu } from '@/entities/record';
+import { isPartialRating, missingRaters, ratingDetail, type DexFish, type DexMenu } from '@/entities/record';
 
 export type DexEntry = { number: number; species: string; count: number; big: DexFish };
 
@@ -51,7 +51,10 @@ export const buildMenuDex = (items: DexMenu[]): MenuDexEntry[] => {
       priceChange: prices.length >= 2 ? prices[0]! - prices[1]! : null,
       rating: ratings.length ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length : null,
       // 평균을 낼 평점이 없고 한 사람만 준 것이 있으면 그 평점을 보여 줍니다(가장 최근 것).
-      pending: newest.find((item) => isPartialRating(item.angler_ratings)) ? ratingDetail(newest.find((item) => isPartialRating(item.angler_ratings))!.angler_ratings) : '',
+      pending: (() => {
+        const waiting = newest.find((item) => isPartialRating(item.angler_ratings));
+        return waiting ? `${missingRaters(waiting.angler_ratings).join(', ')} 평점을 기다리는 중 (${ratingDetail(waiting.angler_ratings)})` : '';
+      })(),
       latest: list.at(-1)!,
       photoPath: newest.find((item) => item.photo_path)?.photo_path ?? undefined,
     };

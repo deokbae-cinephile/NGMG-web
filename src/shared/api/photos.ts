@@ -8,7 +8,7 @@ const signedPathBase = () => `${import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/
 const THUMB_SIZE = 480;
 
 /** 'a/b.jpg'의 썸네일은 'a/b.thumb.jpg'에 둡니다. */
-export const thumbPath = (path: string) => `${path.replace(/\.jpg$/, '')}.thumb.jpg`;
+const thumbPath = (path: string) => `${path.replace(/\.jpg$/, '')}.thumb.jpg`;
 
 export type PhotoUrls = { url: string; thumb: string };
 

@@ -3,14 +3,6 @@ import { ANGLERS, type AnglerRatings, type FishCatch, type PlaceKind, type Place
 export { ANGLERS };
 
 
-/** 조사별 마릿수와 가장 긴 물고기 */
-export const summarizeAnglers = (fish: Pick<FishCatch, 'angler' | 'species' | 'length_cm'>[]) =>
-  ANGLERS.map((angler) => {
-    const mine = fish.filter((item) => item.angler === angler);
-    const biggest = mine.reduce<(typeof mine)[number] | null>((best, item) => (!best || item.length_cm > best.length_cm ? item : best), null);
-    return { angler, count: mine.length, biggest };
-  });
-
 /** 물고기 한 마리를 '감성돔 38.5cm'처럼 읽습니다. */
 export const fishLabel = (fish: Pick<FishCatch, 'species' | 'length_cm'>) => `${fish.species || '물고기'} ${Number(fish.length_cm)}cm`;
 
@@ -54,8 +46,6 @@ export const RECORD_LABELS: { name: TextField; label: string }[] = [
   { name: 'menu', label: '음식' },
 ];
 
-/** 쉼표로 나눈 값을 낱개로 셉니다. (동행) */
-export const splitList = (value: string) => value.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
 
 type MenuDraft = { name: string; price: string };
 
