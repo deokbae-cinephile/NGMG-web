@@ -18,7 +18,7 @@ type Props = { initial?: Partial<PlaceDraft> & { photo_url?: string }; onDone: (
 
 /** 위도·경도는 화면에 보이지 않고, 장소 검색이나 지도에서 위치를 고르면 채워집니다. 비었으면 위치를 고르라고 안내합니다. */
 const coordinate = (max: number) => (value: string) =>
-  (value.trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= max) || '위치가 없습니다. 위에서 장소를 검색해 고르거나, 지도 화면의 \'지도를 눌러 위치 지정\'으로 위치를 정해 주세요.';
+  (value.trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= max) || '위치가 없습니다. 위에서 장소를 검색해 고르거나, 지도 화면의 \'위치 지정\'으로 위치를 정해 주세요.';
 
 export const PlaceForm = ({ initial, onDone }: Props) => {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Values>({
