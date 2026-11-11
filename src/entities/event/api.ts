@@ -65,6 +65,9 @@ export type EventInput = {
   place_id: string | null;
   memo: string;
   gear_set_ids: string[];
+  /** 챙길 장비와 그중 챙긴 것 */
+  gear_ids: string[];
+  packed_gear_ids: string[];
 };
 
 export const saveEvent = async ({ id, isNew, ...values }: EventInput) => {
@@ -83,5 +86,29 @@ export const useDeleteEvent = () => {
   return useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => client.invalidateQueries({ queryKey: ['events'] }),
+  });
+};
+
+/** 체크리스트에서 장비를 챙겼다고 표시하거나 풉니다. 두 사람이 같은 상태를 봅니다. */
+const setPacked = async ({ id, packed }: { id: string; packed: string[] }) => {
+  const { error } = await supabase.from('events').update({ packed_gear_ids: packed }).eq('id', id);
+  if (error) throw new Error('챙김 표시를 저장하지 못했습니다.');
+};
+
+/** 누르는 즉시 체크가 바뀌도록 일정 목록 캐시를 먼저 고치고, 실패하면 되돌립니다. */
+export const useSetPacked = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: setPacked,
+    onMutate: async ({ id, packed }) => {
+      await client.cancelQueries({ queryKey: ['events'] });
+      const previous = client.getQueriesData<CalendarEvent[]>({ queryKey: ['events'] });
+      client.setQueriesData<CalendarEvent[]>({ queryKey: ['events'] }, (events) =>
+        Array.isArray(events) ? events.map((event) => (event.id === id ? { ...event, packed_gear_ids: packed } : event)) : events,
+      );
+      return { previous };
+    },
+    onError: (_error, _input, context) => context?.previous.forEach(([key, data]) => client.setQueryData(key, data)),
+    onSettled: () => client.invalidateQueries({ queryKey: ['events'] }),
   });
 };

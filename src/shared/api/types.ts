@@ -108,8 +108,11 @@ export type CalendarEvent = {
   title: string;
   place_id: string | null;
   memo: string;
-  /** 조사마다 고른 장비 세트 */
+  /** 조사마다 고른 장비 세트(예전 기능, 화면에서는 쓰지 않음) */
   gear_set_ids: string[];
+  /** 챙길 장비(angler_gear id)와 그중 챙긴 것 */
+  gear_ids: string[];
+  packed_gear_ids: string[];
   place: Place | null;
 };
 

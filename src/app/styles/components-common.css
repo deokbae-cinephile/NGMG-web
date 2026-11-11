@@ -465,3 +465,18 @@
     }
   }
 }
+/* 장비 태그: 분류 아이콘 + '[브랜드] 제품명'. 체크리스트와 일정의 장비 고르기에서는 고르기 칸(choice) 안에 놓입니다. */
+@layer components {
+  .gear-tag {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .gear-tag > svg {
+    flex-shrink: 0;
+  }
+  .gear-choice {
+    max-width: 100%;
+  }
+}

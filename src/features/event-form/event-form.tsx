@@ -5,6 +5,7 @@ import { saveEvent } from '@/entities/event';
 import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
 import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
 import { ErrorText, Field, TextareaField, SAVE_KEY } from '@/shared/ui';
+import { GearPicker } from './gear-picker';
 
 type Values = { title: string; date: string; end_date: string; memo: string };
 type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => void };
@@ -23,6 +24,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   const places = usePlaces();
   const client = useQueryClient();
   const [id] = useState(() => event?.id ?? crypto.randomUUID());
+  const [gearIds, setGearIds] = useState<string[]>(event?.gear_ids ?? []);
   const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
 
   const save = useMutation({
@@ -40,6 +42,9 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         end_time: null, // 끝나는 시간 대신 끝나는 날짜를 씁니다.
         place_id: saved?.id ?? null,
         gear_set_ids: event?.gear_set_ids ?? [], // 장비 세트는 더 고르지 않고 예전 값은 그대로 둡니다.
+        gear_ids: gearIds,
+        // 챙김 표시는 아직 고른 장비에 대해서만 남깁니다.
+        packed_gear_ids: (event?.packed_gear_ids ?? []).filter((gearId) => gearIds.includes(gearId)),
       });
     },
     onSuccess: () => client.invalidateQueries(),
@@ -116,6 +121,8 @@ export const EventForm = ({ date, event, onDone }: Props) => {
           </label>
         )}
       </fieldset>
+
+      <GearPicker value={gearIds} onChange={setGearIds} />
 
       <TextareaField label="메모" {...register('memo')} />
       <ErrorText error={save.error} />
