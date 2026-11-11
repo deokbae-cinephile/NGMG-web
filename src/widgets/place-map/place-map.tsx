@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
+import { ALL_KINDS, BASE_PLACE, ClosedToday, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
 import type { Place } from '@/shared/api';
@@ -274,6 +274,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               <div className="flex items-center gap-1.5">
                 <KindBadge kind={selected.kind} />
                 <RatingChip rating={ratings?.get(selected.id)} />
+                <ClosedToday place={selected} />
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}

@@ -1,6 +1,6 @@
 import { Writable } from '@/entities/session';
 import { useState } from 'react';
-import { KindBadge, PlaceActions, useDeletePlace, usePlaces, formatHours } from '@/entities/place';
+import { ClosedToday, KindBadge, PlaceActions, useDeletePlace, usePlaces, formatHours } from '@/entities/place';
 import { FishPhotoGrid, RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
 import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
@@ -50,7 +50,7 @@ export const PlacePage = ({ id }: { id: string }) => {
           {formatHours(place) && (
             <p>
               <span className="mono-label mr-2">영업</span>
-              {formatHours(place)}
+              {formatHours(place)} <ClosedToday place={place} />
             </p>
           )}
           {place.memo && <p className="whitespace-pre-wrap break-words">{place.memo}</p>}

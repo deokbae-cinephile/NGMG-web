@@ -258,6 +258,11 @@
     font-size: 0.8125rem;
     white-space: nowrap;
   }
+  /* 오늘 휴무: 글자와 위험 색 테두리로 함께 알립니다. */
+  .badge-closed {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
   .badge-restaurant,
   .badge-solid {
     background: var(--color-ink);

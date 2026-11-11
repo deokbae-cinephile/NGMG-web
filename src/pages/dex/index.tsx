@@ -159,7 +159,7 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               <dt className="mono-label">장소</dt>
               <dd className="break-words">{latest.record.place.name}</dd>
               <dt className="mono-label">먹은 횟수</dt>
-              <dd>{`${count}번`}</dd>
+              <dd>{`${count}회`}</dd>
             </DexCard>
           );
         })}
