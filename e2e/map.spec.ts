@@ -442,6 +442,16 @@ test('지도: 확대 중 뒤로 가기는 다른 화면으로 가지 않고 확�
     await page.goBack();
     await expect(shrinkButton).toHaveCount(0);
   }
+  // 목록 확대에서 장소를 빠르게 두 번 눌러도 뒤로 가기는 한 번만 보내 지도 화면에 남습니다.
+  await page.getByRole('button', { name: '목록 확대' }).click();
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).evaluate((button: HTMLElement) => {
+    button.click();
+    button.click();
+  });
+  await expect(page.getByRole('button', { name: '목록 작게' })).toHaveCount(0);
+  await expect(page).toHaveTitle('지도 | 낚고먹고');
+  await page.waitForTimeout(300);
+  await expect(page).toHaveTitle('지도 | 낚고먹고');
   // 작게 단추로 닫으면 쌓은 기록도 지워, 뒤로 가기 한 번에 이전 화면(통계)으로 갑니다.
   await page.getByRole('button', { name: '지도 확대' }).click();
   await page.getByRole('button', { name: '지도 작게' }).click();

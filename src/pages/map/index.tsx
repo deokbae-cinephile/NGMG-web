@@ -42,8 +42,13 @@ export const MapPage = () => {
   const mapToggle = useRef<HTMLButtonElement>(null);
   const listToggle = useRef<HTMLButtonElement>(null);
   const shrinkButton = useRef<HTMLButtonElement>(null);
+  // 뒤로 가기를 보낸 뒤 popstate를 받기 전까지는 다시 보내지 않습니다(빠르게 두 번 누르면 이전 화면까지 가지 않게).
+  const goingBack = useRef(false);
   useEffect(() => {
-    const onHistory = () => setExpanded(readExpanded());
+    const onHistory = () => {
+      goingBack.current = false;
+      setExpanded(readExpanded());
+    };
     window.addEventListener('popstate', onHistory);
     return () => window.removeEventListener('popstate', onHistory);
   }, []);
@@ -64,9 +69,12 @@ export const MapPage = () => {
   };
   /** 작게 단추·Esc·다른 작업: 쌓은 기록이 있으면 뒤로 가서(popstate가 줄임) 기록을 남기지 않습니다. */
   const collapse = useCallback((focusToggle = true) => {
+    if (goingBack.current) return;
     refocus.current = focusToggle;
-    if (readExpanded()) history.back();
-    else setExpanded(undefined);
+    if (readExpanded()) {
+      goingBack.current = true;
+      history.back();
+    } else setExpanded(undefined);
   }, []);
   const expandedPane = useRef<HTMLElement | null>(null);
   const setExpandedPane = useCallback((node: HTMLElement | null) => {
