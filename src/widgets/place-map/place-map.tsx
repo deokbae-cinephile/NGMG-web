@@ -242,9 +242,13 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
 
   if (error) {
     return (
-      <div role="alert" className="flex h-full items-center justify-center p-6 text-center text-muted">
-        지도를 불러오지 못했습니다. 목록과 검색으로 장소를 관리할 수 있습니다.
-      </div>
+      <>
+        <div role="alert" className="flex h-full items-center justify-center p-6 text-center text-muted">
+          지도를 불러오지 못했습니다. 목록과 검색으로 장소를 관리할 수 있습니다.
+        </div>
+        {/* 지도를 확대한 채 실패해도 '지도 작게'로 돌아올 수 있게 단추 묶음은 남깁니다. */}
+        {tools}
+      </>
     );
   }
 

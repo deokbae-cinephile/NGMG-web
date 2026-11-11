@@ -562,3 +562,15 @@ test('분류 필터: 터치 화면에서도 알 수 있게 고른 분류 이름�
   await group.getByRole('button', { name: '기타' }).click();
   await expect(group.locator('legend')).toHaveText('분류 · 기타');
 });
+
+test('지도를 불러오지 못해도 지도 단추(지도 작게 등)는 남아 확대를 닫을 수 있다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.route('https://dapi.kakao.com/**', (route) => route.abort());
+  await page.goto('./');
+  await expect(page.getByRole('alert').filter({ hasText: '지도를 불러오지 못했습니다' })).toBeVisible();
+  const tools = page.getByRole('group', { name: '지도 단추' });
+  await tools.getByRole('button', { name: '지도 확대' }).click();
+  await expect(tools.getByRole('button', { name: '지도 작게' })).toBeVisible();
+  await tools.getByRole('button', { name: '지도 작게' }).click();
+  await expect(tools.getByRole('button', { name: '지도 확대' })).toBeVisible();
+});
