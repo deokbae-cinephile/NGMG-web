@@ -1,5 +1,5 @@
 import { useIsMutating } from '@tanstack/react-query';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { Suspense, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icon } from './icon';
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
@@ -68,7 +68,16 @@ export const Modal = ({ title, onClose, children }: Props) => {
           <Icon name="close" size={24} />
         </button>
       </div>
-      {children}
+      {/* 폼 코드는 창을 열 때 받으므로, 받는 동안 안내를 보여 줍니다. */}
+      <Suspense
+        fallback={
+          <p role="status" className="py-6 text-muted">
+            불러오는 중입니다.
+          </p>
+        }
+      >
+        {children}
+      </Suspense>
       </div>
       {/* dialog는 맨 위 층에 그려지므로 저장 중 화면도 그 안에 둡니다. */}
       {saving && (
