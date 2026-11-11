@@ -1,0 +1,97 @@
+/* 스플래시, 저장 중 화면, 스켈레톤, 본문 여백, 도감 격자, 막대그래프 */
+@layer components {
+  /* 첫 화면: 가운데 로고만 놓인 스플래시. 앱이 준비되면 서서히 사라집니다. (index.html의 #boot와 같은 모습) */
+  .splash {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-paper);
+    transition: opacity 0.3s ease-out;
+  }
+  .splash-leaving {
+    opacity: 0;
+  }
+  .splash .logo-lg {
+    width: min(40vw, 10rem);
+  }
+
+  /* 저장 중 화면. 입력과 닫기를 막고 진행 중임을 알립니다. */
+  .saving-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: color-mix(in srgb, var(--color-paper) 88%, transparent);
+    color: var(--color-ink);
+  }
+  .saving-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 3px solid var(--color-soft);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: saving-spin 0.8s linear infinite;
+  }
+
+  /* 내용이 올 자리 */
+  .skeleton {
+    display: block;
+    background: var(--color-soft);
+    animation: skeleton-pulse 1s ease-in-out infinite alternate;
+  }
+  /*
+   * 떠 있는 버튼(맨 위로·앱 설치·평점 대기, 휴대폰은 테마 전환)에 마지막 내용이 가리지 않게 끝에 여백을 둡니다.
+   * 휴대폰은 하단 탭과 버튼 높이만큼 본문 아래를 비웁니다. 넓은 화면은 버튼이 오른쪽 아래에만 있어,
+   * 본문이 스크롤되는 화면은 본문 끝에, 칸마다 스크롤되는 화면은 오른쪽 끝 칸의 끝에 여백을 둡니다.
+   */
+  .main-area {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+  /* 휴대폰 일정 화면에서 '일정 추가' 알림창이 떠 있으면 그 높이(약 4rem)만큼 더 비워 마지막 내용이 가리지 않게 합니다. */
+  @media (width < 64rem) {
+    .main-area:has(.day-sheet) {
+      padding-bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    }
+  }
+  @media (width >= 64rem) {
+    .main-area {
+      padding-bottom: 0;
+    }
+    .main-area > :not(.panes)::after,
+    .main-area > .panes > section.pane:last-of-type::after {
+      content: '';
+      display: block;
+      height: 4.5rem;
+    }
+  }
+  .skeleton-page {
+    min-height: calc(100dvh - var(--spacing-topbar) - 1px);
+  }
+
+  /* 어종 도감: 카드마다 오른쪽과 아래에 선을 그어 빈자리에는 아무것도 그리지 않습니다. */
+  .dex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  }
+  .dex-grid > li {
+    border-right: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* 막대그래프 */
+  .bar {
+    height: 0.75rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-accent);
+  }
+  .bar-top {
+    background: var(--color-ink);
+  }
+}

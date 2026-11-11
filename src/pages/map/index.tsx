@@ -124,7 +124,7 @@ export const MapPage = () => {
         <div className="cell-body flex flex-col gap-5">
           <p role="status" className="text-sm text-muted empty:hidden">
             {picking
-              ? "지도에서 저장할 위치를 눌러 주세요. 키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤 '가운데로 위치 지정'을 누릅니다."
+              ? "지도에서 저장할 위치를 눌러 주세요. 키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다."
               : ''}
           </p>
 

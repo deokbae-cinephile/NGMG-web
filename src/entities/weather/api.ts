@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 /**
  * 기록 폼의 날씨 선택지와 같은 7가지입니다(entities/record의 WEATHER_STATES).
@@ -19,21 +20,67 @@ const weatherState = (code: number): WeatherState => {
   return '비'; // 이슬비(51~57), 비(61~67), 소나기(80·81)
 };
 
-/** 좌표의 지금 날씨와 기온. 키가 필요 없는 Open-Meteo를 씁니다. */
-const fetchWeather = async (latitude: number, longitude: number): Promise<CurrentWeather> => {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude.toFixed(3)}&longitude=${longitude.toFixed(3)}&current=temperature_2m,weather_code&timezone=Asia%2FSeoul`;
+type Position = { latitude: number; longitude: number };
+type Current = { current: { temperature_2m: number; weather_code: number } };
+
+const toWeather = ({ current }: Current): CurrentWeather => ({ state: weatherState(current.weather_code), temperature: Math.round(current.temperature_2m) });
+
+/** 약 1km 안은 같은 곳으로 봅니다(같은 열쇠로 저장). */
+const weatherKey = (position?: Position) => ['weather', position?.latitude.toFixed(2), position?.longitude.toFixed(2)];
+
+/**
+ * 여러 좌표의 지금 날씨를 한 번에 받습니다. 키가 필요 없는 Open-Meteo를 씁니다.
+ * 좌표를 쉼표로 이어 보내면 같은 순서의 목록으로 돌려줍니다(좌표가 하나면 목록이 아닌 하나).
+ */
+const fetchWeathers = async (positions: Position[]): Promise<CurrentWeather[]> => {
+  const join = (pick: (position: Position) => number) => positions.map((position) => pick(position).toFixed(3)).join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${join((p) => p.latitude)}&longitude=${join((p) => p.longitude)}&current=temperature_2m,weather_code&timezone=Asia%2FSeoul`;
   const response = await fetch(url);
   if (!response.ok) throw new Error('날씨를 불러오지 못했습니다.');
-  const { current } = (await response.json()) as { current: { temperature_2m: number; weather_code: number } };
-  return { state: weatherState(current.weather_code), temperature: Math.round(current.temperature_2m) };
+  const body = (await response.json()) as Current | Current[];
+  return (Array.isArray(body) ? body : [body]).map(toWeather);
 };
 
-/** 고른 장소의 지금 날씨. 같은 곳은 15분 동안 다시 받지 않습니다(약 1km 안은 같은 곳으로 봅니다). */
-export const useCurrentWeather = (position?: { latitude: number; longitude: number }) =>
+const STALE = 15 * 60_000;
+/** 미리 받는 중인 좌표(같은 좌표를 겹쳐 요청하지 않게) */
+const inFlight = new Set<string>();
+
+/** 고른 장소의 지금 날씨. 같은 곳은 15분 동안 다시 받지 않습니다. 지도에서 미리 받아 두었으면 바로 나옵니다. */
+export const useCurrentWeather = (position?: Position) =>
   useQuery({
-    queryKey: ['weather', position?.latitude.toFixed(2), position?.longitude.toFixed(2)],
-    queryFn: () => fetchWeather(position!.latitude, position!.longitude),
+    queryKey: weatherKey(position),
+    queryFn: async () => (await fetchWeathers([position!]))[0]!,
     enabled: Boolean(position),
-    staleTime: 15 * 60_000,
+    staleTime: STALE,
     gcTime: 60 * 60_000,
   });
+
+/**
+ * 지도를 열 때 모든 장소의 날씨를 한 번의 요청으로 미리 받아 둡니다. 핀을 누르면 기다리지 않고 바로 보입니다.
+ * 이미 15분 안에 받은 곳은 빼고, 실패하면 핀을 누를 때 하나씩 받습니다.
+ */
+export const usePrefetchWeather = (positions: Position[]) => {
+  const client = useQueryClient();
+  // 좌표 목록을 열쇠 문자열로 바꿔 두면, 목록이 실제로 바뀔 때만 다시 확인합니다(같은 곳은 하나로 합칩니다).
+  const signature = [...new Set(positions.map((position) => weatherKey(position).join('|')))].join(';');
+  useEffect(() => {
+    if (!signature) return;
+    // 열쇠는 약 1km(소수 둘째 자리)로 반올림한 좌표라, 그 좌표로 받아도 같은 곳의 날씨입니다.
+    const keys = signature.split(';').map((key) => {
+      const [, latitude, longitude] = key.split('|');
+      return [key, { latitude: Number(latitude), longitude: Number(longitude) }] as const;
+    });
+    const now = Date.now();
+    const missing = keys.filter(([key, position]) => {
+      if (inFlight.has(key)) return false;
+      const state = client.getQueryState(weatherKey(position));
+      return !state?.data || now - state.dataUpdatedAt > STALE;
+    });
+    if (!missing.length) return;
+    missing.forEach(([key]) => inFlight.add(key));
+    void fetchWeathers(missing.map(([, position]) => position))
+      .then((weathers) => missing.forEach(([, position], index) => client.setQueryData(weatherKey(position), weathers[index])))
+      .catch(() => undefined)
+      .finally(() => missing.forEach(([key]) => inFlight.delete(key)));
+  }, [client, signature]);
+};

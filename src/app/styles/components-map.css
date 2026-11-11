@@ -1,0 +1,335 @@
+/* 지도: 지도 바탕, 핀, 평점 안내, 현재 위치, 날씨, 말풍선, 사진 모음 */
+@layer components {
+  /* 지도 바탕(타일 이미지)만 흑백에 가깝게 하고 핀 색은 그대로 둡니다. */
+  .map img {
+    filter: grayscale(0.85) contrast(1.05);
+  }
+  /* 화면 밖 먼 곳으로 옮길 때는 새 지도 그림을 다 받을 때까지 감췄다가 부드럽게 다시 보여 줍니다. (빈 화면이 번쩍이지 않게) */
+  .map-view {
+    transition: opacity 0.2s ease-out;
+  }
+  /* map-loading: 처음 들어와 첫 그림을 받는 동안, map-moving: 먼 곳으로 옮기는 동안. 서로 따로 풀립니다. */
+  .map-moving,
+  .map-loading {
+    opacity: 0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .map img {
+      filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9); /* 밝은 지도 타일을 어둡게 뒤집습니다. */
+    }
+  }
+  :root[data-theme='dark'] .map img {
+    filter: grayscale(1) invert(1) contrast(0.95) brightness(0.9);
+  }
+  /* 위 흑백·반전은 지도 바탕만을 위한 것입니다. 지도 위 정보 창에 그림이 들어가면 원래 색으로 보여 줍니다(다크 테마 규칙보다 우선). */
+  .map .map-popup img {
+    filter: none !important;
+  }
+
+  /* 지도 핀: 지도 메뉴 아이콘과 같은 물방울 모양. 뾰족한 끝이 장소 위치이고, 분류는 아이콘, 평균 평점은 핀 전체의 색으로 나타냅니다. */
+  .pin {
+    --pin-fill: var(--color-paper);
+    position: relative;
+    display: flex;
+    width: 2.625rem;
+    height: 3.25rem;
+    justify-content: center;
+    padding-top: 0.94rem; /* 18px 아이콘의 중심을 핀 머리 원의 중심(위에서 약 24px)에 맞춥니다. */
+    color: var(--color-ink);
+    cursor: pointer;
+    transform-origin: bottom center;
+    transition: scale 0.15s ease-out;
+  }
+  .pin > svg:not(.pin-shape) {
+    position: relative;
+  }
+  .pin-shape {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* 뾰족한 끝을 그림 아래 끝에 맞췄으므로, 끝의 윤곽선이 잘리지 않게 그림 밖까지 그립니다. */
+    fill: var(--pin-fill);
+    stroke: var(--color-ink);
+    stroke-width: 1.1;
+  }
+  .pin-etc {
+    --pin-fill: var(--color-soft); /* 흰 핀과 구분되는 연회색을 씁니다. */
+  }
+  /* 평균 평점 색(월드 오브 워크래프트 아이템 등급 색). 핀 전체와 평점 표시에 함께 씁니다. 평점이 없으면 분류별 기본 색입니다. */
+  .pin.rate-1 {
+    --pin-fill: #9d9d9d;
+    background: none;
+    color: #0a0a0a;
+  }
+  .rate-1 {
+    background: #9d9d9d;
+    color: #0a0a0a;
+  }
+  .pin.rate-2 {
+    --pin-fill: #1eff00;
+    background: none;
+    color: #0a0a0a;
+  }
+  .rate-2 {
+    background: #1eff00;
+    color: #0a0a0a;
+  }
+  .pin.rate-3 {
+    --pin-fill: #0070dd;
+    background: none;
+    color: #fafafa;
+  }
+  .rate-3 {
+    background: #0070dd;
+    color: #fafafa;
+  }
+  .pin.rate-4 {
+    --pin-fill: #a335ee;
+    background: none;
+    color: #fafafa;
+  }
+  .rate-4 {
+    background: #a335ee;
+    color: #fafafa;
+  }
+  .pin.rate-5 {
+    --pin-fill: #ff8000;
+    background: none;
+    color: #0a0a0a;
+  }
+  .rate-5 {
+    background: #ff8000;
+    color: #0a0a0a;
+  }
+  .pin-score {
+    position: absolute;
+    top: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0 0.1875rem;
+    color: var(--color-ink);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    white-space: nowrap; /* '4.0'이 두 줄로 나뉘지 않게 합니다. */
+  }
+  .rating-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--color-ink);
+    padding: 0 0.375rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+  .map-legend {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 10;
+    display: flex;
+    height: 2.5rem; /* 오른쪽 날씨 상자와 같은 높이 */
+    align-items: center;
+    gap: 0.3125rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0 0.5rem;
+    font-size: 0.9375rem;
+  }
+  .map-legend-toggle,
+  .map-legend-scale > span {
+    display: inline-flex;
+    height: 1.625rem;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  /* 여닫기 단추는 상자 높이 전체를 누를 수 있게 늘립니다. */
+  .map-legend-toggle {
+    height: 100%;
+    gap: 0.125rem;
+    cursor: pointer;
+  }
+  .map-legend-scale {
+    display: flex;
+    gap: 0.3125rem;
+  }
+  .map-legend-scale[hidden] {
+    display: none;
+  }
+  .map-legend-scale > span {
+    width: 1.625rem;
+  }
+
+  /* 현재 위치 단추: 지도 오른쪽 아래(카카오 축척 표시와 겹치지 않는 쪽). 위성 단추와 같은 모양입니다. */
+  .map-locate {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 10;
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .map-locate:disabled {
+    cursor: progress;
+  }
+  .map-locate[aria-busy='true'] svg {
+    animation: skeleton-pulse 0.6s ease-in-out infinite alternate;
+  }
+  @media (hover: hover) {
+    .map-locate:not(:disabled):hover {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+    }
+  }
+  .map-locate-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    position: absolute;
+    right: 0.75rem;
+    bottom: 4rem;
+    left: 0.75rem;
+    z-index: 10;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.5rem 0.75rem;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+  }
+  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.5rem) 가로는 두 배입니다. */
+  .weather-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
+    display: flex;
+    width: 5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 0.9375rem; /* 평점 안내와 같은 글자 크기와 줄 높이 */
+    line-height: 1;
+    pointer-events: none; /* 보기만 하는 상자라, 위치 지정 중에도 아래 지도를 누를 수 있게 합니다. */
+  }
+  /* 지도 폭이 좁아(평점 안내를 펼친 너비 + 날씨 상자) 둘이 겹치면 날씨 상자를 평점 안내 아래로 내립니다. */
+  .map-frame {
+    container-type: inline-size;
+  }
+  @container (width < 21.5rem) {
+    .weather-badge {
+      top: 3.75rem;
+    }
+  }
+  /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
+  .my-location {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 3px solid #fff;
+    border-radius: 9999px;
+    background: #1f6feb;
+    box-shadow: 0 0 0 6px rgb(31 111 235 / 0.25), 0 1px 3px rgb(0 0 0 / 0.4);
+  }
+  /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
+  /* 무악재역: 흰 바탕에 검정 윤곽선. 기차 아이콘과 이름표로 구분합니다. */
+  .pin-base {
+    cursor: default;
+    pointer-events: none;
+  }
+  /* 지도 화면 맨 위 버튼 세 개. 좁은 화면에서도 한 줄에 들어가도록 안쪽 여백을 줄입니다. */
+  .map-actions {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap; /* 화면을 확대해 한 줄에 안 들어가면 줄을 바꿉니다. */
+    gap: 0.5rem;
+  }
+  .map-actions .button {
+    flex-shrink: 0;
+    padding-inline: 0.375rem;
+    white-space: nowrap;
+  }
+  .map-actions .button:first-child {
+    flex: 1 1 auto;
+  }
+  @media (width >= 64rem) {
+    .map-actions .button {
+      padding-inline: 0.625rem;
+    }
+  }
+
+  /* 핀을 고르면 뜨는 말풍선. 핀 위에 놓이도록 아래를 비우고, 꼬리로 핀을 가리킵니다. */
+  /* 잡은 물고기 사진: 장소 상세는 격자, 지도 말풍선은 작은 한 줄 */
+  .fish-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 1rem 0.75rem;
+  }
+  .map-popup {
+    animation: popup-in 0.18s ease-out;
+    position: relative;
+    display: flex;
+    width: 14rem;
+    max-width: 70vw;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    margin-bottom: 4.5rem; /* 고른 핀(1.15배, 약 60px) 위로 꼬리까지 띄워 겹치지 않게 합니다. */
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.625rem 0.75rem;
+    color: var(--color-ink);
+  }
+  /* 이름 첫 줄과 높이를 맞춘 작은 닫기 버튼. 말풍선 오른쪽 위에 놓습니다. */
+  .map-popup-close {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-right: -0.25rem;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  @media (hover: hover) {
+    .map-popup-close:hover {
+      background: var(--color-surface);
+    }
+  }
+  .map-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -0.3125rem;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 1px solid var(--color-ink);
+    border-bottom: 1px solid var(--color-ink);
+    background: inherit;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  /* 고른 핀은 조금 키우고 윤곽을 굵게 합니다. */
+  .pin[aria-pressed='true'],
+  .pin-base[data-selected='true'] {
+    scale: 1.15;
+  }
+  .pin[aria-pressed='true'] .pin-score {
+    display: none; /* 위에 뜨는 말풍선의 상호와 겹치지 않게 합니다. */
+  }
+  .pin[aria-pressed='true'] .pin-shape,
+  .pin-base[data-selected='true'] .pin-shape {
+    stroke-width: 2;
+  }
+}

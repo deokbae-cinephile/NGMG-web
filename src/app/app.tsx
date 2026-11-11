@@ -1,6 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, useCallback, useEffect, useState } from 'react';
 import { useSession } from '@/entities/session';
+import { preloadEventForm } from '@/features/event-form';
+import { preloadPlaceForm } from '@/features/place-form';
+import { preloadRecordForm } from '@/features/record-form';
 import { LoginPage } from '@/pages/login';
 import { Navigate, useLocation } from '@/shared/lib';
 import { ErrorBoundary } from '@/shared/ui';
@@ -77,7 +80,11 @@ export const App = () => {
   // 로그인 후 다른 메뉴의 코드를 미리 받아 둡니다. 메뉴를 처음 눌러도 로딩 화면 없이 바로 바뀝니다.
   useEffect(() => {
     if (!session) return;
-    const timer = window.setTimeout(() => Object.values(pages).forEach((load) => void load()), 1000);
+    // 폼 코드(장소·기록·일정)도 함께 받아 두어, 오프라인에서도 창이 열립니다.
+    const timer = window.setTimeout(() => {
+      Object.values(pages).forEach((load) => void load());
+      [preloadPlaceForm, preloadRecordForm, preloadEventForm].forEach((preload) => preload());
+    }, 1000);
     return () => window.clearTimeout(timer);
   }, [session]);
 

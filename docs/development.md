@@ -105,7 +105,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| E2E | `e2e/app.spec.ts` | 핵심 흐름 8개를 프로덕션 빌드로 360·768·1280px에서 검사합니다. 넘침과 axe 접근성 검사를 포함합니다. |
+| E2E | `e2e/*.spec.ts`(지도·일정·기록·도감통계·앱), 공통 도우미 `e2e/support.ts` | 화면 흐름 51개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(146회). 넘침과 axe 접근성 검사를 포함합니다. |
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
@@ -115,7 +115,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 ## 디자인 토큰
 
-`src/app/styles.css`의 `@theme`에 있습니다.
+`src/app/styles/base.css`의 `@theme`에 있습니다(스타일은 `src/app/styles/`에 영역별로 나뉘어 있고, `src/app/styles.css`가 순서대로 불러옵니다).
 
 | 토큰 | 값 | 쓰임 |
 | --- | --- | --- |
