@@ -31,6 +31,10 @@ export const MapPage = () => {
   // 지도에서 위치 옮기기: 고른 장소의 새 위치를 지도에서 누르면, 좌표와 주소를 바꾼 수정 창을 엽니다(좌표는 화면에 쓰지 않음).
   const [moving, setMoving] = useState<Place>();
   const pickRequest = useRef(0);
+  /** 위치 지정을 켜고 끄거나 다른 장소로 바꾸면, 진행 중인 주소 조회 결과를 버립니다(이전 선택의 창이 늦게 열리지 않게). */
+  const dropPendingPick = () => {
+    pickRequest.current += 1;
+  };
   const [editDraft, setEditDraft] = useState<{ place: Partial<PlaceDraft>; addressHint?: string }>();
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
@@ -106,6 +110,7 @@ export const MapPage = () => {
                 className="button"
                 aria-pressed={picking}
                 onClick={() => {
+                  dropPendingPick();
                   setPicking(!picking);
                   setMoving(undefined);
                 }}
@@ -114,7 +119,14 @@ export const MapPage = () => {
               </button>
             </Writable>
             <Writable>
-              <button type="button" className="button button-primary" onClick={() => setDraft({})}>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => {
+                  dropPendingPick();
+                  setDraft({});
+                }}
+              >
                 장소 추가
               </button>
             </Writable>
@@ -188,6 +200,7 @@ export const MapPage = () => {
                           onClick={() => {
                             const start = moving?.id !== place.id;
                             setMoving(start ? place : undefined);
+                            dropPendingPick();
                             setPicking(start);
                           }}
                         >
