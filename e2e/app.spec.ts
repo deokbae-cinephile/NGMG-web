@@ -1136,3 +1136,14 @@ test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 �
   await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
   await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
 });
+
+test('지도 날씨: 고른 뒤 받기에 실패하면 그 장소의 날씨를 못 불러왔다고 알린다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.route('https://api.open-meteo.com/**', (route) => route.fulfill({ status: 500, body: '' }));
+  await page.goto('./');
+  const badge = page.locator('.weather-badge');
+  await expect(badge).toContainText('장소를 고르면 그곳의 지금 날씨를 보여 줍니다.');
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  await expect(badge).toContainText('거문도 방파제의 날씨를 불러오지 못했습니다.', { timeout: 10000 });
+  await expect(badge).not.toContainText('°');
+});

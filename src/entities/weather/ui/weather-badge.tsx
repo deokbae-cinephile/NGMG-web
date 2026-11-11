@@ -6,10 +6,17 @@ import type { CurrentWeather } from '../api';
  * 장소를 고르지 않았거나 날씨가 없으면 날씨 상징 아이콘(구름 낀 해)만 보여 줍니다.
  * 화면 읽기 프로그램에는 날씨 이름까지 한 문장으로 알립니다.
  */
-export const WeatherBadge = ({ place, weather }: { place?: string; weather?: CurrentWeather }) => (
+export const WeatherBadge = ({ place, weather, failed = false }: { place?: string; weather?: CurrentWeather; failed?: boolean }) => (
   <p className="weather-badge">
+    {/* 고르기 전, 받는 중, 받기 실패, 받음에 맞춰 화면 읽기 프로그램에 알립니다. */}
     <span className="sr-only">
-      {place && weather ? `${place} 지금 날씨 ${weather.state}, 기온 ${weather.temperature}도` : '날씨: 장소를 고르면 그곳의 지금 날씨를 보여 줍니다.'}
+      {!place
+        ? '날씨: 장소를 고르면 그곳의 지금 날씨를 보여 줍니다.'
+        : weather
+          ? `${place} 지금 날씨 ${weather.state}, 기온 ${weather.temperature}도`
+          : failed
+            ? `${place}의 날씨를 불러오지 못했습니다.`
+            : `${place}의 날씨를 불러오는 중입니다.`}
     </span>
     <WeatherIcon state={weather?.state ?? '구름'} size={22} />
     {weather && <span aria-hidden="true">{`${weather.temperature}°`}</span>}
