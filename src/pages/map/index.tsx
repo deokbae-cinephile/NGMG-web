@@ -124,6 +124,8 @@ export const MapPage = () => {
                 className="button button-primary"
                 onClick={() => {
                   dropPendingPick();
+                  setPicking(false); // 위치 지정·위치 옮기기를 끝내고 새 장소 입력으로 넘어갑니다.
+                  setMoving(undefined);
                   setDraft({});
                 }}
               >

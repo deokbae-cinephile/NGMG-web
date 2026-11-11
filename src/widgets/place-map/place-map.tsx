@@ -461,7 +461,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       >
         <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
-      {selected && weather.data && !picking && <WeatherBadge place={selected.name} weather={weather.data} />}
+      {/* 다시 받기에 실패하면 예전 날씨를 지금 날씨처럼 보여 주지 않도록 감춥니다. */}
+      {selected && weather.data && !weather.isError && !picking && <WeatherBadge place={selected.name} weather={weather.data} />}
       {/* 위치 지정 중: 가운데 십자 표시와, 그 자리로 정하는 단추(키보드·화면 읽기 사용자도 위치를 고를 수 있게). */}
       {picking && (
         <>

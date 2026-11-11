@@ -1154,3 +1154,14 @@ test('입력 칸 안내는 칸의 설명으로 읽힌다(위치 옮기기에서 
   await expect(address).toHaveValue('전남 여수시 삼산면');
   await expect(address).toHaveAccessibleDescription(/이전 주소를 그대로 두었습니다/);
 });
+
+test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop');
+  await fakeBackend(page, { ...seed(), members: [{ id: 'm-u1', user_id: 'u1', role: 'guest' }] });
+  await page.goto('./schedule?date=2026-12-01');
+  await page.getByRole('button', { name: /^25 일 \(금\), 2026년 12월, 성탄절/ }).click();
+  const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
+  await expect(sheet).toContainText('12월 25일 (금)');
+  await expect(sheet).toContainText('성탄절');
+  await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
+});
