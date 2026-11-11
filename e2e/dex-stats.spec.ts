@@ -105,7 +105,10 @@ test('도감: 탭마다 따로 찾고, 어종 카드는 빅원을 잡은 날로 
   const fishSearch = page.getByRole('searchbox', { name: /어종 찾기/ });
   await fishSearch.fill('볼락');
   await expect(page.getByRole('heading', { level: 3 })).toHaveText(['볼락']);
-  await expect(page.getByRole('button', { name: '어종 도감' })).toHaveCSS('font-weight', '700'); // 고른 탭은 굵게
+  // 고른 탭은 굵게 보이되, 글꼴이 바뀌어 작아지지 않습니다(고르지 않은 탭과 글자 폭이 같음).
+  const width = (name: string) => page.getByRole('button', { name }).evaluate((node) => { const range = document.createRange(); range.selectNodeContents(node); return Math.round(range.getBoundingClientRect().width); });
+  expect(await page.getByRole('button', { name: '어종 도감' }).evaluate((node) => getComputedStyle(node).webkitTextStrokeWidth)).not.toBe('0px');
+  expect(Math.abs((await width('어종 도감')) - (await width('음식 도감')))).toBeLessThanOrEqual(1);
   await page.getByRole('button', { name: '음식 도감' }).click();
   await expect(page.getByRole('searchbox', { name: /음식 찾기/ })).toHaveValue(''); // 음식 도감은 따로 찾습니다.
   await page.getByRole('button', { name: '어종 도감' }).click();

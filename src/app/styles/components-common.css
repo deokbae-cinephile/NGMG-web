@@ -227,8 +227,9 @@
   .tab-button[aria-pressed='true'] {
     background: var(--color-accent);
     color: var(--color-on-accent);
-    font-weight: 700;
-    font-synthesis: weight; /* 한글 글꼴은 굵은 파일을 받지 않으므로 제목(.title)처럼 브라우저가 굵게 그립니다. */
+    /* 굵게(700)로 바꾸면 한글 굵은 글꼴 파일이 없어 크롬이 다른 글꼴로 바꿔 그려 글자가 작아 보입니다.
+       나눔고딕 그대로 글자 테두리를 얇게 그려 굵게 보이게 합니다. */
+    -webkit-text-stroke: 0.035em currentColor;
   }
 
   .result {
