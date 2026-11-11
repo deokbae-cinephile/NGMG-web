@@ -4,6 +4,7 @@ import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
+import { useGear } from '@/entities/gear';
 import { GearChecklist } from '@/features/gear-checklist';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
@@ -62,7 +63,9 @@ export const SchedulePage = () => {
   );
   const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
   // 출조 알림을 누르면 ?focus=gear로 들어옵니다. 그날 첫 일정의 챙길 물품 체크리스트를 바로 보여 줍니다.
-  const revealId = params.get('focus') === 'gear' ? events.find((event) => event.gear_ids?.length)?.id : undefined;
+  // 지운 물품 id만 남은 일정은 체크리스트가 없으므로, 실제 물품이 하나라도 있는 첫 일정을 고릅니다.
+  const gearList = useGear().data;
+  const revealId = params.get('focus') === 'gear' ? events.find((event) => event.gear_ids?.some((id) => gearList?.some((item) => item.id === id)))?.id : undefined;
   const recorded = useRecordedEventIds(events);
   const waiting = events.filter((event) => event.place && !recorded.data?.has(event.id));
   const holiday = holidayName(selected);

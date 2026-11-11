@@ -104,7 +104,11 @@ test('게스트: 물품 체크리스트는 보기만 한다', async ({ page }) =
 
 test('출조 알림을 누르고 들어오면(?focus=gear) 그날 챙길 물품 체크리스트를 바로 보여 준다', async ({ page }) => {
   const base = seed();
-  base.events![0] = { ...base.events![0]!, gear_ids: ['g1', 'g2'], packed_gear_ids: [] };
+  // 첫 일정에는 지운 물품 id만 남아 있고, 둘째 일정에 실제 물품이 있습니다.
+  base.events = [
+    { ...base.events![0]!, gear_ids: ['deleted'], packed_gear_ids: [] },
+    { ...base.events![0]!, id: 'e-second', title: '오후 출조', gear_ids: ['g1', 'g2'], packed_gear_ids: [] },
+  ];
   await page.setViewportSize({ width: 360, height: 640 });
   await fakeBackend(page, { ...base, angler_gear: gear });
   await page.goto('./schedule?date=2026-11-07&focus=gear');

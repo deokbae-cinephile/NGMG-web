@@ -264,6 +264,10 @@ test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없�
   await expect(page.getByRole('alert')).toContainText('위치 권한이 꺼져 있습니다');
   await page.waitForTimeout(5500);
   await expect(page.getByRole('alert')).toBeVisible(); // 저절로 사라지지 않습니다.
+  // 안내는 오른쪽 지도 단추 줄과 겹치지 않습니다(닫기 단추가 지도 확대 단추에 가리지 않게).
+  const alertBox = (await page.getByRole('alert').boundingBox())!;
+  const toolBox = (await page.getByRole('group', { name: '지도 단추' }).boundingBox())!;
+  expect(alertBox.x + alertBox.width).toBeLessThanOrEqual(toolBox.x);
   await page.getByRole('button', { name: '위치 안내 닫기' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('alert')).toHaveCount(0);
