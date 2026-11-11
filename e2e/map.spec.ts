@@ -120,22 +120,32 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('지도 단추: 위치 지정·무악재역·지도 확대는 지도 위(현재 위치 단추 위)에 세로로, 목록 확대·장소 추가는 목록 위에 놓인다. 무악재역은 길찾기 출발지다', async ({ page }) => {
+test('지도 단추: 오른쪽에 위에서부터 지도 확대·위치 지정·무악재역·현재 위치가 틈 없이 붙고, 목록 위는 장소 추가(왼쪽 끝)·목록 확대(오른쪽 끝)다. 무악재역은 길찾기 출발지다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
   const tools = page.getByRole('group', { name: '지도 단추' });
   const base = tools.getByRole('button', { name: '무악재역', exact: true });
   await expect(base).toHaveAttribute('aria-pressed', 'false');
-  const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
-  const locate = (await page.getByRole('button', { name: '현재 위치로 이동' }).boundingBox())!;
-  const onMap = await Promise.all(['위치 지정', '무악재역', '지도 확대'].map((name) => tools.getByRole('button', { name, exact: true }).boundingBox()));
-  for (const box of onMap) {
-    expect(Math.round(box!.x)).toBe(Math.round(locate.x)); // 현재 위치 단추와 같은 세로줄
-    expect(box!.y + box!.height).toBeLessThanOrEqual(locate.y);
-    expect(box!.y).toBeGreaterThanOrEqual(map.y);
+  const column = await Promise.all(
+    [tools.getByRole('button', { name: '지도 확대' }), tools.getByRole('button', { name: '위치 지정', exact: true }), base, page.getByRole('button', { name: '현재 위치로 이동' })].map((button) => button.boundingBox()),
+  );
+  for (let i = 1; i < column.length; i += 1) {
+    expect(Math.round(column[i]!.x)).toBe(Math.round(column[0]!.x)); // 같은 세로줄
+    expect(Math.round(column[i]!.y)).toBe(Math.round(column[i - 1]!.y + column[i - 1]!.height) - 1); // 틈 없이(선 1px 겹침) 아래로
   }
-  expect(onMap.map((box) => Math.round(box!.y))).toEqual([...onMap.map((box) => Math.round(box!.y))].sort((a, b) => a - b)); // 위에서부터 위치 지정·무악재역·지도 확대
-  for (const name of ['목록 확대', '장소 추가']) await expect(page.getByRole('region', { name: '내 장소' }).getByRole('button', { name })).toBeVisible(); // 목록 칸 위
+  // 키보드 이동 순서도 화면 위아래 순서와 같습니다.
+  await tools.getByRole('button', { name: '지도 확대' }).focus();
+  for (const name of ['위치 지정', '무악재역', '현재 위치로 이동']) {
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name, exact: true }).first()).toBeFocused();
+  }
+  // 목록 위: 장소 추가는 왼쪽 끝, 목록 확대는 오른쪽 끝
+  const region = page.getByRole('region', { name: '내 장소' });
+  const head = (await region.locator('.map-actions').boundingBox())!;
+  const add = (await region.getByRole('button', { name: '장소 추가' }).boundingBox())!;
+  const list = (await region.getByRole('button', { name: '목록 확대' }).boundingBox())!;
+  expect(Math.round(add.x)).toBe(Math.round(head.x));
+  expect(Math.round(list.x + list.width)).toBe(Math.round(head.x + head.width));
   // 위치 지정은 다시 누르면 취소합니다(켜짐은 aria-pressed).
   const pick = tools.getByRole('button', { name: '위치 지정', exact: true });
   await expect(pick).toHaveText('');
@@ -553,12 +563,14 @@ test('분류 필터: 터치 화면에서도 알 수 있게 고른 분류 이름�
   await expect(group.locator('legend')).toHaveText('분류 · 기타');
 });
 
-test('목록 위 단추: 장소 추가·목록 확대 순서로 틈 없이 붙어 있다', async ({ page }) => {
+test('지도를 불러오지 못해도 지도 단추(지도 작게 등)는 남아 확대를 닫을 수 있다', async ({ page }) => {
   await fakeBackend(page, seed());
+  await page.route('https://dapi.kakao.com/**', (route) => route.abort());
   await page.goto('./');
-  const region = page.getByRole('region', { name: '내 장소' });
-  const add = (await region.getByRole('button', { name: '장소 추가' }).boundingBox())!;
-  const list = (await region.getByRole('button', { name: '목록 확대' }).boundingBox())!;
-  expect(add.x).toBeLessThan(list.x);
-  expect(Math.round(list.x)).toBe(Math.round(add.x + add.width) - 1); // 선 1px을 겹쳐 붙임
+  await expect(page.getByRole('alert').filter({ hasText: '지도를 불러오지 못했습니다' })).toBeVisible();
+  const tools = page.getByRole('group', { name: '지도 단추' });
+  await tools.getByRole('button', { name: '지도 확대' }).click();
+  await expect(tools.getByRole('button', { name: '지도 작게' })).toBeVisible();
+  await tools.getByRole('button', { name: '지도 작게' }).click();
+  await expect(tools.getByRole('button', { name: '지도 확대' })).toBeVisible();
 });

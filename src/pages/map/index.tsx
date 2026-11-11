@@ -173,35 +173,46 @@ export const MapPage = () => {
       <h1 className="sr-only">내 장소 지도</h1>
       {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
       <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:relative lg:top-auto lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
-        <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} focusKey={focusKey} />
-        {/* 지도 위 단추(오른쪽 아래, 현재 위치 단추 위): 위치 지정, 무악재역, 지도 확대·작게(한 단추로 토글). 확대해도 같은 자리에 있습니다. */}
-        <div role="group" aria-label="지도 단추" className="map-tools">
-          <Writable>
-            <button type="button" className="map-tool" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
-              <Icon name="mapPinPlus" size={20} />
-            </button>
-          </Writable>
-          <button
-            type="button"
-            className="map-tool"
-            aria-label={BASE_PLACE.name}
-            title={BASE_PLACE.name}
-            aria-pressed={selectedId === BASE_PLACE.id}
-            onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}
-          >
-            <Icon name="train" size={20} />
-          </button>
-          <button
-            ref={mapToggle}
-            type="button"
-            className="map-tool"
-            aria-label={expanded === 'map' ? '지도 작게' : '지도 확대'}
-            title={expanded === 'map' ? '지도 작게' : '지도 확대'}
-            onClick={() => (expanded === 'map' ? collapse() : expand('map'))}
-          >
-            <Icon name={expanded === 'map' ? 'minimize' : 'maximize'} size={20} />
-          </button>
-        </div>
+        <PlaceMap
+          places={visible}
+          selectedId={selectedId}
+          picking={picking}
+          onSelect={setSelectedId}
+          onClose={closePopup}
+          onPick={onPick}
+          focusKey={focusKey}
+          // 현재 위치 단추 바로 앞에 그려, 키보드 이동 순서가 화면 위아래 순서와 같습니다.
+          tools={
+            // 지도 위 단추(오른쪽 아래): 위에서부터 지도 확대·작게(토글), 위치 지정, 무악재역, 그 아래 현재 위치. 틈 없이 붙이고, 확대해도 같은 자리입니다.
+            <div role="group" aria-label="지도 단추" className="map-tools">
+              <button
+                ref={mapToggle}
+                type="button"
+                className="map-tool"
+                aria-label={expanded === 'map' ? '지도 작게' : '지도 확대'}
+                title={expanded === 'map' ? '지도 작게' : '지도 확대'}
+                onClick={() => (expanded === 'map' ? collapse() : expand('map'))}
+              >
+                <Icon name={expanded === 'map' ? 'minimize' : 'maximize'} size={20} />
+              </button>
+              <Writable>
+                <button type="button" className="map-tool" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
+                  <Icon name="mapPinPlus" size={20} />
+                </button>
+              </Writable>
+              <button
+                type="button"
+                className="map-tool"
+                aria-label={BASE_PLACE.name}
+                title={BASE_PLACE.name}
+                aria-pressed={selectedId === BASE_PLACE.id}
+                onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}
+              >
+                <Icon name="train" size={20} />
+              </button>
+            </div>
+          }
+        />
       </div>
 
       <section ref={expanded === 'list' ? setExpandedPane : undefined} aria-labelledby="places-title" className={`pane ${expanded === 'list' ? 'list-expanded' : ''}`}>
@@ -231,7 +242,7 @@ export const MapPage = () => {
                 <Icon name="plus" size={20} />
               </button>
             </Writable>
-            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
+            <button ref={listToggle} type="button" className="button map-icon-button map-list-toggle" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
               <Icon name="list" size={20} />
             </button>
           </div>
