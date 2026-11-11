@@ -81,8 +81,9 @@ export const GearForm = ({ initial, angler, onDone }: Props) => {
         </fieldset>
       )}
       <Field label="브랜드" placeholder="예: 다이와" maxLength={40} {...register('brand')} />
-      <Field label="제품명" placeholder="예: 25 레가리스" maxLength={80} error={errors.name?.message} {...register('name', { validate: (value) => value.trim() !== '' || '제품명을 입력해 주세요.' })} />
-      <TextareaField label="메모" {...register('memo')} />
+      {/* 글자 수는 DB 제약(제품명 60자, 메모 500자)과 맞춥니다. */}
+      <Field label="제품명" placeholder="예: 25 레가리스" maxLength={60} error={errors.name?.message} {...register('name', { validate: (value) => value.trim() !== '' || '제품명을 입력해 주세요.' })} />
+      <TextareaField label="메모" maxLength={500} {...register('memo')} />
       <ErrorText error={save.error} />
       <div className="flex justify-end">
         <button type="submit" className="button button-primary" disabled={save.isPending}>

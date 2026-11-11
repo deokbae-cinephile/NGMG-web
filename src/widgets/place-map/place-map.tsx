@@ -18,9 +18,11 @@ type Props = {
   onSelect: (id: string) => void;
   onClose: () => void;
   onPick: (latitude: number, longitude: number) => void;
+  /** 같은 장소를 다시 골라도 지도를 그 장소로 옮기도록, 고를 때마다 바뀌는 값 */
+  focusKey?: number;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -160,7 +162,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       window.clearTimeout(settleTimer);
       moving.current = false;
     };
-  }, [map, selected, offsets]);
+  }, [map, selected, offsets, focusKey]);
 
   useEffect(() => {
     basePin.current?.setAttribute('data-selected', String(isBase));

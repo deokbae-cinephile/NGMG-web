@@ -69,6 +69,9 @@ test('장소: 긴 이름도 화면을 넘치지 않는다', async ({ page }) => 
   await page.goto('./');
   await expect(page.getByRole('button', { name: new RegExp(LONG_NAME) }).first()).toBeVisible();
   await expectFits(page);
+  // 목록의 긴 이름은 한 줄로 줄입니다(오른쪽 사진과 겹치지 않게).
+  const title = page.getByRole('list', { name: '장소 목록' }).locator(`[title="${LONG_NAME}"]`);
+  expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth && getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
   await page.goto('./places/p3');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expectFits(page);
@@ -349,7 +352,25 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   // 목록에서 장소를 고르면 목록을 줄이고 지도에서 그 장소를 보여 줍니다.
   await list.getByRole('button', { name: /^거문도 방파제/ }).click();
   await expect(page.locator('.list-expanded')).toHaveCount(0);
-  await expect(page.getByRole('group', { name: '거문도 방파제 정보' })).toBeVisible();
+  const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
+  await expect(popup).toBeVisible();
+
+  // 확대 중 Esc는 확대만 닫고 고른 장소는 그대로 둡니다. Tab 초점은 확대 화면 밖(가려진 단추)으로 나가지 않습니다.
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toBeFocused();
+  for (let i = 0; i < 6; i += 1) {
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.map-expanded')) || document.activeElement === document.body)).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.map-expanded')).toHaveCount(0);
+  await expect(popup).toBeVisible();
+  await expect(page.locator('[inert]')).toHaveCount(0);
+
+  // 목록 확대 중 위치 지정을 누르면 목록을 줄여 지도를 보여 줍니다.
+  await page.getByRole('button', { name: '목록 확대' }).click();
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
+  await expect(page.locator('.list-expanded')).toHaveCount(0);
 });
 
 test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {

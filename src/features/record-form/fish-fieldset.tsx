@@ -23,12 +23,12 @@ export const fishError = (fish: FishDraft) => {
   return undefined;
 };
 
-type ItemProps = { fish: FishDraft; index: number; showError: boolean; species: string[]; listId: string; onChange: (fish: FishDraft) => void; onRemove: () => void };
+type ItemProps = { fish: FishDraft; index: number; showError: boolean; species: string[]; listId: string; onChange: (fish: FishDraft) => void; onPhotos: (first: File | null, rest: File[]) => void; onRemove: () => void };
 
 /** 전에 저장한 어종 가운데 바로 누를 수 있게 보여 줄 개수 */
 const QUICK_SPECIES = 8;
 
-const FishItem = ({ fish, index, showError, species, listId, onChange, onRemove }: ItemProps) => {
+const FishItem = ({ fish, index, showError, species, listId, onChange, onPhotos, onRemove }: ItemProps) => {
   const id = useId();
   const label = `물고기 ${index + 1}`;
   const error = showError ? fishError(fish) : undefined;
@@ -98,9 +98,17 @@ const FishItem = ({ fish, index, showError, species, listId, onChange, onRemove 
               id={`${id}-photo`}
               type="file"
               accept="image/*"
+              multiple
+              aria-describedby={`${id}-photo-hint`}
               className="min-h-11 w-full border border-field bg-surface px-3 py-2"
-              onChange={(event) => set({ file: event.target.files?.[0] ?? null })}
+              onChange={(event) => {
+                // 여러 장을 고르면 첫 장은 이 물고기에, 나머지는 같은 조사의 물고기를 늘려 한 장씩 넣습니다.
+                const [first = null, ...rest] = [...(event.target.files ?? [])];
+                onPhotos(first, rest);
+                event.target.value = '';
+              }}
             />
+            <p id={`${id}-photo-hint`} className="text-sm text-muted">여러 장을 고르면 물고기가 그만큼 늘어납니다.</p>
           </div>
         </div>
         <div className="flex justify-end">
@@ -139,6 +147,9 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
           species={species}
           listId={listId}
           onChange={(next) => onChange(value.map((item) => (item.id === fish.id ? next : item)))}
+          onPhotos={(first, rest) =>
+            onChange([...value.map((item) => (item.id === fish.id ? { ...item, file: first } : item)), ...rest.map((file) => ({ ...newFish(fish.angler), file }))])
+          }
           onRemove={() => onChange(value.filter((item) => item.id !== fish.id))}
         />
       ))}

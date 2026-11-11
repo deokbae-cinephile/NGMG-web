@@ -61,8 +61,16 @@ test('일정: 챙길 장비를 고르면 그날 일정에 체크리스트로 보
   // 체크하면 묶음 이름(몇 개 챙김)이 바뀌므로, 체크 칸은 이름이 바뀌지 않는 일정 안에서 찾습니다.
   await page.locator('.pane-day').getByRole('checkbox', { name: '로드 [다이와] 레가리스' }).click();
   await expect(page.getByRole('group', { name: /챙길 장비 3개 중 1개 챙김/ })).toBeVisible();
-  expect(db.events![0]!.packed_gear_ids).toEqual(['g1']);
+  await expect.poll(() => db.events![0]!.packed_gear_ids).toEqual(['g1']);
   await expectAccessible(page);
+
+  // 수정 창을 연 뒤 다른 사람이 체크해도, 장비만 바꿔 저장하면 그 체크는 남고 뺀 장비의 챙김만 지워집니다.
+  await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
+  db.events![0]!.packed_gear_ids = ['g1', 'g2', 'g3'];
+  await picker.getByRole('checkbox', { name: /스텔라/ }).uncheck();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.events![0]).toMatchObject({ gear_ids: ['g1', 'g3'], packed_gear_ids: ['g1', 'g3'] });
 });
 
 test('게스트: 장비 체크리스트는 보기만 한다', async ({ page }) => {

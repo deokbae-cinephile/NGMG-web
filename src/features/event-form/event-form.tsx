@@ -42,9 +42,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         end_time: null, // 끝나는 시간 대신 끝나는 날짜를 씁니다.
         place_id: saved?.id ?? null,
         gear_set_ids: event?.gear_set_ids ?? [], // 장비 세트는 더 고르지 않고 예전 값은 그대로 둡니다.
-        gear_ids: gearIds,
-        // 챙김 표시는 아직 고른 장비에 대해서만 남깁니다.
-        packed_gear_ids: (event?.packed_gear_ids ?? []).filter((gearId) => gearIds.includes(gearId)),
+        gear_ids: gearIds, // 챙김 표시는 보내지 않습니다(창을 연 뒤 다른 사람이 체크한 것을 지우지 않게). 뺀 장비의 챙김은 DB가 지웁니다.
       });
     },
     onSuccess: () => client.invalidateQueries(),
