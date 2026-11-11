@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { GearTag, sortGear, useGear } from '@/entities/gear';
+import { GearTag, gearLabel, sortGear, useGear } from '@/entities/gear';
 import { useSetPacked } from '@/entities/event';
 import { useCanWrite } from '@/entities/session';
 import type { CalendarEvent } from '@/shared/api';
@@ -16,6 +16,7 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
   // 저장 중인 장비는 다시 누르지 못하게 바로 잠급니다(isPending은 다음 렌더에야 바뀜).
   const saving = useRef(new Set<string>());
   const [pending, setPending] = useState<string[]>([]);
+  const [failed, setFailed] = useState<string[]>([]); // 저장에 실패한 장비(요청마다 기록)
   const gearIds = event.gear_ids ?? [];
   if (!gearIds.length) return null;
   if (gear.error) {
@@ -35,10 +36,11 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
     if (saving.current.has(gearId)) return;
     saving.current.add(gearId);
     setPending((list) => [...list, gearId]);
+    setFailed((list) => list.filter((item) => item !== gearId));
     // 요청마다 잠금을 풉니다. mutate의 호출별 콜백은 마지막 요청에만 불려 앞선 장비가 잠긴 채 남으므로 mutateAsync를 씁니다.
     setPacked
       .mutateAsync({ id: event.id, gearId, packed: checked })
-      .catch(() => {}) // 오류는 setPacked.error로 아래에 안내합니다.
+      .catch(() => setFailed((list) => [...list, gearId])) // 체크는 되돌리고, 실패한 장비를 아래에 안내합니다.
       .finally(() => {
         saving.current.delete(gearId);
         setPending((list) => list.filter((item) => item !== gearId));
@@ -58,8 +60,14 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
           </li>
         ))}
       </ul>
-      {/* 저장에 실패하면 체크를 되돌리고 알립니다. 다시 누르면 다시 저장합니다. */}
-      <ErrorText error={setPacked.error && !setPacked.isPending ? new Error(`${setPacked.error.message} 다시 눌러 주세요.`) : null} />
+      {/* 저장에 실패하면 체크를 되돌리고 어느 장비인지 알립니다. 다시 누르면 다시 저장합니다. */}
+      <ErrorText
+        error={
+          failed.length
+            ? new Error(`챙김 표시를 저장하지 못했습니다: ${items.filter((item) => failed.includes(item.id)).map(gearLabel).join(', ')}. 다시 눌러 주세요.`)
+            : null
+        }
+      />
     </fieldset>
   );
 };

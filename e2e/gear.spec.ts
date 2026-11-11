@@ -74,6 +74,13 @@ test('일정: 챙길 장비를 고르면 그날 일정에 체크리스트로 보
   await day.getByRole('checkbox', { name: /1\.5호/ }).click();
   await expect.poll(() => db.events![0]!.packed_gear_ids).toEqual(['g1']);
 
+  // 저장에 실패하면 체크를 되돌리고 어느 장비인지 알립니다.
+  await page.route('**/rest/v1/rpc/set_packed_gear', (route) => route.fulfill({ status: 500, json: { message: 'down' } }));
+  await day.getByRole('checkbox', { name: /스텔라/ }).click();
+  await expect(page.getByRole('alert')).toContainText('챙김 표시를 저장하지 못했습니다: 스텔라');
+  await expect(day.getByRole('checkbox', { name: /스텔라/ })).not.toBeChecked();
+  await page.unroute('**/rest/v1/rpc/set_packed_gear');
+
   // 수정 창을 연 뒤 다른 사람이 체크해도, 장비만 바꿔 저장하면 그 체크는 남고 뺀 장비의 챙김만 지워집니다.
   await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
   db.events![0]!.packed_gear_ids = ['g1', 'g2', 'g3'];
