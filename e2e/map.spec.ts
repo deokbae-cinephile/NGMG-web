@@ -236,6 +236,7 @@ test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류는 낚�
   expect(pins.length).toBeGreaterThan(0);
   for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|lodging|etc)\b/);
   const filters = page.getByRole('group', { name: '분류' });
+  await expect(filters.getByRole('button')).toHaveCount(5);
   expect(await filters.getByRole('button').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))).toEqual(['전체', '낚시', '맛집', '숙박', '기타']); // 숙박·기타를 다시 더했습니다(사용자 요청).
 });
 
@@ -378,6 +379,7 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   // 목록에서 장소를 고르면 목록을 줄이고 지도에서 그 장소를 보여 줍니다.
   await list.getByRole('button', { name: /^거문도 방파제/ }).click();
   await expect(page.locator('.list-expanded')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '목록 확대' })).not.toBeFocused(); // 다른 작업으로 넘어갈 때는 초점을 돌리지 않습니다.
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
   await expect(popup).toBeVisible();
 
@@ -402,6 +404,7 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
 test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
+  await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveCount(5);
   expect(await page.getByRole('group', { name: '분류' }).getByRole('button').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))).toEqual(['전체', '낚시', '맛집', '숙박', '기타']);
   await page.goto('./places/p2');
   await page.getByRole('button', { name: '장소 수정' }).click();
@@ -426,18 +429,24 @@ test('지도: 확대 중 뒤로 가기는 다른 화면으로 가지 않고 확�
   await page.goto('./stats');
   await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link', { name: '지도' }).click();
   await expect(page).toHaveTitle('지도 | 낚고먹고');
-  for (const [open, shrink, pane] of [['지도 확대', '지도 작게', '.map-expanded'], ['목록 확대', '목록 작게', '.list-expanded']] as const) {
+  for (const [open, shrink] of [['지도 확대', '지도 작게'], ['목록 확대', '목록 작게']] as const) {
+    const shrinkButton = page.getByRole('button', { name: shrink });
     await page.getByRole('button', { name: open }).click();
-    await expect(page.locator(pane)).toHaveCount(1);
+    await expect(shrinkButton).toBeVisible();
     await page.goBack();
-    await expect(page.locator(pane)).toHaveCount(0);
+    await expect(shrinkButton).toHaveCount(0);
     await expect(page).toHaveTitle('지도 | 낚고먹고');
-    await expect(page.getByRole('button', { name: shrink })).toHaveCount(0);
+    // 앞으로 가기는 확대를 다시 열고, 다시 뒤로 가면 닫습니다.
+    await page.goForward();
+    await expect(shrinkButton).toBeVisible();
+    await page.goBack();
+    await expect(shrinkButton).toHaveCount(0);
   }
   // 작게 단추로 닫으면 쌓은 기록도 지워, 뒤로 가기 한 번에 이전 화면(통계)으로 갑니다.
   await page.getByRole('button', { name: '지도 확대' }).click();
   await page.getByRole('button', { name: '지도 작게' }).click();
-  await expect(page.locator('.map-expanded')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveTitle('통계 | 낚고먹고');
 });

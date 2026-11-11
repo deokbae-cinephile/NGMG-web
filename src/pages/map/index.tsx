@@ -12,6 +12,13 @@ type Filter = PlaceKind | 'all';
 
 const NO_PLACES: Place[] = [];
 
+type Expanded = 'map' | 'list';
+/** 방문 기록에 남긴 확대 상태 */
+const readExpanded = (): Expanded | undefined => {
+  const value = (history.state as { mapExpanded?: unknown } | null)?.mapExpanded;
+  return value === 'map' || value === 'list' ? value : undefined;
+};
+
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
   const { data: ratings, error: ratingsError, isPending: ratingsPending } = usePlaceRatings();
@@ -30,33 +37,37 @@ export const MapPage = () => {
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
   // 지도 확대(지도를 화면 전체로) / 목록 확대(장소 목록이 지도 위를 꽉 채움). Esc나 '작게' 단추로 돌아옵니다.
-  const [expanded, setExpanded] = useState<'map' | 'list'>();
+  // 확대 상태는 방문 기록(history.state.mapExpanded)과 맞춥니다. 휴대폰 뒤로 가기는 확대만 닫고, 앞으로 가기는 다시 엽니다.
+  const [expanded, setExpanded] = useState<Expanded | undefined>(readExpanded);
   const mapToggle = useRef<HTMLButtonElement>(null);
   const listToggle = useRef<HTMLButtonElement>(null);
   const shrinkButton = useRef<HTMLButtonElement>(null);
-  const refocus = useRef(true);
-  /** 실제로 줄입니다. 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다(다른 작업으로 넘어갈 때는 빼고). */
-  const shrink = useCallback(() => {
-    setExpanded((current) => {
-      if (current && refocus.current) requestAnimationFrame(() => (current === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true }));
-      refocus.current = true;
-      return undefined;
-    });
+  useEffect(() => {
+    const onHistory = () => setExpanded(readExpanded());
+    window.addEventListener('popstate', onHistory);
+    return () => window.removeEventListener('popstate', onHistory);
   }, []);
-  // 확대할 때 방문 기록을 하나 쌓아, 휴대폰의 뒤로 가기가 다른 화면으로 가지 않고 확대만 닫게 합니다.
-  const expand = (kind: 'map' | 'list') => {
-    if (!(history.state as { mapExpanded?: string } | null)?.mapExpanded) history.pushState({ mapExpanded: kind }, '');
+  // 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다(다른 작업으로 넘어갈 때는 빼고). 상태가 바뀐 뒤 효과에서 옮깁니다.
+  const refocus = useRef(true);
+  const previous = useRef(expanded);
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = expanded;
+    if (!before || expanded) return;
+    if (refocus.current) (before === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true });
+    refocus.current = true;
+  }, [expanded]);
+  const expand = (kind: Expanded) => {
+    if (readExpanded()) history.replaceState({ ...history.state, mapExpanded: kind }, '');
+    else history.pushState({ mapExpanded: kind }, '');
     setExpanded(kind);
   };
-  /** 작게 단추·Esc·다른 작업: 쌓은 기록이 있으면 뒤로 가서(아래 popstate가 줄임) 기록을 남기지 않습니다. */
-  const collapse = useCallback(
-    (focusToggle = true) => {
-      refocus.current = focusToggle;
-      if ((history.state as { mapExpanded?: string } | null)?.mapExpanded) history.back();
-      else shrink();
-    },
-    [shrink],
-  );
+  /** 작게 단추·Esc·다른 작업: 쌓은 기록이 있으면 뒤로 가서(popstate가 줄임) 기록을 남기지 않습니다. */
+  const collapse = useCallback((focusToggle = true) => {
+    refocus.current = focusToggle;
+    if (readExpanded()) history.back();
+    else setExpanded(undefined);
+  }, []);
   const expandedPane = useRef<HTMLElement | null>(null);
   const setExpandedPane = useCallback((node: HTMLElement | null) => {
     expandedPane.current = node;
@@ -79,17 +90,12 @@ export const MapPage = () => {
       event.stopPropagation();
       collapse();
     };
-    const onBack = () => {
-      if (!(history.state as { mapExpanded?: string } | null)?.mapExpanded) shrink();
-    };
     document.addEventListener('keydown', onKey, true);
-    window.addEventListener('popstate', onBack);
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('popstate', onBack);
       blocked.forEach((element) => element.removeAttribute('inert'));
     };
-  }, [expanded, collapse, shrink]);
+  }, [expanded, collapse]);
   const pickRequest = useRef(0);
   /** 위치 지정을 켜고 끄거나 장소 추가 창을 열면, 진행 중인 주소 조회 결과를 버립니다(이전 선택의 창이 늦게 열리지 않게). */
   const dropPendingPick = () => {
