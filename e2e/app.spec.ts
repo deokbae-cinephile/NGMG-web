@@ -143,3 +143,21 @@ test('찾기 칸은 지도·전체 기록·도감 모두 같은 모양이다(안
     await expect(page.getByRole('search').getByRole('button')).toHaveCount(0);
   }
 });
+
+test('포인트 색(연두)은 색만으로 구분하지 않는다: 현재 메뉴에 검정 막대, 달력 일정 막대는 바탕과 3:1 이상', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
+  const current = page.getByRole('navigation', { name: '주요 메뉴' }).locator('[aria-current="page"]');
+  expect(await current.evaluate((node) => getComputedStyle(node).boxShadow)).toContain('inset');
+  const ratio = await page.evaluate(() => {
+    const bar = document.querySelector('.cal-stay');
+    if (!bar) return 0;
+    const parse = (value: string) => value.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+    const lum = ([r, g, b]: number[]) => [r, g, b].map((c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i]!, 0);
+    const fg = lum(parse(getComputedStyle(bar, '::after').backgroundColor));
+    const bg = lum(parse(getComputedStyle(document.body).backgroundColor));
+    return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+  });
+  expect(ratio).toBeGreaterThanOrEqual(3);
+});

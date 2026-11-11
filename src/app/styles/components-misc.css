@@ -35,7 +35,7 @@
     width: 2.5rem;
     height: 2.5rem;
     border: 3px solid var(--color-soft);
-    border-top-color: var(--color-accent);
+    border-top-color: var(--color-accent-text); /* 회색 고리와 구분되게 진한 초록 */
     border-radius: 50%;
     animation: saving-spin 0.8s linear infinite;
   }
