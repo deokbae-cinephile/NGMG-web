@@ -64,6 +64,16 @@ test('일정: 챙길 장비를 고르면 그날 일정에 체크리스트로 보
   await expect.poll(() => db.events![0]!.packed_gear_ids).toEqual(['g1']);
   await expectAccessible(page);
 
+  // 두 장비를 잇달아 체크해도 둘 다 저장되고, 둘 다 다시 누를 수 있습니다(요청마다 잠금을 풂).
+  const day = page.locator('.pane-day');
+  await day.getByRole('checkbox', { name: /스텔라/ }).click();
+  await day.getByRole('checkbox', { name: /1\.5호/ }).click();
+  await expect.poll(() => [...(db.events![0]!.packed_gear_ids as string[])].sort()).toEqual(['g1', 'g2', 'g3']);
+  for (const name of [/레가리스/, /스텔라/, /1\.5호/]) await expect(day.getByRole('checkbox', { name })).toBeEnabled();
+  await day.getByRole('checkbox', { name: /스텔라/ }).click();
+  await day.getByRole('checkbox', { name: /1\.5호/ }).click();
+  await expect.poll(() => db.events![0]!.packed_gear_ids).toEqual(['g1']);
+
   // 수정 창을 연 뒤 다른 사람이 체크해도, 장비만 바꿔 저장하면 그 체크는 남고 뺀 장비의 챙김만 지워집니다.
   await page.getByRole('button', { name: '새벽 출조 일정 수정' }).click();
   db.events![0]!.packed_gear_ids = ['g1', 'g2', 'g3'];

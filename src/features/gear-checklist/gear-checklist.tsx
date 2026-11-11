@@ -35,15 +35,14 @@ export const GearChecklist = ({ event }: { event: Pick<CalendarEvent, 'id' | 'ti
     if (saving.current.has(gearId)) return;
     saving.current.add(gearId);
     setPending((list) => [...list, gearId]);
-    setPacked.mutate(
-      { id: event.id, gearId, packed: checked },
-      {
-        onSettled: () => {
-          saving.current.delete(gearId);
-          setPending((list) => list.filter((item) => item !== gearId));
-        },
-      },
-    );
+    // 요청마다 잠금을 풉니다. mutate의 호출별 콜백은 마지막 요청에만 불려 앞선 장비가 잠긴 채 남으므로 mutateAsync를 씁니다.
+    setPacked
+      .mutateAsync({ id: event.id, gearId, packed: checked })
+      .catch(() => {}) // 오류는 setPacked.error로 아래에 안내합니다.
+      .finally(() => {
+        saving.current.delete(gearId);
+        setPending((list) => list.filter((item) => item !== gearId));
+      });
   };
 
   return (
