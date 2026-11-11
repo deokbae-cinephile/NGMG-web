@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge } from '@/entities/place';
-import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
+import { ALL_KINDS, BASE_PLACE, KIND_LABEL, KindBadge } from '@/entities/place';
+import { RatingChip, usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
-import type { Place, PlaceKind } from '@/shared/api';
-import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
-import { Icon, iconSvg } from '@/shared/ui';
+import type { Place } from '@/shared/api';
+import { Link, useTheme } from '@/shared/lib';
+import { Icon } from '@/shared/ui';
+import { LocateControl } from './locate-control';
+import { MapLegend } from './map-legend';
+import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets, START_VIEW } from './pins';
+import { useKakaoMap } from './use-kakao-map';
 
 type Props = {
   places: Place[];
@@ -16,94 +20,8 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
 };
 
-/** 저장된 위치가 없을 때의 지도 중심 */
-const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE.longitude, level: 5 };
-
-/** 물방울 모양 핀의 바탕. 지도 메뉴 아이콘과 같은 모양이고, 그림의 아래 끝이 장소 위치입니다. */
-// 그림의 아래 끝(뾰족한 끝, y≈22)을 상자 아래 끝에 맞춰(xMidYMax) 핀 끝이 정확히 장소 위치에 오게 합니다.
-const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 21" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
-
-const createBasePin = () => {
-  const pin = document.createElement('div');
-  pin.className = 'pin pin-base';
-  pin.setAttribute('role', 'img');
-  pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
-  pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}`; // 이름은 aria-label로만 알리고 핀 옆 이름표는 두지 않습니다.
-  return pin;
-};
-
-// 핀 묶음 색은 분류별 핀의 채움과 같습니다. (낚시 검정, 맛집 흰색, 기타 연회색)
-const CLUSTER_COLOR = (dark: boolean): Record<PlaceKind, { background: string; color: string }> => ({
-  fishing: dark ? { background: '#121212', color: '#f2f2f2' } : { background: '#0a0a0a', color: '#fafafa' },
-  restaurant: dark ? { background: '#1e1e1e', color: '#f2f2f2' } : { background: '#fafafa', color: '#0a0a0a' },
-  etc: dark ? { background: '#3b3b3b', color: '#f2f2f2' } : { background: '#d9d9d9', color: '#0a0a0a' },
-});
-const clusterStyle = (kind: PlaceKind, dark: boolean) => {
-  return {
-    ...CLUSTER_COLOR(dark)[kind],
-    width: '64px',
-    height: '36px',
-    border: `2px solid ${dark ? '#f2f2f2' : '#0a0a0a'}`,
-    borderRadius: '18px',
-    fontSize: '13px',
-    lineHeight: '32px',
-    textAlign: 'center',
-  };
-};
-
-/** 거의 같은 지점(약 10m 안)의 핀은 겹쳐서 눌리지 않으므로 옆으로 나란히 벌려 놓습니다. 값은 가로 이동 픽셀입니다. */
-const pinOffsets = (places: Place[]) => {
-  const groups = new Map<string, string[]>();
-  places.forEach((place) => {
-    const key = `${place.latitude.toFixed(4)},${place.longitude.toFixed(4)}`;
-    groups.set(key, [...(groups.get(key) ?? []), place.id]);
-  });
-  const offsets = new Map<string, number>();
-  groups.forEach((ids) => ids.forEach((id, index) => offsets.set(id, (index - (ids.length - 1) / 2) * 46)));
-  return offsets;
-};
-
-// 핀 모양: 낚시는 물고기, 맛집은 수저, 기타는 위치 아이콘
-const createPin = (place: Place, offset: number, onSelect: (id: string) => void) => {
-  const pin = document.createElement('button');
-  pin.type = 'button';
-  // 지도에 올리는 순간 카카오 지도가 핀 크기를 재어 기준점(가운데 아래)을 정하므로, 처음부터 핀 모양 클래스를 붙여 둡니다.
-  // (클래스 없이 올리면 작은 크기로 재어 핀이 오른쪽 아래로 어긋나고, 지도를 움직여 다시 재기 전까지 그대로입니다)
-  pin.className = `pin pin-${place.kind}`;
-  pin.innerHTML = PIN_SHAPE + iconSvg(KIND_ICON[place.kind], 18);
-  pin.setAttribute('aria-pressed', 'false');
-  pin.title = place.name;
-  if (offset) pin.style.transform = `translateX(${offset}px)`;
-  pin.addEventListener('click', () => onSelect(place.id));
-  return pin;
-};
-
-/** 평균 평점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
-const applyRating = (pin: HTMLButtonElement, place: Place, rating: number | undefined) => {
-  pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 평점 ${rating.toFixed(1)}`}`);
-  pin.querySelector('.pin-score')?.remove();
-  if (rating === undefined) return;
-  // 색만으로 구분되지 않도록 평균 평점 숫자를 함께 보여 줍니다.
-  const score = document.createElement('span');
-  score.className = 'pin-score';
-  score.setAttribute('aria-hidden', 'true');
-  score.textContent = rating.toFixed(1);
-  pin.append(score);
-};
-
 export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
   const container = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
-  const [error, setError] = useState(false);
-  const [tilesReady, setTilesReady] = useState(false);
-  const [legendOpen, setLegendOpen] = useState(() => getPreference('map-legend-open', true));
-  // 현재 위치: 누를 때만 위치를 묻고, 지도에 파란 점으로 표시한 뒤 그곳으로 옮깁니다.
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState('');
-  const [locateNotice, setLocateNotice] = useState('');
-  const myLocation = useRef<Kakao>(undefined);
-  const locateButton = useRef<HTMLButtonElement>(null);
   const dark = useTheme() === 'dark';
 
   const [popupHost] = useState(() => document.createElement('div'));
@@ -136,59 +54,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   useEffect(() => {
     latest.current = { picking, onPick };
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    let observer: ResizeObserver | undefined;
-    let revealTimer = 0;
-    loadKakao()
-      .then((kakao) => {
-        if (cancelled || !container.current) return;
-        // 마지막으로 보던 곳에서 시작합니다. 처음이면 무악재역입니다.
-        const view = getPreference('map-view', START_VIEW);
-        const instance = new kakao.maps.Map(container.current, {
-          center: new kakao.maps.LatLng(view.latitude, view.longitude),
-          level: view.level,
-        });
-        kakao.maps.event.addListener(instance, 'click', (event: Kakao) => {
-          if (!latest.current.picking) return;
-          latest.current.onPick(event.latLng.getLat(), event.latLng.getLng());
-        });
-        const node = container.current;
-        // 화면을 옮기는 중이거나(크기 0, 문서에서 빠짐) 크기를 다시 맞추는 중에는 위치를 저장하지 않습니다.
-        let resizing = false;
-        kakao.maps.event.addListener(instance, 'idle', () => {
-          if (resizing || !node.isConnected || !node.clientWidth || !node.clientHeight) return;
-          const center = instance.getCenter();
-          setPreference('map-view', { latitude: center.getLat(), longitude: center.getLng(), level: instance.getLevel() });
-        });
-        // 지도 칸의 크기가 바뀌면 relayout이 가운데를 옮기므로, 보던 가운데를 다시 맞춥니다.
-        observer = new ResizeObserver(() => {
-          if (!node.clientWidth || !node.clientHeight) return;
-          const center = instance.getCenter();
-          resizing = true;
-          instance.relayout();
-          instance.setCenter(center);
-          resizing = false;
-        });
-        observer.observe(node);
-        // 첫 지도 그림을 다 받을 때까지 감춰 둡니다(다른 메뉴에서 돌아올 때 빈 화면이 번쩍이지 않게). 늦어도 1.5초 뒤에는 보여 줍니다.
-        const reveal = () => {
-          kakao.maps.event.removeListener(instance, 'tilesloaded', reveal);
-          window.clearTimeout(revealTimer);
-          if (!cancelled) setTilesReady(true);
-        };
-        kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
-        revealTimer = window.setTimeout(reveal, 1500);
-        setMap({ kakao, instance });
-      })
-      .catch(() => setError(true));
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-      window.clearTimeout(revealTimer);
-    };
-  }, []);
+  const { map, error, tilesReady } = useKakaoMap(container, latest);
 
   useEffect(() => {
     if (!map) return;
@@ -365,45 +231,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     return () => document.removeEventListener('keydown', onKey);
   }, [selectedId, onClose]);
 
-  const locate = () => {
-    if (!map || locating) return;
-    setLocateError('');
-    setLocateNotice('');
-    if (!('geolocation' in navigator)) {
-      setLocateError('이 브라우저에서는 현재 위치를 쓸 수 없습니다.');
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocating(false);
-        const { kakao, instance } = map;
-        const position = new kakao.maps.LatLng(coords.latitude, coords.longitude);
-        if (myLocation.current) myLocation.current.setPosition(position);
-        else {
-          const dot = document.createElement('div');
-          dot.className = 'my-location';
-          dot.setAttribute('role', 'img');
-          dot.setAttribute('aria-label', '내 위치');
-          myLocation.current = new kakao.maps.CustomOverlay({ map: instance, position, content: dot, xAnchor: 0.5, yAnchor: 0.5, zIndex: 4 });
-        }
-        onClose(); // 고른 장소로 지도를 옮기는 동작과 겹치지 않게 말풍선을 닫습니다.
-        if (instance.getLevel() > START_VIEW.level) instance.setLevel(START_VIEW.level);
-        instance.panTo(position);
-        setLocateNotice('지도를 현재 위치로 옮겼습니다.');
-      },
-      (failure) => {
-        setLocating(false);
-        setLocateError(
-          failure.code === failure.PERMISSION_DENIED
-            ? '위치 권한이 꺼져 있습니다. 브라우저 설정에서 이 사이트의 위치 권한을 허용해 주세요.'
-            : '현재 위치를 찾지 못했습니다. 잠시 뒤 다시 눌러 주세요.',
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
-    );
-  };
-
   const closePopup = () => {
     onClose();
     container.current?.focus({ preventScroll: true });
@@ -421,46 +248,11 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 지도를 감춘 동안에는 바탕색이 보입니다.
     <div className="map-frame relative h-full w-full bg-surface">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view map h-full w-full ${tilesReady ? '' : 'map-loading'}`} />
-      {/* 평점 색 안내는 '평점' 단추로 여닫습니다. 고른 상태는 기억합니다. */}
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
-        <button
-          type="button"
-          className="map-legend-toggle"
-          aria-expanded={legendOpen}
-          aria-controls="map-legend-scale"
-          onClick={() => {
-            setLegendOpen(!legendOpen);
-            setPreference('map-legend-open', !legendOpen);
-          }}
-        >
-          평점
-          <Icon name={legendOpen ? 'chevronLeft' : 'chevronRight'} size={16} />
-        </button>
-        <span id="map-legend-scale" className="map-legend-scale" hidden={!legendOpen}>
-          {[1, 2, 3, 4, 5].map((score) => (
-            <span key={score} aria-hidden="true" className={`rate-${score}`}>{score}</span>
-          ))}
-        </span>
-      </div>
+      <MapLegend />
       {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
       {/* 다시 받는 중(isFetching)에도 예전 기온을 지금 날씨처럼 보이지 않게 아이콘만 둡니다. */}
       <WeatherBadge place={selected?.name} weather={selected && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError && !weather.isFetching} />
-      <button ref={locateButton} type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
-        <Icon name="locate" size={22} />
-      </button>
-      <p role="status" className="sr-only">{locating ? '현재 위치를 찾는 중입니다.' : locateNotice}</p>
-      {/* 위치 오류 안내는 저절로 사라지지 않고, 읽은 뒤 닫기 단추로 닫습니다(응답 시간 제한 없음). */}
-      {locateError && (
-        <div className="map-locate-error">
-          <p role="alert" className="min-w-0 flex-1">{locateError}</p>
-          <button type="button" className="map-popup-close" aria-label="위치 안내 닫기" onClick={() => {
-              setLocateError('');
-              locateButton.current?.focus(); // 닫기 단추가 사라지므로 초점을 현재 위치 단추로 돌려 둡니다.
-            }}>
-            <Icon name="close" size={16} />
-          </button>
-        </div>
-      )}
+      <LocateControl map={map} onMove={onClose} />
       {selected &&
         createPortal(
           <div
