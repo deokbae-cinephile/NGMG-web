@@ -10,10 +10,13 @@ const gear = [
   { id: 'g3', angler: '류 조사', category: '라인', subcategory: '목줄', brand: '선라인', name: '1.5호', memo: '', photo_path: null, position: 0, created_at: '2026-01-03T00:00:00Z' },
 ];
 
-test('장비: 설정에서 장비 화면으로 가서 조사별로 등록·수정·삭제한다(태그는 아이콘 + [브랜드] 제품명)', async ({ page }) => {
+test('장비: 메뉴(도감과 설정 사이)에서 장비 화면으로 가서 조사별로 등록·수정·삭제한다(태그는 아이콘 + [브랜드] 제품명)', async ({ page }) => {
   const db = await fakeBackend(page, { ...seed(), angler_gear: gear });
   await page.goto('./settings');
-  await page.getByRole('link', { name: '장비 관리' }).click();
+  const menu = page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link');
+  await expect(menu).toHaveText(['지도', '일정 및 기록', '통계', '도감', '장비', '설정'].map((name) => new RegExp(name)));
+  await expect(page.getByRole('link', { name: '장비 관리' })).toHaveCount(0); // 설정에는 더 두지 않습니다.
+  await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link', { name: '장비' }).click();
   await expect(page).toHaveTitle('장비 | 낚고먹고');
   await expect(page.getByRole('region', { name: '로드' }).getByText('[다이와] 레가리스')).toBeVisible();
   await expect(page.getByRole('region', { name: '릴' }).getByText('스텔라', { exact: true })).toBeVisible(); // 브랜드가 없으면 제품명만

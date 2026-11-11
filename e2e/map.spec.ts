@@ -129,16 +129,15 @@ test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 맨 위 단�
     [page.getByRole('button', { name: '위치 지정', exact: true }), page.getByRole('button', { name: '지도 확대' }), page.getByRole('button', { name: '목록 확대' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()),
   );
   expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
-  // 위치 지정 중에도 단추가 한 줄에 놓이고, 취소 단추가 남는 폭을 다 차지하지 않습니다.
-  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
-  const cancel = page.getByRole('button', { name: '위치 지정 취소' });
-  await expect(cancel).toHaveText('지정 취소');
-  const picking = await Promise.all(
-    [cancel, page.getByRole('button', { name: '지도 확대' }), page.getByRole('button', { name: '목록 확대' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()),
-  );
-  expect(new Set(picking.map((box) => Math.round(box!.y))).size).toBe(1);
-  expect(picking[0]!.width).toBeLessThan(100);
-  await cancel.click();
+  // 다섯 단추 모두 글자 없는 같은 크기의 아이콘 단추이고, 누를 수 있는 크기(44px)입니다.
+  for (const box of boxes) expect([Math.round(box!.width), Math.round(box!.height)]).toEqual([44, 44]);
+  // 위치 지정은 다시 누르면 취소합니다(켜짐은 aria-pressed).
+  const pick = page.getByRole('button', { name: '위치 지정', exact: true });
+  await expect(pick).toHaveText('');
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'true');
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'false');
   await base.click();
   await expect(base).toHaveAttribute('aria-pressed', 'true');
   const popup = page.getByRole('group', { name: '무악재역 정보' });
@@ -237,7 +236,8 @@ test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류는 낚�
   expect(pins.length).toBeGreaterThan(0);
   for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|lodging|etc)\b/);
   const filters = page.getByRole('group', { name: '분류' });
-  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']); // 숙박·기타를 다시 더했습니다(사용자 요청).
+  await expect(filters.getByRole('button')).toHaveCount(5);
+  expect(await filters.getByRole('button').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))).toEqual(['전체', '낚시', '맛집', '숙박', '기타']); // 숙박·기타를 다시 더했습니다(사용자 요청).
 });
 
 test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없으면 안내한다', async ({ page, context }) => {
@@ -379,6 +379,7 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   // 목록에서 장소를 고르면 목록을 줄이고 지도에서 그 장소를 보여 줍니다.
   await list.getByRole('button', { name: /^거문도 방파제/ }).click();
   await expect(page.locator('.list-expanded')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '목록 확대' })).not.toBeFocused(); // 다른 작업으로 넘어갈 때는 초점을 돌리지 않습니다.
   const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
   await expect(popup).toBeVisible();
 
@@ -403,7 +404,8 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
 test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
-  await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']);
+  await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveCount(5);
+  expect(await page.getByRole('group', { name: '분류' }).getByRole('button').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))).toEqual(['전체', '낚시', '맛집', '숙박', '기타']);
   await page.goto('./places/p2');
   await page.getByRole('button', { name: '장소 수정' }).click();
   const dialog = page.getByRole('dialog', { name: '장소 수정' });
@@ -420,4 +422,55 @@ test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴�
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '장소 수정' }).click();
   await expect(page.getByRole('dialog', { name: '장소 수정' }).getByLabel('여는 시각')).toHaveCount(0);
+});
+
+test('지도: 확대 중 뒤로 가기는 다른 화면으로 가지 않고 확대만 닫는다. 작게 단추로 닫으면 뒤로 가기는 원래대로 이전 화면이다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./stats');
+  await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link', { name: '지도' }).click();
+  await expect(page).toHaveTitle('지도 | 낚고먹고');
+  for (const [open, shrink] of [['지도 확대', '지도 작게'], ['목록 확대', '목록 작게']] as const) {
+    const shrinkButton = page.getByRole('button', { name: shrink });
+    await page.getByRole('button', { name: open }).click();
+    await expect(shrinkButton).toBeVisible();
+    await page.goBack();
+    await expect(shrinkButton).toHaveCount(0);
+    await expect(page).toHaveTitle('지도 | 낚고먹고');
+    // 앞으로 가기는 확대를 다시 열고, 다시 뒤로 가면 닫습니다.
+    await page.goForward();
+    await expect(shrinkButton).toBeVisible();
+    await page.goBack();
+    await expect(shrinkButton).toHaveCount(0);
+  }
+  // 목록 확대에서 장소를 빠르게 두 번 눌러도 뒤로 가기는 한 번만 보내 지도 화면에 남습니다.
+  await page.getByRole('button', { name: '목록 확대' }).click();
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).evaluate((button: HTMLElement) => {
+    button.click();
+    button.click();
+  });
+  await expect(page.getByRole('button', { name: '목록 작게' })).toHaveCount(0);
+  await expect(page).toHaveTitle('지도 | 낚고먹고');
+  await page.waitForTimeout(300);
+  await expect(page).toHaveTitle('지도 | 낚고먹고');
+  // 작게 단추로 닫으면 쌓은 기록도 지워, 뒤로 가기 한 번에 이전 화면(통계)으로 갑니다.
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await page.getByRole('button', { name: '지도 작게' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeFocused();
+  await page.goBack();
+  await expect(page).toHaveTitle('통계 | 낚고먹고');
+});
+
+test('지도: 분류 필터는 아이콘 단추를 붙여 한 덩어리로 놓는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const group = page.getByRole('group', { name: '분류' });
+  const buttons = group.getByRole('button');
+  await expect(buttons).toHaveCount(5);
+  for (const name of ['전체', '낚시', '맛집', '숙박', '기타']) await expect(group.getByRole('button', { name, exact: true })).toHaveText('');
+  const boxes = await buttons.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()));
+  boxes.slice(1).forEach((box, index) => expect(Math.round(box.left)).toBe(Math.round(boxes[index]!.right) - 1)); // 선 1px을 겹쳐 붙임
+  await group.getByRole('button', { name: '맛집' }).click();
+  await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(1);
 });

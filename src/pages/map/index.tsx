@@ -1,6 +1,6 @@
 import { Writable } from '@/entities/session';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BASE_PLACE, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
+import { BASE_PLACE, KIND_ICON, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
@@ -11,6 +11,13 @@ import { PlaceMap } from '@/widgets/place-map';
 type Filter = PlaceKind | 'all';
 
 const NO_PLACES: Place[] = [];
+
+type Expanded = 'map' | 'list';
+/** 방문 기록에 남긴 확대 상태 */
+const readExpanded = (): Expanded | undefined => {
+  const value = (history.state as { mapExpanded?: unknown } | null)?.mapExpanded;
+  return value === 'map' || value === 'list' ? value : undefined;
+};
 
 export const MapPage = () => {
   const { data: places = NO_PLACES, isPending, error } = usePlaces();
@@ -30,16 +37,44 @@ export const MapPage = () => {
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
   // 지도 확대(지도를 화면 전체로) / 목록 확대(장소 목록이 지도 위를 꽉 채움). Esc나 '작게' 단추로 돌아옵니다.
-  const [expanded, setExpanded] = useState<'map' | 'list'>();
+  // 확대 상태는 방문 기록(history.state.mapExpanded)과 맞춥니다. 휴대폰 뒤로 가기는 확대만 닫고, 앞으로 가기는 다시 엽니다.
+  const [expanded, setExpanded] = useState<Expanded | undefined>(readExpanded);
   const mapToggle = useRef<HTMLButtonElement>(null);
   const listToggle = useRef<HTMLButtonElement>(null);
   const shrinkButton = useRef<HTMLButtonElement>(null);
-  const collapse = useCallback(() => {
-    setExpanded((current) => {
-      // 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다.
-      requestAnimationFrame(() => (current === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true }));
-      return undefined;
-    });
+  // 뒤로 가기를 보낸 뒤 popstate를 받기 전까지는 다시 보내지 않습니다(빠르게 두 번 누르면 이전 화면까지 가지 않게).
+  const goingBack = useRef(false);
+  useEffect(() => {
+    const onHistory = () => {
+      goingBack.current = false;
+      setExpanded(readExpanded());
+    };
+    window.addEventListener('popstate', onHistory);
+    return () => window.removeEventListener('popstate', onHistory);
+  }, []);
+  // 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다(다른 작업으로 넘어갈 때는 빼고). 상태가 바뀐 뒤 효과에서 옮깁니다.
+  const refocus = useRef(true);
+  const previous = useRef(expanded);
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = expanded;
+    if (!before || expanded) return;
+    if (refocus.current) (before === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true });
+    refocus.current = true;
+  }, [expanded]);
+  const expand = (kind: Expanded) => {
+    if (readExpanded()) history.replaceState({ ...history.state, mapExpanded: kind }, '');
+    else history.pushState({ mapExpanded: kind }, '');
+    setExpanded(kind);
+  };
+  /** 작게 단추·Esc·다른 작업: 쌓은 기록이 있으면 뒤로 가서(popstate가 줄임) 기록을 남기지 않습니다. */
+  const collapse = useCallback((focusToggle = true) => {
+    if (goingBack.current) return;
+    refocus.current = focusToggle;
+    if (readExpanded()) {
+      goingBack.current = true;
+      history.back();
+    } else setExpanded(undefined);
   }, []);
   const expandedPane = useRef<HTMLElement | null>(null);
   const setExpandedPane = useCallback((node: HTMLElement | null) => {
@@ -125,9 +160,8 @@ export const MapPage = () => {
       <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
         <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} focusKey={focusKey} />
         {expanded === 'map' && (
-          <button ref={shrinkButton} type="button" className="button button-primary expanded-close" onClick={collapse}>
-            <Icon name="minimize" size={18} />
-            지도 작게
+          <button ref={shrinkButton} type="button" className="button button-primary map-icon-button expanded-close" aria-label="지도 작게" title="지도 작게" onClick={() => collapse()}>
+            <Icon name="minimize" size={20} />
           </button>
         )}
       </div>
@@ -136,9 +170,8 @@ export const MapPage = () => {
         {expanded === 'list' && (
           <div className="cell-head">
             <p className="title text-xl" aria-hidden="true">장소 목록</p>
-            <button ref={shrinkButton} type="button" className="button" onClick={collapse}>
-              <Icon name="minimize" size={18} />
-              목록 작게
+            <button ref={shrinkButton} type="button" className="button map-icon-button" aria-label="목록 작게" title="목록 작게" onClick={() => collapse()}>
+              <Icon name="minimize" size={20} />
             </button>
           </div>
         )}
@@ -146,45 +179,56 @@ export const MapPage = () => {
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
             <Writable>
+              {/* 아이콘 단추: 이름은 aria-label, 켜짐은 aria-pressed로 알립니다. 다시 누르면 취소합니다. */}
               <button
                 type="button"
-                className="button"
+                className="button map-icon-button"
+                aria-label="위치 지정"
+                title={picking ? '위치 지정 취소' : '위치 지정'}
                 aria-pressed={picking}
-                aria-label={picking ? '위치 지정 취소' : undefined} // 화면에는 짧게 '지정 취소'(한 줄에 들어가게), 이름은 그 글자를 포함합니다.
                 onClick={() => {
                   dropPendingPick();
                   setPicking(!picking);
-                  if (expanded === 'list') setExpanded(undefined); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
+                  if (expanded === 'list') collapse(false); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
                 }}
               >
-                {picking ? '지정 취소' : '위치 지정'}
+                <Icon name="mapPinPlus" size={20} />
               </button>
             </Writable>
-            <button ref={mapToggle} type="button" className="button map-icon-button" aria-label="지도 확대" title="지도 확대" onClick={() => setExpanded('map')}>
+            <button ref={mapToggle} type="button" className="button map-icon-button" aria-label="지도 확대" title="지도 확대" onClick={() => expand('map')}>
               <Icon name="maximize" size={20} />
             </button>
-            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => setExpanded(expanded === 'list' ? undefined : 'list')}>
+            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => (expanded === 'list' ? collapse() : expand('list'))}>
               <Icon name="list" size={20} />
             </button>
             <Writable>
               <button
                 type="button"
-                className="button" // '위치 지정'과 같은 모양
+                className="button map-icon-button"
+                aria-label="장소 추가"
+                title="장소 추가"
                 onClick={() => {
                   dropPendingPick();
                   setPicking(false); // 위치 지정을 끝내고 새 장소 입력으로 넘어갑니다.
-                  setExpanded(undefined); // 확대 중이면 줄여 둡니다(새 장소 창이 막힌 뒤쪽에 뜨지 않게).
+                  if (expanded) collapse(false); // 확대 중이면 줄여 둡니다(새 장소 창이 막힌 뒤쪽에 뜨지 않게).
                   setDraft({});
                 }}
               >
-                장소 추가
+                <Icon name="plus" size={20} />
               </button>
             </Writable>
-            <button type="button" className="button" aria-pressed={selectedId === BASE_PLACE.id} onClick={() => {
+            <button
+              type="button"
+              className="button map-icon-button"
+              aria-label={BASE_PLACE.name}
+              title={BASE_PLACE.name}
+              aria-pressed={selectedId === BASE_PLACE.id}
+              onClick={() => {
                 setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id);
-                if (expanded === 'list') setExpanded(undefined); // 지도에서 무악재역을 보여 줍니다.
-              }}>
-              {BASE_PLACE.name}
+                if (expanded === 'list') collapse(false); // 지도에서 무악재역을 보여 줍니다.
+              }}
+            >
+              <Icon name="train" size={20} />
             </button>
           </div>
         </div>
@@ -192,18 +236,22 @@ export const MapPage = () => {
         <div className="cell-body flex flex-col gap-5">
           <p role="status" className="text-sm text-muted empty:hidden">
             {picking
-              ? "지도에서 저장할 위치를 눌러 주세요. 키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다."
+              ? "지도에서 저장할 위치를 눌러 주세요. 다시 누르면 취소합니다. 키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다."
               : ''}
           </p>
 
           <fieldset>
             <legend className="mono-label pb-1.5">분류</legend>
-            <div className="flex flex-wrap gap-2">
-              {(['all', ...KINDS] as Filter[]).map((item) => (
-                <button key={item} type="button" className="button" aria-pressed={filter === item} onClick={() => changeFilter(item)}>
-                  {item === 'all' ? '전체' : KIND_LABEL[item]}
-                </button>
-              ))}
+            {/* 아이콘 단추를 한 덩어리로 붙여 둡니다. 이름은 aria-label과 title(마우스를 올리면 보임)로 알립니다. */}
+            <div className="kind-filter">
+              {(['all', ...KINDS] as Filter[]).map((item) => {
+                const label = item === 'all' ? '전체' : KIND_LABEL[item];
+                return (
+                  <button key={item} type="button" className="button map-icon-button" aria-label={label} title={label} aria-pressed={filter === item} onClick={() => changeFilter(item)}>
+                    <Icon name={item === 'all' ? 'layers' : KIND_ICON[item]} size={20} />
+                  </button>
+                );
+              })}
             </div>
           </fieldset>
 
@@ -235,7 +283,7 @@ export const MapPage = () => {
                     onClick={() => {
                       setSelectedId(place.id);
                       setFocusKey((key) => key + 1);
-                      if (expanded === 'list') setExpanded(undefined); // 목록 확대에서 고르면 목록을 줄여 지도에서 그 장소를 보여 줍니다.
+                      if (expanded === 'list') collapse(false); // 목록 확대에서 고르면 목록을 줄여 지도에서 그 장소를 보여 줍니다.
                     }}
                   >
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">

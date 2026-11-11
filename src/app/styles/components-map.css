@@ -260,10 +260,23 @@
     padding-inline: 0.3125rem; /* 360px 화면에서 단추 다섯 개가 한 줄에 들어가는 여백 */
     white-space: nowrap;
   }
-  /* 위치 지정 옆 지도 확대·목록 확대 아이콘 단추 */
+  /* 지도 화면의 아이콘 단추(위치 지정·지도 확대·목록 확대·장소 추가·무악재역·작게·분류). 이름은 aria-label과 title로 알립니다. */
+  .map-icon-button,
   .map-actions .map-icon-button {
-    width: 2.5rem;
+    width: 2.75rem;
+    justify-content: center;
     padding-inline: 0;
+  }
+  /* 분류 필터: 아이콘 단추를 틈 없이 붙여 한 덩어리로 보입니다(겹치는 선은 1px 하나로). */
+  .kind-filter {
+    display: flex;
+  }
+  .kind-filter .button + .button {
+    margin-left: -1px;
+  }
+  .kind-filter .button[aria-pressed='true'] {
+    position: relative; /* 고른 단추의 선이 옆 단추 선에 덮이지 않게 */
+    z-index: 1;
   }
   /* 지도 확대: 지도 칸을 화면 전체로 키웁니다(하단 메뉴 위까지 덮음). */
   /* 칸에 붙은 유틸리티 클래스(sticky top-topbar z-20 등)가 컴포넌트 층보다 앞서므로 !important로 덮습니다. */
