@@ -29,7 +29,8 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
 });
 
 const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
-const priceError = (row: MenuRow) => (Number(row.price) < 0 || !Number.isInteger(Number(row.price)) ? '0 이상의 정수로 입력해 주세요.' : undefined);
+// 비었거나 0~9로만 된 십진수만 받습니다(Number()는 '0x10'·'1e3'도 숫자로 바꾸므로 쓰지 않음).
+const priceError = (row: MenuRow) => (row.price !== '' && !/^\d+$/.test(row.price) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
 /** 내용을 적다 만 줄 */
 export const menuRowError = (row: MenuRow) => nameError(row) ?? priceError(row);
@@ -84,12 +85,14 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label={`${label} 가격 (원)`}
-                  type="number"
+                  // 숫자 칸(type=number)은 초점이 있을 때 마우스 휠로 값이 바뀌므로 글자 칸에 숫자 키패드만 띄웁니다.
+                  // 쉼표·공백·'원'만 지우고, 소수점·음수 같은 잘못된 값은 바꾸지 않고 저장할 때 오류로 알립니다.
+                  type="text"
                   inputMode="numeric"
-                  min={0}
+                  autoComplete="off"
                   value={row.price}
                   error={showErrors ? priceError(row) : undefined}
-                  onChange={(event) => set(row.id, { price: event.target.value })}
+                  onChange={(event) => set(row.id, { price: event.target.value.replace(/[,\s원]/g, '') })}
                 />
               </div>
               <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />

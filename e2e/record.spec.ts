@@ -345,3 +345,28 @@ test('전체 기록: 분류 필터는 지도와 같은 붙인 아이콘 단추�
   await group.getByRole('button', { name: '맛집' }).click();
   await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 바뀌지 않고, 쉼표·원만 지우며 잘못된 값은 안내한다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  const price = dialog.getByLabel('음식 1 가격 (원)');
+  await price.fill('12,000원');
+  await expect(price).toHaveValue('12000');
+  await expect(price).toHaveAttribute('inputmode', 'numeric');
+  await price.focus();
+  await price.hover();
+  for (const delta of [-300, 300]) {
+    await page.mouse.wheel(0, delta);
+    await expect(price).toHaveValue('12000'); // 휠을 굴릴 때마다 그대로입니다.
+  }
+  // 소수점·음수는 다른 값으로 바꾸지 않고 저장할 때 오류로 알립니다.
+  await dialog.getByLabel('음식 1', { exact: true }).fill('모둠회');
+  for (const wrong of ['1.5', '-12000', '0x10', '1e3']) {
+    await price.fill(wrong);
+    await expect(price).toHaveValue(wrong);
+    await dialog.getByRole('button', { name: '저장' }).click();
+    await expect(dialog.getByText('0 이상의 정수로 입력해 주세요.')).toBeVisible();
+  }
+});

@@ -59,10 +59,11 @@ export const GearChecklist = ({ event, reveal = false }: { event: Pick<CalendarE
   return (
     <fieldset ref={box} tabIndex={-1} className="mt-2 flex flex-col gap-2">
       <legend className="mono-label pb-1.5">{`챙길 물품 ${items.length}개 중 ${packed.length}개 챙김`}</legend>
-      <ul className="flex flex-wrap gap-2">
+      {/* 물품은 한 줄에 하나씩 블록으로 쌓습니다(사용자 요청). */}
+      <ul className="flex flex-col gap-2">
         {items.map((item) => (
           <li key={item.id}>
-            <label className="choice gear-choice">
+            <label className="choice gear-choice w-full">
               <input type="checkbox" checked={packed.includes(item.id)} disabled={!canWrite || pending.includes(item.id)} onChange={(change) => toggle(item.id, change.target.checked)} />
               <GearTag gear={item} />
             </label>

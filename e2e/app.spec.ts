@@ -59,15 +59,16 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제.*류 조사 평점 필요/ })).toBeVisible(); // 평점을 줘야 하는 사람을 밝힙니다.
   await expect(page.getByRole('region', { name: '알림', exact: true }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
 
-  // 화면 테마: 라이트·다크 중에서 고릅니다(기기 설정 따르기는 없음).
+  // 화면 테마: '다크 모드' 스위치(role=switch)로 켜고 끕니다.
   const theme = page.getByRole('region', { name: '화면 테마' });
-  await expect(theme.getByRole('radio')).toHaveCount(0); // 라디오 대신 단추입니다.
-  await expect(theme.getByRole('button')).toHaveCount(2);
-  await theme.getByRole('button', { name: '다크' }).click();
+  const darkSwitch = theme.getByRole('switch', { name: '다크 모드' });
+  await expect(theme.getByRole('button')).toHaveCount(0); // 단추 대신 스위치입니다.
+  await darkSwitch.click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(theme.getByRole('button', { name: '다크' })).toHaveAttribute('aria-pressed', 'true');
-  await theme.getByRole('button', { name: '라이트' }).click();
+  await expect(darkSwitch).toHaveAttribute('aria-checked', 'true');
+  await darkSwitch.press('Space'); // 키보드로도 켜고 끕니다.
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(darkSwitch).toHaveAttribute('aria-checked', 'false');
 
   // 앱 설치: 설치할 수 있는 브라우저가 보내는 설치 제안을 흉내 냅니다.
   await page.evaluate(() => {
@@ -78,8 +79,9 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await expectFits(page);
   await expectAccessible(page);
 
-  // 물품 주소(/gear)는 물품 화면입니다(주요 메뉴의 '물품').
+  // 물품 주소는 /items이고, 예전 주소 /gear는 /items로 넘깁니다.
   await page.goto('./gear');
+  await expect(page).toHaveURL(/\/items$/);
   await expect(page).toHaveTitle('물품 | 낚고먹고');
 });
 
@@ -141,5 +143,28 @@ test('찾기 칸은 지도·전체 기록·도감 모두 같은 모양이다(안
     await expect(box).toBeAttached();
     expect(await box.getAttribute('placeholder')).toBeTruthy(); // 이름표 대신 칸 안의 안내 글자
     await expect(page.getByRole('search').getByRole('button')).toHaveCount(0);
+  }
+});
+
+test('아이콘 단추: 모든 화면에서 아이콘이 실제 크기로 보인다(주요 단추·삭제 단추 포함), 라이트·다크', async ({ page }) => {
+  await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
+  for (const theme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    for (const [url, ready] of [['./', '장소 추가'], ['./schedule?date=2026-11-07', '오늘'], ['./items', '물품 추가'], ['./places/p1', '장소 수정']] as const) {
+      await page.goto(url);
+      await expect(page.getByRole('button', { name: ready, exact: true }).first()).toBeAttached();
+      await expect.poll(() => page.locator('.icon-only, .map-tool').count(), { message: `${url}에 검사할 아이콘 단추가 없습니다` }).toBeGreaterThan(0);
+      const broken = await page.locator('.icon-only, .map-tool').evaluateAll((buttons) =>
+        buttons
+          .filter((button) => (button as HTMLElement).offsetParent !== null)
+          .filter((button) => {
+            const icon = button.querySelector('svg')?.getBoundingClientRect();
+            const style = getComputedStyle(button.querySelector('svg')!);
+            return !icon || icon.width < 16 || icon.height < 16 || style.stroke === getComputedStyle(button).backgroundColor;
+          })
+          .map((button) => button.getAttribute('aria-label')),
+      );
+      expect(broken, `${theme} ${url}`).toEqual([]);
+    }
   }
 });

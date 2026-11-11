@@ -552,3 +552,13 @@ test('분류 필터: 터치 화면에서도 알 수 있게 고른 분류 이름�
   await group.getByRole('button', { name: '기타' }).click();
   await expect(group.locator('legend')).toHaveText('분류 · 기타');
 });
+
+test('목록 위 단추: 장소 추가·목록 확대 순서로 틈 없이 붙어 있다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const region = page.getByRole('region', { name: '내 장소' });
+  const add = (await region.getByRole('button', { name: '장소 추가' }).boundingBox())!;
+  const list = (await region.getByRole('button', { name: '목록 확대' }).boundingBox())!;
+  expect(add.x).toBeLessThan(list.x);
+  expect(Math.round(list.x)).toBe(Math.round(add.x + add.width) - 1); // 선 1px을 겹쳐 붙임
+});

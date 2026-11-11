@@ -54,7 +54,8 @@ const Page = () => {
   if (pathname === '/records') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/stats') return <StatsPage />;
   if (pathname === '/settings') return <SettingsPage />;
-  if (pathname === '/gear') return <GearPage />;
+  if (pathname === '/items') return <GearPage />;
+  if (pathname === '/gear') return <Navigate to="/items" />; // 예전 주소
   if (pathname === '/dex') return <DexPage />;
   const place = /^\/places\/([^/]+)$/.exec(pathname);
   if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;

@@ -25,6 +25,10 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   const client = useQueryClient();
   const [id] = useState(() => event?.id ?? crypto.randomUUID());
   const [gearIds, setGearIds] = useState<string[]>(event?.gear_ids ?? []);
+  // 챙길 물품은 여닫습니다. 새 일정은 하나 이상 골라야 저장되므로 열어 두고, 수정할 때는 닫아 둡니다.
+  const [gearOpen, setGearOpen] = useState(!event);
+  const [gearMissing, setGearMissing] = useState(false);
+  const gearArea = useRef<HTMLDivElement>(null);
   const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
 
   const save = useMutation({
@@ -49,6 +53,17 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   });
 
   const onValid = (values: Values) => {
+    if (!event && gearIds.length === 0) {
+      // 새 일정은 챙길 물품을 하나 이상 골라야 저장합니다(사용자 요청). 목록을 열고 첫 칸으로 초점을 옮깁니다.
+      setGearMissing(true);
+      setGearOpen(true);
+      // 첫 체크 칸으로, 등록한 물품이 없으면 물품 화면 링크로, 그것도 없으면 여닫기 단추로 옮깁니다.
+      requestAnimationFrame(() => {
+        const area = gearArea.current;
+        (area?.querySelector<HTMLElement>('input[type="checkbox"]') ?? area?.querySelector<HTMLElement>('fieldset a') ?? area?.querySelector<HTMLElement>('button'))?.focus();
+      });
+      return;
+    }
     if (locked.current) return;
     locked.current = true;
     save.mutate(
@@ -118,7 +133,18 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         )}
       </fieldset>
 
-      <GearPicker value={gearIds} onChange={setGearIds} />
+      <div ref={gearArea}>
+        <GearPicker
+          value={gearIds}
+          onChange={(ids) => {
+            setGearIds(ids);
+            if (ids.length) setGearMissing(false);
+          }}
+          open={gearOpen}
+          onOpenChange={setGearOpen}
+          error={gearMissing && gearIds.length === 0 ? '챙길 물품을 하나 이상 골라 주세요.' : undefined}
+        />
+      </div>
 
       <TextareaField label="메모" {...register('memo')} />
       <ErrorText error={save.error} />
