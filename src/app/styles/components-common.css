@@ -187,7 +187,7 @@
     }
   }
   .text-action-accent {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
   /* 휴대폰의 조사 고르기 탭. 넓은 화면은 두 칸을 함께 보여 줍니다. */
   .tab-button {

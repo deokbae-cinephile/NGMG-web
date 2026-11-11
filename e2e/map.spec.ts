@@ -353,6 +353,25 @@ test('지도: 확대한 지도에서도 위치를 지정하고, 고르면 지도
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
   expect(db.places!.some((item) => item.name === '확대 지도 포인트')).toBe(true);
+
+  // 주소를 찾는 동안 지도를 줄여도 새 장소 창은 열립니다.
+  await page.evaluate(() => {
+    // 가짜 지도의 주소 찾기를 붙잡아 두었다가 window.releaseAddress()로 끝냅니다.
+    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (...args: unknown[]) => void } } } } }; releaseAddress: () => void };
+    const proto = w.kakao.maps.services.Geocoder.prototype;
+    const original = proto.coord2Address;
+    proto.coord2Address = function (this: unknown, ...args: unknown[]) {
+      w.releaseAddress = () => original.apply(this, args);
+    };
+  });
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('map').click({ position: { x: box.width * 0.3, y: box.height * 0.7 } }); // 방금 저장한 핀이 없는 자리
+  await page.getByRole('button', { name: '지도 작게' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
+  await page.evaluate(() => (window as unknown as { releaseAddress: () => void }).releaseAddress());
+  await expect(page.getByRole('dialog', { name: '새 장소' })).toBeVisible();
 });
 
 test('맛집: 오늘이 휴무 요일이면 목록·말풍선·상세에 오늘 휴무를 띄운다', async ({ page }) => {
@@ -506,4 +525,13 @@ test('지도: 분류 필터는 아이콘 단추를 붙여 한 덩어리로 놓�
   await group.getByRole('button', { name: '맛집' }).click();
   await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(1);
+});
+
+test('분류 필터: 터치 화면에서도 알 수 있게 고른 분류 이름을 글자로 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const group = page.getByRole('group', { name: '분류', exact: true });
+  await expect(group.locator('legend')).toHaveText('분류 · 전체');
+  await group.getByRole('button', { name: '기타' }).click();
+  await expect(group.locator('legend')).toHaveText('분류 · 기타');
 });

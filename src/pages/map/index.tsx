@@ -115,7 +115,8 @@ export const MapPage = () => {
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   /** 새 장소 창을 엽니다. 확대 중이면 먼저 줄인 뒤 엽니다(확대 중에는 뒤쪽이 막혀 창을 쓸 수 없음). */
   const openDraft = (next: Partial<PlaceDraft>) => {
-    if (!expanded) return setDraft(next);
+    // 주소 조회 중에 확대를 닫았을 수 있으므로, 렌더 때의 값이 아니라 지금의 확대 상태(previous, 효과에서 갱신)를 봅니다.
+    if (!previous.current) return setDraft(next);
     afterCollapse.current = () => setDraft(next);
     collapse(false);
   };
