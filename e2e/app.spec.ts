@@ -132,6 +132,7 @@ test('장소: 수정하고 삭제한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./places/p2');
   await expect(page.getByRole('heading', { name: '바다횟집', exact: true })).toBeVisible();
+  await expect(page.getByText(/\d+\.\d{5}, \d+\.\d{5}/)).toHaveCount(0); // 상세에도 좌표를 쓰지 않습니다.
   await expectFits(page);
   await expectAccessible(page);
 
@@ -141,10 +142,7 @@ test('장소: 수정하고 삭제한다', async ({ page }) => {
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByText('이름을 입력해 주세요.')).toBeVisible();
   await dialog.getByLabel('이름').fill('푸른바다횟집');
-  await dialog.getByLabel('위도').fill('999');
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog.getByText('-90에서 90 사이')).toBeVisible();
-  await dialog.getByLabel('위도').fill('34.5');
+  await expect(dialog.getByLabel('위도')).toHaveCount(0); // 위도·경도는 보이지 않습니다(사용자 요청).
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(page.getByRole('heading', { name: '푸른바다횟집', exact: true })).toBeVisible();
 
@@ -205,7 +203,7 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.records!.at(-1)).toMatchObject({ rating: 4.3, angler_ratings: { '김 조사': 5, '류 조사': 3.5 } });
 });
 
-test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }) => {
+test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다', async ({ page }, testInfo) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
@@ -225,7 +223,7 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
 
   await page.getByRole('button', { name: '9 일 (월), 2026년 11월' }).click();
   await expect(page.getByRole('heading', { name: '2026년 11월 9일 (월)' })).toBeVisible();
-  await page.getByRole('button', { name: '일정 추가' }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '새 일정' });
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByText('할 일을 입력해 주세요.')).toBeVisible();
@@ -238,8 +236,8 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('button', { name: '일정 추가' })).toBeFocused();
-  await page.getByRole('button', { name: '일정 추가' }).click();
+  await expect(page.getByRole('button', { name: '일정 추가', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).click();
   await dialog.getByLabel('할 일').fill('점심');
   await dialog.getByLabel('종료 날짜').fill('2026-11-10');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('백도');
@@ -248,7 +246,9 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await dialog.getByRole('button', { name: '저장' }).click();
 
   await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '일정 추가' })).toBeFocused();
+  // 저장하면 넓은 화면은 연 단추로, 휴대폰은 알림창이 닫히며 고른 날 제목으로 초점이 갑니다.
+  if (testInfo.project.name === 'desktop') await expect(page.getByRole('button', { name: '일정 추가', exact: true })).toBeFocused();
+  else await expect(page.locator('.cal-day.is-selected')).toBeFocused();
   await expect(page.getByRole('link', { name: '백도 횟집' })).toBeVisible();
   expect(db.places).toHaveLength(4);
   expect(db.places!.at(-1)).toMatchObject({ kind: 'restaurant' });
@@ -317,11 +317,20 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
 test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 팝업과 지도 전환 이름이 동작한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   await page.goto('./');
+  // 위치 없이 저장하면 위치를 고르라고 안내합니다.
   await page.getByRole('button', { name: '장소 추가' }).click();
-  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  let dialog = page.getByRole('dialog', { name: '새 장소' });
   await dialog.getByLabel('이름').fill('새 포인트');
-  await dialog.getByLabel('위도').fill('34.5');
-  await dialog.getByLabel('경도').fill('127.5');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('위치가 없습니다');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  // 지도를 눌러 위치를 지정하면 위도·경도가 채워진 새 장소 창이 열립니다.
+  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).click();
+  const box = (await page.getByTestId('map').boundingBox())!;
+  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } }); // 평점 안내·핀이 없는 자리
+  dialog = page.getByRole('dialog', { name: '새 장소' });
+  await dialog.getByLabel('이름').fill('새 포인트');
   await dialog.getByRole('button', { name: '저장' }).dblclick();
   await expect(dialog).toBeHidden();
   expect(db.places).toHaveLength(4);
@@ -852,7 +861,7 @@ test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByText('게스트로 보는 중입니다. 보기만 할 수 있습니다.')).toBeVisible();
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '일정 추가' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /일정 수정|일정 삭제|기록 남기기|기록 수정/ })).toHaveCount(0);
   await page.goto('./');
   await expect(page.getByRole('button', { name: '장소 추가' })).toHaveCount(0);
@@ -987,4 +996,173 @@ test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 
   await expect(page.getByRole('region', { name: '알림', exact: true })).toBeVisible();
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   await expect(page.getByRole('region', { name: '평점 대기' })).toHaveCount(0);
+});
+
+test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창이 올라오고, 머리의 일정 추가는 감춘다. 지도 평점 안내는 여닫는다', async ({ page }, testInfo) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
+  const head = page.getByRole('region', { name: /2026년 11월 7일/ }).getByRole('button', { name: '일정 추가', exact: true });
+  await page.getByRole('button', { name: /^9 일 \(월\)/ }).click();
+  const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
+  if (testInfo.project.name === 'desktop') {
+    await expect(sheet).toBeHidden(); // 넓은 화면은 머리의 단추를 씁니다.
+  } else {
+    // 휴대폰은 고른 날짜·공휴일 머리를 감춥니다(알림창과 겹침). 제목은 화면 읽기 프로그램에만 남깁니다.
+    // 제목은 남아 있지만, 그 제목을 담은 머리가 1px로 잘려 화면에는 보이지 않습니다.
+    const dayTitle = page.getByRole('heading', { name: '2026년 11월 9일 (월)' });
+    await expect(dayTitle).toBeAttached();
+    const clipped = await dayTitle.evaluate((node) => {
+      for (let element: Element | null = node; element; element = element.parentElement) {
+        const box = element.getBoundingClientRect();
+        if (box.width <= 1 && box.height <= 1 && getComputedStyle(element).overflow === 'hidden') return true;
+      }
+      return false;
+    });
+    expect(clipped).toBe(true);
+    await expect(head).toBeHidden();
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText('11월 9일 (월)');
+    // 알림창 높이만큼 아래를 더 비웁니다: 하단 탭 + 알림창 + 그 위로 올린 맨 위로 단추(44px)까지 가리지 않게.
+    await sheet.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished))); // 올라오는 움직임이 끝난 뒤 잽니다.
+    const space = await page.evaluate(() => {
+      const main = document.querySelector('.main-area')!;
+      const sheetBox = document.querySelector('.day-sheet')!.getBoundingClientRect();
+      return { padding: parseFloat(getComputedStyle(main).paddingBottom), cover: innerHeight - sheetBox.top + 44 };
+    });
+    expect(space.padding).toBeGreaterThanOrEqual(space.cover);
+    await expectAccessible(page);
+    await sheet.getByRole('button', { name: '일정 추가', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '새 일정' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toBeFocused(); // 창을 닫으면 알림창 단추로 돌아옵니다.
+    await sheet.getByRole('button', { name: '일정 추가 알림창 닫기' }).click();
+    await expect(sheet).toHaveCount(0);
+    // 공휴일이면 알림창에 공휴일 이름도 씁니다.
+    await page.goto('./schedule?date=2026-12-01');
+    await page.getByRole('button', { name: /^25 일 \(금\), 2026년 12월, 성탄절/ }).click();
+    await expect(sheet).toContainText('12월 25일 (금)');
+    await expect(sheet).toContainText('성탄절');
+  }
+
+  await page.goto('./');
+  const toggle = page.getByRole('button', { name: '평점', exact: true });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#map-legend-scale')).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#map-legend-scale')).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('button', { name: '평점', exact: true })).toHaveAttribute('aria-expanded', 'false'); // 고른 상태를 기억합니다.
+});
+
+test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, {
+    ...seed(),
+    records: [
+      ...seed().records!,
+      { id: 'm1', place_id: 'p2', visited_on: '2026-09-01', catches: '' },
+      { id: 'm2', place_id: 'p2', visited_on: '2026-10-01', catches: '' },
+      { id: 'm3', place_id: 'p2', visited_on: '2026-11-01', catches: '' },
+    ],
+    menu_items: [
+      { id: 'a1', record_id: 'm1', name: '모둠회', price: 50000, position: 0 },
+      { id: 'a2', record_id: 'm2', name: '모둠회', price: 50000, position: 0 },
+      { id: 'a3', record_id: 'm3', name: '모둠회', price: 55000, position: 0 },
+      { id: 'b1', record_id: 'm2', name: '매운탕', price: 20000, position: 1 },
+      { id: 'b2', record_id: 'm3', name: '매운탕', price: 18000, position: 1 },
+      { id: 'c1', record_id: 'm3', name: '전복죽', price: 15000, position: 2 },
+    ],
+  });
+  await page.goto('./dex');
+  await page.getByRole('button', { name: '음식 도감' }).click();
+  const card = (name: string) => page.getByRole('listitem').filter({ has: page.getByRole('heading', { name }) });
+  await expect(card('모둠회')).toContainText('55,000원 (+5,000원)');
+  await expect(card('매운탕')).toContainText('18,000원 (-2,000원)');
+  await expect(card('전복죽')).toContainText('15,000원');
+  await expect(card('전복죽')).not.toContainText('(+');
+  // 좁아서 줄이 바뀌면 가격과 증감이 각각 통째로 나뉩니다.
+  const pieces = card('모둠회').locator('dd span.whitespace-nowrap');
+  await expect(pieces).toHaveText(['55,000원', '(+5,000원)']);
+});
+
+test('지도: 핀을 고르면 왼쪽 아래에 그곳의 날씨와 기온을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.weather-badge')).toHaveCount(0); // 고르기 전에는 없습니다.
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  const badge = page.locator('.weather-badge');
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText('14°');
+  await expect(badge).toContainText('구름'); // 기록의 날씨 선택지 이름을 씁니다.
+  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도');
+  await expectAccessible(page);
+  // 무악재역도 같은 방식입니다.
+  await page.getByRole('button', { name: '무악재역', exact: true }).click();
+  await expect(badge).toContainText('무악재역 지금 날씨');
+});
+
+test('지도: 고른 장소를 지도에서 새 위치로 옮긴다(좌표는 보이지 않음)', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  // 휴대폰은 위에 붙은 지도와 하단 탭 사이라 자동 스크롤이 가리므로 눌림 이벤트를 바로 보냅니다.
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
+  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
+  await expect(page.getByText("지도에서 '거문도 방파제'의 새 위치를 눌러 주세요.")).toBeVisible();
+  const box = (await page.getByTestId('map').boundingBox())!;
+  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } });
+  const dialog = page.getByRole('dialog', { name: '장소 수정' });
+  await expect(dialog.getByLabel('이름')).toHaveValue('거문도 방파제');
+  await expect(dialog.getByLabel('위도')).toHaveCount(0);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  const moved = db.places!.find((item) => item.id === 'p1')!;
+  expect(moved.latitude).not.toBe(34.03); // 같은 장소(기록은 그대로)의 좌표만 바뀝니다.
+  expect(db.places).toHaveLength(3);
+});
+
+test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데로 위치 지정)', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤/)).toBeVisible();
+  await expect(page.getByRole('region', { name: '장소 지도' })).toHaveAttribute('tabindex', '0'); // 방향키로 옮기도록 초점을 받을 수 있습니다.
+  await page.getByRole('button', { name: '가운데로 위치 지정' }).focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  await dialog.getByLabel('이름').fill('가운데 포인트');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.places!.at(-1)).toMatchObject({ name: '가운데 포인트', latitude: 36, longitude: 127 }); // 지도 가운데 좌표
+  await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
+});
+
+test('입력 칸 안내는 칸의 설명으로 읽힌다(위치 옮기기에서 이전 주소 안내)', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  // 새 위치의 주소를 찾지 못하는 경우를 흉내 냅니다.
+  await page.evaluate(() => {
+    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (lng: number, lat: number, done: (result: unknown[], status: string) => void) => void } } } } } };
+    w.kakao.maps.services.Geocoder.prototype.coord2Address = (_lng, _lat, done) => done([], 'ZERO_RESULT');
+  });
+  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
+  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
+  await page.getByRole('button', { name: '가운데로 위치 지정' }).click();
+  const address = page.getByRole('dialog', { name: '장소 수정' }).getByLabel('주소');
+  await expect(address).toHaveValue('전남 여수시 삼산면');
+  await expect(address).toHaveAccessibleDescription(/이전 주소를 그대로 두었습니다/);
+});
+
+test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop');
+  await fakeBackend(page, { ...seed(), members: [{ id: 'm-u1', user_id: 'u1', role: 'guest' }] });
+  await page.goto('./schedule?date=2026-12-01');
+  await page.getByRole('button', { name: /^25 일 \(금\), 2026년 12월, 성탄절/ }).click();
+  const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
+  await expect(sheet).toContainText('12월 25일 (금)');
+  await expect(sheet).toContainText('성탄절');
+  await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
+  await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
 });

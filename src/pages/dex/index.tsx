@@ -137,7 +137,7 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
       {!error && all.length === 0 && <p className="cell-body text-muted">아직 도감이 비어 있습니다. 맛집 기록에 음식을 추가하면 하나씩 등록됩니다.</p>}
       {!error && all.length > 0 && entries.length === 0 && <p role="status" className="cell-body text-muted">{`'${keyword.trim()}'에 맞는 음식이 없습니다.`}</p>}
       <ol className="dex-grid">
-        {visible.map(({ name, count, price, rating, latest, photoPath, pending }) => {
+        {visible.map(({ name, count, price, priceChange, rating, latest, photoPath, pending }) => {
           const photo = photoPath ? urls.get(photoPath) : undefined;
           return (
             <DexCard
@@ -150,7 +150,17 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               <dt className="mono-label">평점</dt>
               <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending ? `${pending} (평점 대기)` : '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
-              <dd>{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</dd>
+              <dd>
+                <span className="whitespace-nowrap">{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</span>
+                {/* 지난번 가격과 다르면 오르내린 금액을 덧붙입니다. 색이 아니라 +·- 기호로 구분합니다.
+                    좁으면 가격과 증감이 각각 통째로 줄을 바꿉니다('17,000원' / '(+2,000원)'). */}
+                {priceChange ? (
+                  <>
+                    {' '}
+                    <span className="whitespace-nowrap text-muted">{`(${priceChange > 0 ? '+' : '-'}${Math.abs(priceChange).toLocaleString('ko-KR')}원)`}</span>
+                  </>
+                ) : null}
+              </dd>
               <dt className="mono-label">시간</dt>
               <dd>{formatDate(latest.record.visited_on)}</dd>
               <dt className="mono-label">장소</dt>

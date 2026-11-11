@@ -566,6 +566,36 @@ body::after {
   .floating-actions > * {
     pointer-events: auto;
   }
+  /* 휴대폰 일정 화면: 날짜를 누르면 하단 탭 바로 위로 올라오는 '일정 추가' 알림창 */
+  .day-sheet {
+    position: fixed;
+    right: 0;
+    bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom));
+    left: 0;
+    z-index: 30;
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    gap: 0.75rem;
+    border-top: 1px solid var(--color-line);
+    background: var(--color-paper);
+    padding: 0.625rem 0.75rem 0.625rem 1.25rem;
+    box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08);
+    animation: sheet-up 0.2s ease-out;
+  }
+  .day-sheet-close {
+    display: inline-flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  /* 알림창이 떠 있으면 맨 위로·저장 대기 단추를 그 위로 올립니다. */
+  body:has(.day-sheet) .floating-actions {
+    bottom: calc(8.25rem + env(safe-area-inset-bottom));
+  }
   /* 평점 대기 알림: 한 사람만 평점을 준 기록이 있는 동안 계속 보입니다. 누르면 기록 목록이 위로 열립니다. */
   .pending-ratings {
     position: relative;
@@ -973,15 +1003,28 @@ body::after {
     padding: 0 0.5rem;
     font-size: 0.9375rem;
   }
-  .map-legend strong,
-  .map-legend span {
+  .map-legend-toggle,
+  .map-legend-scale > span {
     display: inline-flex;
     height: 1.625rem;
     align-items: center;
     justify-content: center;
     line-height: 1;
   }
-  .map-legend span {
+  /* 여닫기 단추는 상자 높이 전체를 누를 수 있게 늘립니다. */
+  .map-legend-toggle {
+    height: 100%;
+    gap: 0.125rem;
+    cursor: pointer;
+  }
+  .map-legend-scale {
+    display: flex;
+    gap: 0.3125rem;
+  }
+  .map-legend-scale[hidden] {
+    display: none;
+  }
+  .map-legend-scale > span {
     width: 1.625rem;
   }
   /* 지도 종류 전환. 왼쪽 평점 표시와 높이를 맞춥니다. */
@@ -1049,6 +1092,41 @@ body::after {
     padding: 0.5rem 0.75rem;
     color: var(--color-ink);
     font-size: 0.875rem;
+  }
+  /* 고른 핀 자리의 날씨: 지도 왼쪽 아래, 카카오 축척 표시 위에 둡니다. */
+  .weather-badge {
+    position: absolute;
+    bottom: 2.25rem;
+    left: 0.75rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-paper);
+    padding: 0.375rem 0.75rem 0.375rem 0.5rem;
+    color: var(--color-ink);
+  }
+  /* 위치 지정 중 지도 가운데 십자 표시와, 그 자리로 정하는 단추(왼쪽 아래) */
+  .map-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 10;
+    width: 2rem;
+    height: 2rem;
+    translate: -50% -50%;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--color-ink), var(--color-ink)) center / 2px 100% no-repeat,
+      linear-gradient(var(--color-ink), var(--color-ink)) center / 100% 2px no-repeat;
+    filter: drop-shadow(0 0 1px var(--color-paper)) drop-shadow(0 0 1px var(--color-paper));
+  }
+  .map-pick-center {
+    position: absolute;
+    bottom: 2.25rem;
+    left: 0.75rem;
+    z-index: 10;
   }
   /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
   .my-location {
@@ -1203,6 +1281,12 @@ body::after {
    */
   .main-area {
     padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+  /* 휴대폰 일정 화면에서 '일정 추가' 알림창이 떠 있으면 그 높이(약 4rem)만큼 더 비워 마지막 내용이 가리지 않게 합니다. */
+  @media (width < 64rem) {
+    .main-area:has(.day-sheet) {
+      padding-bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    }
   }
   @media (width >= 64rem) {
     .main-area {
@@ -1382,6 +1466,12 @@ body::after {
     transform: rotate(360deg);
   }
 }
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
 @keyframes skeleton-pulse {
   to {
     opacity: 0.45;
@@ -1399,6 +1489,9 @@ body::after {
     animation: none;
   }
   .saving-spinner {
+    animation: none;
+  }
+  .day-sheet {
     animation: none;
   }
   * {
