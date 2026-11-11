@@ -1163,5 +1163,6 @@ test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 �
   const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
   await expect(sheet).toContainText('12월 25일 (금)');
   await expect(sheet).toContainText('성탄절');
+  await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
   await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
 });
