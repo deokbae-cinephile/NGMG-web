@@ -137,7 +137,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 | `paper` / `surface` | `#fafafa` / `#f0f0f0` | 바탕 / 입력란·강조 영역 |
 | `ink` / `muted` | `#0a0a0a` / `#595959` | 글자·칸 선 / 보조 글자·라벨 |
 | `soft` / `field` | `#d9d9d9` / `#8c8c8c` | 옅은 구분선 / 입력란 테두리 |
-| `accent` | `#00a86b` (브랜드 CI) | 선택된 메뉴·필터·단추·체크 칸, 달력 표시, 그래프, 삭제 단추 바탕(그 위 글자·아이콘은 검정). CI 색이라 대비 보정 없이 그대로 씀 |
+| `accent` | `#8ed8cb` (브랜드 CI, 아쿠아 민트) | 선택된 메뉴·필터·단추·체크 칸, 달력 표시, 그래프, 삭제 단추 바탕(그 위 글자·아이콘은 검정). CI 색이라 대비 보정 없이 그대로 씀 |
 | `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
 | `danger` | `#b3221e` | 삭제·오류 |
 
