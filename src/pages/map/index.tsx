@@ -150,13 +150,14 @@ export const MapPage = () => {
                 type="button"
                 className="button"
                 aria-pressed={picking}
+                aria-label={picking ? '위치 지정 취소' : undefined} // 화면에는 짧게 '지정 취소'(한 줄에 들어가게), 이름은 그 글자를 포함합니다.
                 onClick={() => {
                   dropPendingPick();
                   setPicking(!picking);
                   if (expanded === 'list') setExpanded(undefined); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
                 }}
               >
-                {picking ? '위치 지정 취소' : '위치 지정'}
+                {picking ? '지정 취소' : '위치 지정'}
               </button>
             </Writable>
             <button ref={mapToggle} type="button" className="button map-icon-button" aria-label="지도 확대" title="지도 확대" onClick={() => setExpanded('map')}>

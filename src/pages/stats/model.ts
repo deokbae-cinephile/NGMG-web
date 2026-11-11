@@ -1,14 +1,13 @@
 import type { StatRecord } from '@/entities/record';
 
-export type PlaceRank = { id: string; name: string; count: number; fish: number; rating?: number };
+export type PlaceRank = { id: string; name: string; count: number; rating?: number };
 
-/** 장소별 다녀간 횟수(많은 순 5곳), 잡은 마릿수, 평균 평점(평점을 준 기록만) */
+/** 장소별 다녀간 횟수(많은 순 5곳)와 평균 평점(평점을 준 기록만) */
 const rank = (records: StatRecord[], limit = 5): PlaceRank[] => {
-  const byPlace = new Map<string, { id: string; name: string; count: number; fish: number; ratings: number[] }>();
+  const byPlace = new Map<string, { id: string; name: string; count: number; ratings: number[] }>();
   records.forEach((record) => {
-    const row = byPlace.get(record.place.id) ?? { id: record.place.id, name: record.place.name, count: 0, fish: 0, ratings: [] };
+    const row = byPlace.get(record.place.id) ?? { id: record.place.id, name: record.place.name, count: 0, ratings: [] };
     row.count += 1;
-    row.fish += record.fish.length;
     if (record.rating !== null) row.ratings.push(record.rating);
     byPlace.set(record.place.id, row);
   });
