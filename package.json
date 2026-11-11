@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "packageManager": "pnpm@12.16.1",
   "scripts": {
     "dev": "vite",
