@@ -222,33 +222,6 @@
       color: var(--color-paper);
     }
   }
-  /* [ 삭제 ] 처럼 대괄호로 감싼 글자 버튼. 대괄호는 읽지 않습니다. */
-  .text-action {
-    display: inline-flex;
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-    align-items: center;
-    justify-content: center;
-    padding: 0 0.25rem;
-    color: var(--color-muted);
-    font-size: 0.875rem;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .text-action::before {
-    content: '[\00a0' / '';
-  }
-  .text-action::after {
-    content: '\00a0]' / '';
-  }
-  @media (hover: hover) {
-    .text-action:hover:not(:disabled) {
-      color: var(--color-ink);
-    }
-  }
-  .text-action-accent {
-    color: var(--color-accent);
-  }
   /* 휴대폰의 조사 고르기 탭. 넓은 화면은 두 칸을 함께 보여 줍니다. */
   .tab-button {
     display: flex;

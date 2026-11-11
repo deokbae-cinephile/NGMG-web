@@ -52,7 +52,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 알림 (웹 푸시)
 
-출조 전날 오후 6시(내일 일정이 있을 때)와 토요일 오후 6시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
+출조 전날 오후 6시(내일 일정이 있을 때)와 토요일 오후 6시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 출조 알림에는 일정마다 챙길 물품 개수를 적고, 누르면 `/schedule?date=<내일>&focus=gear`로 열려 실제 물품이 있는 첫 일정의 챙길 물품 체크리스트로 스크롤하고 초점을 옮깁니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
 
 - 구독: `push_subscriptions` 표(멤버만 읽고 씀)
 - 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
@@ -99,19 +99,27 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 ## PR 리뷰
 
-`main`에는 브랜치와 PR로 올리고, 검사가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다. 초안(Draft) PR은 자동 리뷰에서 제외됩니다. Ready로 바꾼 뒤에도 리뷰가 시작되지 않으면 PR에 `@coderabbitai review` 댓글을 남겨 요청합니다.
+`main`에는 브랜치와 PR로 올리고, 검사(CI `check`, CodeRabbit)가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다. 초안(Draft) PR은 자동 리뷰에서 제외됩니다. Ready로 바꾼 뒤에도 리뷰가 시작되지 않으면 PR에 `@coderabbitai review` 댓글을 남겨 요청합니다.
+
+## 버전과 릴리스
+
+1.1.0부터 [시맨틱 버저닝](https://semver.org/lang/ko/)을 따릅니다. 버그 수정은 PATCH, 기능 추가는 MINOR, 호환이 깨지는 변경은 MAJOR를 올립니다.
+
+1. PR 안에서 `package.json`의 `version`, README 배지·상태 줄, `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다. 설정의 앱 정보는 `package.json` 버전을 그대로 보여 줍니다.
+2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다(`gh release create vX.Y.Z --notes-file`).
+3. Edge Function(`notify`, `backup`)을 고쳤으면 merge 뒤 `supabase functions deploy <이름> --use-api`로 함께 배포합니다.
 
 ## 테스트
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| E2E | `e2e/*.spec.ts`(지도·일정·기록·도감통계·앱), 공통 도우미 `e2e/support.ts` | 화면 흐름 51개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(146회). 넘침과 axe 접근성 검사를 포함합니다. |
+| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 69개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
 
-프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-backend.ts`가 흉내 냅니다. 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
+프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-server.ts`가 흉내 냅니다(`fakeBackend`). 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 평점 안내 여닫기(`map-legend-open`), 기록 분류 필터(`records-filter`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 평점 안내 여닫기(`map-legend-open`), 기록 분류 필터(`records-filter`), 화면 테마(`theme`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다. 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 
@@ -122,13 +130,21 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 | `paper` / `surface` | `#fafafa` / `#f0f0f0` | 바탕 / 입력란·강조 영역 |
 | `ink` / `muted` | `#0a0a0a` / `#595959` | 글자·칸 선 / 보조 글자·라벨 |
 | `soft` / `field` | `#d9d9d9` / `#8c8c8c` | 옅은 구분선 / 입력란 테두리 |
-| `accent` | `#00a86b` (브랜드 CI) | 선택된 메뉴·필터·핀, 그래프 칠하기, 빼기 단추 글자(그 위 글자는 검정). CI 색이라 대비 보정 없이 그대로 씀 |
+| `accent` | `#00a86b` (브랜드 CI) | 선택된 메뉴·필터·단추·체크 칸, 달력 표시, 그래프, 삭제 단추 바탕(그 위 글자·아이콘은 검정). CI 색이라 대비 보정 없이 그대로 씀 |
 | `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
 | `danger` | `#b3221e` | 삭제·오류 |
 
-제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 핀과 배지의 채움으로 구분합니다(낚시: 검정, 맛집: 흰색). '기타' 분류는 고를 수 없게 뺐고, 예전 자료 표시를 위해 값과 연회색만 남겨 두었습니다.
+제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 낚시·맛집·숙박·기타이고, 핀과 배지의 아이콘과 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 숙박·기타: 회색 계열).
 
 글꼴은 나눔고딕(Nanum Gothic)을 `@fontsource/nanum-gothic`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
+
+## 단추 원칙
+
+- 단추는 글자 없는 아이콘 단추로 씁니다(`src/shared/ui/icon-button.tsx`의 `IconButton`, 화면 이동은 `IconLink`). 이름은 `aria-label`로 화면 읽기 프로그램에, `title`로 마우스를 올린 사람에게 알리고, 누르는 면적은 44px입니다.
+- 글자를 그대로 두는 예외: 분류 필터(아이콘이지만 고른 분류 이름을 '분류 · 낚시'처럼 글자로도 보여 줌), 화면 테마('다크 모드' 스위치, `role="switch"`), 알림 켜기·끄기, 이름 자체를 고르는 단추(도감 탭, 조사 탭, 어종 빠른 선택, 달력 연·월 고르기).
+- 주요 단추(`button-primary`)·삭제 단추(`button-accent`)에도 아이콘 크기가 지켜지도록 `.button.icon-only`로 여백을 덮습니다. 이 규칙이 깨지면 아이콘이 0px로 사라지므로, E2E의 '아이콘 단추' 검사가 모든 화면을 라이트·다크로 확인합니다.
+- 지도 위 단추(위치 지정·무악재역·지도 확대/작게 토글)는 오른쪽 아래 현재 위치 단추 위에 세로로 둡니다(`role="group"` '지도 단추'). 목록 위 장소 추가·목록 확대와 분류 필터는 틈 없이 붙입니다(겹치는 선은 1px).
+- UI를 바꾸면 휴대폰·PC와 라이트·다크로 전체 화면을 찍어 직접 확인한 뒤 올립니다.
 
 ## 첫 로딩과 화면 전환
 
