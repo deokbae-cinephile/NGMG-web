@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDateRange } from '@/shared/lib';
+import { WeatherIcon } from '@/shared/ui';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
@@ -44,7 +45,13 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="mono-label">
             {formatDateRange(record.visited_on, record.end_date)}
-            {record.weather && ` / ${record.weather}`}
+            {record.weather && (
+              <>
+                {' / '}
+                <WeatherIcon state={record.weather} size={14} className="mr-0.5 align-[-2px]" />
+                {record.weather}
+              </>
+            )}
           </p>
           {heading}
         </div>

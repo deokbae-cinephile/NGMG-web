@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ALL_KINDS, BASE_PLACE, KIND_ICON, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, ratingClass, usePlaceRatings } from '@/entities/record';
+import { useCurrentWeather, WeatherBadge } from '@/entities/weather';
 import type { Place, PlaceKind } from '@/shared/api';
 import { getPreference, Link, loadKakao, setPreference, useTheme, type Kakao } from '@/shared/lib';
 import { Icon, iconSvg } from '@/shared/ui';
@@ -111,6 +112,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const focusPopup = useRef(false); // 핀을 눌러 열었을 때만 초점을 팝업으로 옮깁니다. 목록에서 고를 때는 그대로 둡니다.
   const selected = selectedId === BASE_PLACE.id ? BASE_PLACE : places.find((place) => place.id === selectedId);
   const isBase = selected?.id === BASE_PLACE.id;
+  // 고른 핀(무악재역 포함) 자리의 지금 날씨를 왼쪽 아래에 띄웁니다. 못 받으면 상자를 띄우지 않습니다.
+  const weather = useCurrentWeather(selected);
   const basePin = useRef<HTMLDivElement>(null);
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
@@ -455,6 +458,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       >
         <Icon name={satellite ? 'map' : 'satellite'} size={22} />
       </button>
+      {selected && weather.data && <WeatherBadge place={selected.name} weather={weather.data} />}
       <button ref={locateButton} type="button" className="map-locate" aria-label="현재 위치로 이동" title="현재 위치로 이동" aria-busy={locating} disabled={!map || locating} onClick={locate}>
         <Icon name="locate" size={22} />
       </button>

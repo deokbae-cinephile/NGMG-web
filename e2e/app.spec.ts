@@ -1077,3 +1077,19 @@ test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 
   const pieces = card('모둠회').locator('dd span.whitespace-nowrap');
   await expect(pieces).toHaveText(['55,000원', '(+5,000원)']);
 });
+
+test('지도: 핀을 고르면 왼쪽 아래에 그곳의 날씨와 기온을 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.weather-badge')).toHaveCount(0); // 고르기 전에는 없습니다.
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  const badge = page.locator('.weather-badge');
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText('14°');
+  await expect(badge).toContainText('구름'); // 기록의 날씨 선택지 이름을 씁니다.
+  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도');
+  await expectAccessible(page);
+  // 무악재역도 같은 방식입니다.
+  await page.getByRole('button', { name: '무악재역', exact: true }).click();
+  await expect(badge).toContainText('무악재역 지금 날씨');
+});

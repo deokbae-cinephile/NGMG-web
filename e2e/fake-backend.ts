@@ -11,6 +11,10 @@ export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn =
   const server = createFakeServer(seed);
 
   await page.route('https://dapi.kakao.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: KAKAO_SDK }));
+  // 지도 날씨(Open-Meteo): 구름 조금, 14.3도
+  await page.route('https://api.open-meteo.com/**', (route) =>
+    route.fulfill({ contentType: 'application/json', headers: CORS, body: JSON.stringify({ current: { temperature_2m: 14.3, weather_code: 2 } }) }),
+  );
   await page.route('**/fake-supabase/**', (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.split('/fake-supabase')[1] ?? '';
