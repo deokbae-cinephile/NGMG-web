@@ -1,8 +1,7 @@
 /* 기본: 색·글꼴 토큰, 다크 테마, 문서 기본값, 입력칸 꺾쇠, 초점 표시 */
 /*
- * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 연두 포인트(#b8e994) 하나.
- * 연두(accent)는 흰 바탕 위 글자로는 대비가 모자라(1.3:1) 칠하는 데만 쓰고 그 위 글자는 검정입니다(검정과 약 14:1).
- * 흰 바탕에 포인트 색 글자가 필요하면 같은 계열의 진한 초록(accent-text, 5:1)을 씁니다. 어두운 화면에서는 연두 그대로(13.5:1).
+ * 톤: 흰 바탕과 검정 1px 선으로 짠 칸(셀) 구조, 연두 포인트(#b8e994, 브랜드 CI 색) 하나.
+ * CI 색이라 대비 보정 없이 그대로 씁니다(사용자 결정, 2026-11-12). 칠한 곳 위 글자는 검정입니다(검정과 약 14:1).
  * 선택 상태는 검정 선을 함께 둘러 색 없이도 구분되게 합니다.
  */
 @theme {
@@ -14,7 +13,6 @@
   --color-soft: #d9d9d9;
   --color-field: #8c8c8c;
   --color-accent: #b8e994;
-  --color-accent-text: #3d7a1f; /* 흰 바탕 위 포인트 색 글자(대비 5:1) */
   --color-on-accent: #0a0a0a; /* 포인트 색 위의 글자. 어두운 화면에서도 검정입니다. */
   --color-sun: #d4271b;
   --color-sat: #1f5fb4;
@@ -40,7 +38,6 @@
       --color-sun: #ff7a6e;
       --color-sat: #7db1ff;
       --color-danger: #ff8a80;
-      --color-accent-text: #b8e994;
       --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
   }
 }
@@ -56,7 +53,6 @@
     --color-sun: #ff7a6e;
     --color-sat: #7db1ff;
     --color-danger: #ff8a80;
-    --color-accent-text: #b8e994;
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f2f2f2' stroke-width='1.6'/%3E%3C/svg%3E");
 }
 :root[data-theme='light'] {
