@@ -80,13 +80,23 @@ const cacheFirst = async (event, name, key, request, max) => {
   return response;
 };
 
-// 처음 설치하면 서비스 워커가 페이지를 맡기 전에 받은 화면·폼 코드(/assets/)는 저장되지 않습니다.
-// 맡은 뒤 페이지가 그 목록을 보내면 아직 없는 것만 받아 저장해, 오프라인에서도 창과 화면이 열리게 합니다.
+// 처음 설치하면 서비스 워커가 페이지를 맡기 전에 받은 앱 화면(HTML)과 화면·폼 코드(/assets/)는 저장되지 않습니다.
+// 맡은 뒤 페이지가 그 목록을 보내면 아직 없는 것만 받아 저장해, 처음 방문한 뒤에도 오프라인에서 앱과 창이 열리게 합니다.
+// 받지 못한 것은 건너뛰고, 페이지가 연결이 돌아왔을 때 목록을 다시 보내면 그때 저장합니다.
 self.addEventListener('message', (event) => {
   const { type, urls } = event.data ?? {};
   if (type !== 'cache-assets' || !Array.isArray(urls)) return;
   event.waitUntil(
     (async () => {
+      const shell = await caches.open(SHELL);
+      if (!(await shell.match('/'))) {
+        try {
+          const response = await fetch('/', { cache: 'no-cache' });
+          if (response.ok) await shell.put('/', response);
+        } catch {
+          // 연결이 없으면 다음 기회에 저장합니다.
+        }
+      }
       const cache = await caches.open(ASSETS);
       for (const raw of urls) {
         const url = new URL(raw, self.location.origin);
