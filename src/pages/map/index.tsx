@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { findAddress, Link } from '@/shared/lib';
-import { ErrorText, Field, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
@@ -139,7 +139,7 @@ export const MapPage = () => {
             </div>
           </fieldset>
 
-          <Field label="이름·주소로 찾기" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <SearchField label="이름·주소로 찾기" value={keyword} onChange={setKeyword} />
           <ErrorText error={error ?? ratingsError} />
           <p role="status" className="text-sm text-muted">
             {!isPending && !error && (visible.length === 0 ? '표시할 장소가 없습니다.' : `장소 ${visible.length}곳`)}

@@ -5,7 +5,7 @@ import { RecordCard, useRecordPages } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
 import type { PlaceKind, PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
-import { ErrorText, Field, Icon, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 
 type Filter = PlaceKind | 'all';
 
@@ -18,6 +18,13 @@ export const AllRecords = () => {
   });
   const [draft, setDraft] = useState('');
   const [keyword, setKeyword] = useState('');
+  // 입력하는 대로 찾되, 서버에서 찾으므로 입력을 멈추고 0.3초 뒤에 찾습니다. 지우면 바로 전체 목록으로 돌아갑니다.
+  useEffect(() => {
+    const next = draft.trim();
+    if (!next) return; // 지운 경우는 입력할 때 바로 처리합니다(아래 onChange).
+    const timer = window.setTimeout(() => setKeyword(next), 300);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
   const [editing, setEditing] = useState<PlaceRecord>();
   // 휴대폰에서는 전체 기록을 접어 두고 머리를 눌러 엽니다(아코디언). 넓은 화면은 늘 펼쳐 둡니다.
   const [open, setOpen] = useState(false);
@@ -74,29 +81,13 @@ export const AllRecords = () => {
               ))}
             </div>
           </fieldset>
-          <form
-            role="search"
-            className="flex items-center gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setKeyword(draft.trim());
+          <SearchField label="기록 찾기 (장소·조과·어종·음식·메모)" placeholder="장소·어종·음식·메모로 찾기"
+            value={draft}
+            onChange={(value) => {
+              setDraft(value);
+              if (!value.trim()) setKeyword('');
             }}
-          >
-            <div className="min-w-0 flex-1">
-              <Field
-                label="기록 찾기 (장소·조과·어종·음식·메모)"
-                hideLabel
-                placeholder="기록 찾기"
-                type="search"
-                value={draft}
-                onChange={(event) => {
-                  setDraft(event.target.value);
-                  if (!event.target.value) setKeyword(''); // 지우면 전체 목록으로 돌아갑니다.
-                }}
-              />
-            </div>
-            <button type="submit" className="button shrink-0">찾기</button>
-          </form>
+          />
       </div>
       <div className="cell-body flex flex-col">
         <ErrorText error={error} />

@@ -432,14 +432,13 @@ test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) =>
   const pane = page.locator('.pane-records');
   const search = page.getByRole('searchbox', { name: /기록 찾기/ });
   await expect(page.getByText('장소·조과·어종·메뉴·메모에서 찾기')).toHaveCount(0); // 안내 문구는 화면에 없습니다.
+  await expect(page.getByRole('button', { name: '찾기', exact: true })).toHaveCount(0); // 찾기 단추 없이 입력하는 대로 찾습니다.
   await search.fill('망둥어');
-  await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('거대 망둥어 17cm')).toBeVisible();
   await expect(pane.getByText('감성돔 1마리')).toBeHidden();
 
   // 장소 이름으로도 찾습니다.
   await search.fill('바다횟');
-  await page.getByRole('button', { name: '찾기', exact: true }).click();
   await expect(pane.getByText('모둠회')).toBeVisible();
   await expect(pane.getByText('감성돔 2마리')).toBeHidden();
   await search.fill('');
@@ -564,11 +563,12 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
   expect(menus).toEqual(['모둠회', '매운탕']);
   // 한 사람만 준 평점도 보여 줍니다.
-  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('류 조사 3.5점 (평점 대기)')).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '매운탕' }) }).getByText('김 조사 평점을 기다리는 중 (류 조사 3.5점)')).toBeVisible();
 
   // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
   await page.goto('./places/p2');
-  await expect(page.getByText('류 조사 3.5점 / 김 조사 평점 대기')).toBeVisible();
+  await expect(page.getByText('김 조사 평점을 기다리는 중 (류 조사 3.5점)')).toBeVisible(); // 음식 줄
+  await expect(page.getByText('김 조사 평점을 기다리는 중', { exact: true }).first()).toBeVisible(); // 기록 평점 줄도 누구를 기다리는지 씁니다.
   await page.getByRole('button', { name: /기록 수정/ }).first().click();
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
@@ -1147,4 +1147,16 @@ test('지도 날씨: 고른 뒤 받기에 실패하면 그 장소의 날씨를 �
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('거문도 방파제의 날씨를 불러오지 못했습니다.', { timeout: 10000 });
   await expect(badge).not.toContainText('°');
+});
+
+test('찾기 칸은 지도·전체 기록·도감 모두 같은 모양이다(안내 글자, 찾기 단추 없음, 입력하는 대로)', async ({ page }) => {
+  await fakeBackend(page, seed());
+  for (const [url, name] of [['./', '이름·주소로 찾기'], ['./schedule', '기록 찾기 (장소·조과·어종·음식·메모)'], ['./dex', '어종 찾기 (어종·조사·장소)']]) {
+    if (url === './schedule') await openRecords(page);
+    else await page.goto(url);
+    const box = page.getByRole('search').getByRole('searchbox', { name, exact: true });
+    await expect(box).toBeAttached();
+    expect(await box.getAttribute('placeholder')).toBeTruthy(); // 이름표 대신 칸 안의 안내 글자
+    await expect(page.getByRole('search').getByRole('button')).toHaveCount(0);
+  }
 });

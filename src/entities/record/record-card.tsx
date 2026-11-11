@@ -5,19 +5,22 @@ import { WeatherIcon } from '@/shared/ui';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
-import { isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
+import { ANGLERS, isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
 /** 평점: 두 사람이 다 주면 평균과 각자의 점수, 한 사람만 주면 기다리는 사람을 보여 줍니다. */
 const Rating = ({ record }: { record: PlaceRecord }) => {
   if (pendingRating(record)) {
-    const waiting = isPartialRating(record.angler_ratings) ? missingRaters(record.angler_ratings) : [];
+    // 기록 평점이나 음식 평점에서 아직 평점을 주지 않은 사람을 모아 '김 조사 평점을 기다리는 중'처럼 씁니다.
+    const partial = [record.angler_ratings, ...record.menu_items.map((item) => item.angler_ratings)].filter((ratings) => isPartialRating(ratings));
+    const waiting = ANGLERS.filter((angler) => partial.some((ratings) => missingRaters(ratings).includes(angler)));
+    const recordWaiting = isPartialRating(record.angler_ratings);
     return (
       <dl>
         <dt className="mono-label">평점</dt>
-        <dd>{waiting.length ? `${waiting.join(', ')} 평점을 기다리는 중` : '음식 평점을 기다리는 중'}</dd>
-        {waiting.length > 0 && <dd className="text-sm text-muted">{ratingDetail(record.angler_ratings)}</dd>}
+        <dd>{`${waiting.join(', ')} 평점을 기다리는 중`}</dd>
+        {recordWaiting && <dd className="text-sm text-muted">{ratingDetail(record.angler_ratings)}</dd>}
       </dl>
     );
   }
@@ -40,7 +43,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
   );
 
   return (
-    <article className="panel panel-roomy flex flex-col gap-3">
+    <article className="panel panel-roomy flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="mono-label">

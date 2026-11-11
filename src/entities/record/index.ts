@@ -22,7 +22,7 @@ export {
   type StatRecord,
   type DexMenu,
 } from './api';
-export { ANGLERS, combinedRating, formatMenu, isPartialRating, ratingDetail, RECORD_FIELDS, summarizeRecords, WEATHER_STATES } from './model';
+export { ANGLERS, combinedRating, formatMenu, isPartialRating, missingRaters, ratingDetail, RECORD_FIELDS, summarizeRecords, WEATHER_STATES } from './model';
 export { RatingChip, ratingClass } from './rating-chip';
 export { RecordCard } from './record-card';
 export { FishPhotoGrid } from './fish-photo-grid';
