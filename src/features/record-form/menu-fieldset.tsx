@@ -29,7 +29,8 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
 });
 
 const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
-const priceError = (row: MenuRow) => (Number(row.price) < 0 || !Number.isInteger(Number(row.price)) ? '0 이상의 정수로 입력해 주세요.' : undefined);
+// 비었거나 0~9로만 된 십진수만 받습니다(Number()는 '0x10'·'1e3'도 숫자로 바꾸므로 쓰지 않음).
+const priceError = (row: MenuRow) => (row.price !== '' && !/^\d+$/.test(row.price) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
 /** 내용을 적다 만 줄 */
 export const menuRowError = (row: MenuRow) => nameError(row) ?? priceError(row);

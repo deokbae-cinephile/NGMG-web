@@ -363,7 +363,7 @@ test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 
   }
   // 소수점·음수는 다른 값으로 바꾸지 않고 저장할 때 오류로 알립니다.
   await dialog.getByLabel('음식 1', { exact: true }).fill('모둠회');
-  for (const wrong of ['1.5', '-12000']) {
+  for (const wrong of ['1.5', '-12000', '0x10', '1e3']) {
     await price.fill(wrong);
     await expect(price).toHaveValue(wrong);
     await dialog.getByRole('button', { name: '저장' }).click();
