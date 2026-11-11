@@ -1,13 +1,13 @@
 import { Writable } from '@/entities/session';
 import { useEffect, useRef, useState } from 'react';
-import { KIND_LABEL, KINDS, KindBadge } from '@/entities/place';
+import { KINDS, KindBadge, KindFilter, type KindFilterValue } from '@/entities/place';
 import { RecordCard, useRecordPages } from '@/entities/record';
 import { RecordForm } from '@/features/record-form';
-import type { PlaceKind, PlaceRecord } from '@/shared/api';
+import type { PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
 import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 
-type Filter = PlaceKind | 'all';
+type Filter = KindFilterValue;
 
 /** 오른쪽 칸: 전체 기록을 찾고 훑어봅니다. */
 export const AllRecords = () => {
@@ -62,25 +62,13 @@ export const AllRecords = () => {
       </div>
       <div id="records-body" className={open ? '' : 'max-lg:hidden'}>
       <div className="cell-body flex flex-col gap-5 border-b border-line">
-          <fieldset>
-            <legend className="mono-label pb-1.5">분류</legend>
-            <div className="flex flex-wrap gap-2">
-              {(['all', ...KINDS] as Filter[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="button"
-                  aria-pressed={filter === item}
-                  onClick={() => {
-                    setFilter(item);
-                    setPreference('records-filter', item);
-                  }}
-                >
-                  {item === 'all' ? '전체' : KIND_LABEL[item]}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          <KindFilter
+            value={filter}
+            onChange={(item) => {
+              setFilter(item);
+              setPreference('records-filter', item);
+            }}
+          />
           <SearchField label="기록 찾기 (장소·조과·어종·음식·메모)" placeholder="장소·어종·음식·메모로 찾기"
             value={draft}
             onChange={(value) => {

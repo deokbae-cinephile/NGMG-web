@@ -331,11 +331,63 @@ test('장소 추가 창: 폼 코드를 받지 못하면(오프라인 등) 앱 �
   await expect(dialog).toBeHidden();
 });
 
-test('지도: 위치 지정 중에는 키보드 사용자에게 장소 추가의 찾기를 안내한다', async ({ page }) => {
-  await fakeBackend(page, seed());
+test('지도: 확대한 지도에서도 위치를 지정하고, 고르면 지도를 줄여 새 장소 창을 연다. 위치 지정 안내 문구는 없다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
   await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
   await page.getByRole('button', { name: '위치 지정', exact: true }).click();
-  await expect(page.getByText("키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다.", { exact: false })).toBeVisible();
+  await expect(page.getByText(/지도에서 저장할 위치|키보드로는/)).toHaveCount(0); // 안내 문구는 사용자 요청으로 뺐습니다.
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
+
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  const pick = page.getByRole('group', { name: '확대한 지도' }).getByRole('button', { name: '위치 지정', exact: true });
+  await expect(pick).toBeVisible();
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'true');
+  const box = (await page.getByTestId('map').boundingBox())!;
+  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } });
+  const dialog = page.getByRole('dialog', { name: '새 장소' });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0); // 지도를 줄이고 창을 엽니다.
+  await dialog.getByLabel('이름').fill('확대 지도 포인트');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.places!.some((item) => item.name === '확대 지도 포인트')).toBe(true);
+
+  // 주소를 찾는 동안 지도를 줄여도 새 장소 창은 열립니다.
+  await page.evaluate(() => {
+    // 가짜 지도의 주소 찾기를 붙잡아 두었다가 window.releaseAddress()로 끝냅니다.
+    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (...args: unknown[]) => void } } } } }; releaseAddress: () => void };
+    const proto = w.kakao.maps.services.Geocoder.prototype;
+    const original = proto.coord2Address;
+    proto.coord2Address = function (this: unknown, ...args: unknown[]) {
+      w.releaseAddress = () => original.apply(this, args);
+    };
+  });
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('map').click({ position: { x: box.width * 0.3, y: box.height * 0.7 } }); // 방금 저장한 핀이 없는 자리
+  await page.getByRole('button', { name: '지도 작게' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
+  await page.evaluate(() => (window as unknown as { releaseAddress: () => void }).releaseAddress());
+  await expect(page.getByRole('dialog', { name: '새 장소' })).toBeVisible();
+});
+
+test('맛집: 오늘이 휴무 요일이면 목록·말풍선·상세에 오늘 휴무를 띄운다', async ({ page }) => {
+  const base = seed();
+  const today = new Date().getDay();
+  base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, closed_days: [today] } : item.id === 'p1' ? { ...item, closed_days: [(today + 1) % 7] } : item));
+  await fakeBackend(page, base);
+  await page.goto('./');
+  const list = page.getByRole('list', { name: '장소 목록' });
+  await expect(list.getByRole('listitem').filter({ hasText: '바다횟집' }).getByText('오늘 휴무')).toBeVisible();
+  await expect(list.getByRole('listitem').filter({ hasText: '거문도 방파제' }).getByText('오늘 휴무')).toHaveCount(0);
+  await list.getByRole('button', { name: /^바다횟집/ }).click();
+  await expect(page.getByRole('group', { name: '바다횟집 정보' }).getByText('오늘 휴무')).toBeVisible();
+  await page.goto('./places/p2');
+  await expect(page.getByText('오늘 휴무')).toBeVisible();
+  await expectAccessible(page);
 });
 
 test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목록이 지도 위를 채우고, 작게 단추나 Esc로 돌아온다', async ({ page }) => {
@@ -473,4 +525,13 @@ test('지도: 분류 필터는 아이콘 단추를 붙여 한 덩어리로 놓�
   await group.getByRole('button', { name: '맛집' }).click();
   await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(1);
+});
+
+test('분류 필터: 터치 화면에서도 알 수 있게 고른 분류 이름을 글자로 보여 준다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const group = page.getByRole('group', { name: '분류', exact: true });
+  await expect(group.locator('legend')).toHaveText('분류 · 전체');
+  await group.getByRole('button', { name: '기타' }).click();
+  await expect(group.locator('legend')).toHaveText('분류 · 기타');
 });

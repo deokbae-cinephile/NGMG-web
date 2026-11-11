@@ -93,7 +93,7 @@ export const StatsPage = () => {
           {stats.months.map((count, index) => (
             <li key={index} className="flex flex-col items-center gap-1">
               <span aria-hidden="true" className="mono-label">{count}</span>
-              {/* 가장 많이 나간 달은 검정, 나머지는 주황으로 칠합니다. */}
+              {/* 가장 많이 나간 달은 검정, 나머지는 포인트 색(연두)으로 칠합니다. */}
               <span
                 aria-hidden="true"
                 className={`w-full border border-ink ${count > 0 && count === maxMonth ? 'bg-ink' : 'bg-accent'}`}

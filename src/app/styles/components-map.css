@@ -295,14 +295,21 @@
     overflow-y: auto;
     background: var(--color-paper);
   }
-  /* 지도 확대 중 '지도 작게' 단추: 아래 가운데(카카오 축척·현재 위치 단추와 겹치지 않게) */
-  .expanded-close {
+  /* 지도 확대 중 '위치 지정'·'지도 작게' 단추: 아래 가운데(카카오 축척·현재 위치 단추와 겹치지 않게) */
+  .expanded-actions {
     position: absolute;
     bottom: 0.75rem;
     left: 50%;
     z-index: 15;
+    display: flex;
+    gap: 0.5rem;
     translate: -50% 0;
+  }
+  .expanded-actions .button {
     box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  }
+  .expanded-actions .button:not(.button-primary) {
+    background: var(--color-paper); /* 지도 위에서도 단추가 비쳐 보이지 않게 */
   }
   @media (width >= 64rem) {
     .map-actions .button {

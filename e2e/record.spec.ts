@@ -329,3 +329,19 @@ test('전체 기록: 입력하는 대로 찾고, 결과를 상태 영역으로 �
   await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('감성돔');
   await expect(page.getByRole('status').filter({ hasText: /'감성돔'이\(가\) 들어간 기록 \d+건( 이상)?을 찾았습니다\./ })).toBeAttached();
 });
+
+test('전체 기록: 분류 필터는 지도와 같은 붙인 아이콘 단추다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await openRecords(page);
+  const group = page.getByRole('group', { name: '분류' });
+  await expect(group.getByRole('button')).toHaveCount(5);
+  expect(await group.getByRole('button').evaluateAll((items) => items.map((item) => [item.getAttribute('aria-label'), item.textContent]))).toEqual([
+    ['전체', ''],
+    ['낚시', ''],
+    ['맛집', ''],
+    ['숙박', ''],
+    ['기타', ''],
+  ]);
+  await group.getByRole('button', { name: '맛집' }).click();
+  await expect(group.getByRole('button', { name: '맛집' })).toHaveAttribute('aria-pressed', 'true');
+});

@@ -1,14 +1,14 @@
 import { Writable } from '@/entities/session';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BASE_PLACE, KIND_ICON, KIND_LABEL, KINDS, KindBadge, PlaceActions, usePlaces } from '@/entities/place';
+import { BASE_PLACE, ClosedToday, KindBadge, KindFilter, type KindFilterValue, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
-import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
+import type { Place, PlaceDraft } from '@/shared/api';
 import { findAddress, Link } from '@/shared/lib';
 import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
-type Filter = PlaceKind | 'all';
+type Filter = KindFilterValue;
 
 const NO_PLACES: Place[] = [];
 
@@ -54,6 +54,7 @@ export const MapPage = () => {
   }, []);
   // 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다(다른 작업으로 넘어갈 때는 빼고). 상태가 바뀐 뒤 효과에서 옮깁니다.
   const refocus = useRef(true);
+  const afterCollapse = useRef<() => void>(undefined); // 줄인 뒤 할 일(새 장소 창 열기)
   const previous = useRef(expanded);
   useEffect(() => {
     const before = previous.current;
@@ -61,6 +62,8 @@ export const MapPage = () => {
     if (!before || expanded) return;
     if (refocus.current) (before === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true });
     refocus.current = true;
+    afterCollapse.current?.();
+    afterCollapse.current = undefined;
   }, [expanded]);
   const expand = (kind: Expanded) => {
     if (readExpanded()) history.replaceState({ ...history.state, mapExpanded: kind }, '');
@@ -110,6 +113,13 @@ export const MapPage = () => {
     pickRequest.current += 1;
   };
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
+  /** 새 장소 창을 엽니다. 확대 중이면 먼저 줄인 뒤 엽니다(확대 중에는 뒤쪽이 막혀 창을 쓸 수 없음). */
+  const openDraft = (next: Partial<PlaceDraft>) => {
+    // 주소 조회 중에 확대를 닫았을 수 있으므로, 렌더 때의 값이 아니라 지금의 확대 상태(previous, 효과에서 갱신)를 봅니다.
+    if (!previous.current) return setDraft(next);
+    afterCollapse.current = () => setDraft(next);
+    collapse(false);
+  };
   const [keyword, setKeyword] = useState('');
   const items = useRef(new Map<string, HTMLLIElement>());
 
@@ -143,13 +153,18 @@ export const MapPage = () => {
     setFilter(next);
   };
 
+  const togglePicking = () => {
+    dropPendingPick();
+    setPicking(!picking);
+  };
+
   const onPick = async (latitude: number, longitude: number) => {
     setPicking(false);
     // 위치를 고를 때마다 번호를 매겨, 주소 조회가 늦게 끝나도 가장 최근 고른 것만 창에 씁니다.
     const request = ++pickRequest.current;
     const address = await findAddress(latitude, longitude);
     if (request !== pickRequest.current) return;
-    setDraft({ latitude, longitude, address });
+    openDraft({ latitude, longitude, address });
   };
 
   return (
@@ -160,9 +175,17 @@ export const MapPage = () => {
       <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
         <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} focusKey={focusKey} />
         {expanded === 'map' && (
-          <button ref={shrinkButton} type="button" className="button button-primary map-icon-button expanded-close" aria-label="지도 작게" title="지도 작게" onClick={() => collapse()}>
-            <Icon name="minimize" size={20} />
-          </button>
+          // 확대한 지도에서도 위치를 지정합니다. 고르면 지도를 줄이고 새 장소 창을 엽니다.
+          <div role="group" aria-label="확대한 지도" className="expanded-actions">
+            <Writable>
+              <button type="button" className="button map-icon-button" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
+                <Icon name="mapPinPlus" size={20} />
+              </button>
+            </Writable>
+            <button ref={shrinkButton} type="button" className="button button-primary map-icon-button" aria-label="지도 작게" title="지도 작게" onClick={() => collapse()}>
+              <Icon name="minimize" size={20} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -187,8 +210,7 @@ export const MapPage = () => {
                 title={picking ? '위치 지정 취소' : '위치 지정'}
                 aria-pressed={picking}
                 onClick={() => {
-                  dropPendingPick();
-                  setPicking(!picking);
+                  togglePicking();
                   if (expanded === 'list') collapse(false); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
                 }}
               >
@@ -210,8 +232,7 @@ export const MapPage = () => {
                 onClick={() => {
                   dropPendingPick();
                   setPicking(false); // 위치 지정을 끝내고 새 장소 입력으로 넘어갑니다.
-                  if (expanded) collapse(false); // 확대 중이면 줄여 둡니다(새 장소 창이 막힌 뒤쪽에 뜨지 않게).
-                  setDraft({});
+                  openDraft({});
                 }}
               >
                 <Icon name="plus" size={20} />
@@ -234,26 +255,8 @@ export const MapPage = () => {
         </div>
 
         <div className="cell-body flex flex-col gap-5">
-          <p role="status" className="text-sm text-muted empty:hidden">
-            {picking
-              ? "지도에서 저장할 위치를 눌러 주세요. 다시 누르면 취소합니다. 키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다."
-              : ''}
-          </p>
 
-          <fieldset>
-            <legend className="mono-label pb-1.5">분류</legend>
-            {/* 아이콘 단추를 한 덩어리로 붙여 둡니다. 이름은 aria-label과 title(마우스를 올리면 보임)로 알립니다. */}
-            <div className="kind-filter">
-              {(['all', ...KINDS] as Filter[]).map((item) => {
-                const label = item === 'all' ? '전체' : KIND_LABEL[item];
-                return (
-                  <button key={item} type="button" className="button map-icon-button" aria-label={label} title={label} aria-pressed={filter === item} onClick={() => changeFilter(item)}>
-                    <Icon name={item === 'all' ? 'layers' : KIND_ICON[item]} size={20} />
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
+          <KindFilter value={filter} onChange={changeFilter} />
 
           <SearchField label="이름·주소로 찾기" value={keyword} onChange={setKeyword} />
           <ErrorText error={error ?? ratingsError} />
@@ -289,7 +292,7 @@ export const MapPage = () => {
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                       <span className="flex max-w-full flex-wrap items-center gap-2">
                         {/* 긴 이름은 한 줄로 줄여 오른쪽 사진과 겹치지 않게 합니다. 전체 이름은 자세히 보기에서 봅니다. */}
-                        <span className="min-w-0 max-w-full truncate" title={place.name}>{place.name}</span> <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
+                        <span className="min-w-0 max-w-full truncate" title={place.name}>{place.name}</span> <KindBadge kind={place.kind} /> <ClosedToday place={place} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                     </span>

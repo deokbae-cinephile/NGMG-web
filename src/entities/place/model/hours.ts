@@ -6,6 +6,9 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
  * 맛집 영업 정보 한 줄: '11:00–21:00 · 월·화 휴무'. 적은 것만 씁니다(여는 시각만 있으면 '11:00부터').
  * 아무것도 없으면 빈 문자열입니다.
  */
+/** 오늘이 휴무 요일인지(기기 시각 기준) */
+export const isClosedToday = (place: Pick<Place, 'closed_days'>, now = new Date()) => (place.closed_days ?? []).includes(now.getDay());
+
 export const formatHours = (place: Pick<Place, 'open_time' | 'close_time' | 'closed_days'>) => {
   const open = place.open_time?.slice(0, 5);
   const close = place.close_time?.slice(0, 5);

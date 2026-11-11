@@ -33,6 +33,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByText(/종 수집|총 \d+개/)).toHaveCount(0);
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('30,000원')).toBeVisible();
   await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByText('4.0점')).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '모둠회' }) }).getByRole('definition').filter({ hasText: /^\d+회$/ })).toBeVisible(); // 먹은 횟수는 'n회'
   // 음식 도감은 번호 없이 평점 높은 순입니다.
   await expect(page.getByText(/^No\./)).toHaveCount(0);
   const menus = await page.getByRole('listitem').getByRole('heading', { level: 3 }).allTextContents();
