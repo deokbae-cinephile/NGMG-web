@@ -61,9 +61,15 @@ export const useCurrentWeather = (position?: Position) =>
  */
 export const usePrefetchWeather = (positions: Position[]) => {
   const client = useQueryClient();
-  const keys = [...new Map(positions.map((position) => [weatherKey(position).join('|'), position])).entries()];
-  const signature = keys.map(([key]) => key).join(';');
+  // 좌표 목록을 열쇠 문자열로 바꿔 두면, 목록이 실제로 바뀔 때만 다시 확인합니다(같은 곳은 하나로 합칩니다).
+  const signature = [...new Set(positions.map((position) => weatherKey(position).join('|')))].join(';');
   useEffect(() => {
+    if (!signature) return;
+    // 열쇠는 약 1km(소수 둘째 자리)로 반올림한 좌표라, 그 좌표로 받아도 같은 곳의 날씨입니다.
+    const keys = signature.split(';').map((key) => {
+      const [, latitude, longitude] = key.split('|');
+      return [key, { latitude: Number(latitude), longitude: Number(longitude) }] as const;
+    });
     const now = Date.now();
     const missing = keys.filter(([key, position]) => {
       if (inFlight.has(key)) return false;
@@ -76,7 +82,5 @@ export const usePrefetchWeather = (positions: Position[]) => {
       .then((weathers) => missing.forEach(([, position], index) => client.setQueryData(weatherKey(position), weathers[index])))
       .catch(() => undefined)
       .finally(() => missing.forEach(([key]) => inFlight.delete(key)));
-    // 좌표 목록이 바뀔 때만 다시 확인합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, signature]);
 };
