@@ -262,6 +262,9 @@
     background: var(--color-ink);
     color: var(--color-paper);
   }
+  .badge-lodging {
+    background: var(--color-surface);
+  }
   .badge-etc {
     background: var(--color-soft);
   }

@@ -74,7 +74,7 @@ const RECORD_DEFAULTS = {
   companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '', gear_sets: [], angler_ratings: {},
 };
 const DEFAULTS: Record<string, Record<string, unknown>> = {
-  places: { memo: '', address: '', photo_path: null, created_at: '2026-01-01T00:00:00Z' },
+  places: { memo: '', address: '', photo_path: null, open_time: null, close_time: null, closed_days: [], created_at: '2026-01-01T00:00:00Z' },
   records: RECORD_DEFAULTS,
   events: { memo: '', end_time: null, place_id: null, gear_set_ids: [] },
   checklist_items: { checked: false },

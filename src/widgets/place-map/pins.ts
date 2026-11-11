@@ -21,10 +21,11 @@ export const createBasePin = () => {
   return pin;
 };
 
-// 핀 묶음 색은 분류별 핀의 채움과 같습니다. (낚시 검정, 맛집 흰색, 기타 연회색)
+// 핀 묶음 색은 분류별로 다릅니다(낚시 검정, 맛집 흰색, 숙박 회색, 기타 연회색). 묶음에는 분류 이름도 함께 씁니다.
 const CLUSTER_COLOR = (dark: boolean): Record<PlaceKind, { background: string; color: string }> => ({
   fishing: dark ? { background: '#121212', color: '#f2f2f2' } : { background: '#0a0a0a', color: '#fafafa' },
   restaurant: dark ? { background: '#1e1e1e', color: '#f2f2f2' } : { background: '#fafafa', color: '#0a0a0a' },
+  lodging: dark ? { background: '#5a5a5a', color: '#f2f2f2' } : { background: '#b5b5b5', color: '#0a0a0a' },
   etc: dark ? { background: '#3b3b3b', color: '#f2f2f2' } : { background: '#d9d9d9', color: '#0a0a0a' },
 });
 export const clusterStyle = (kind: PlaceKind, dark: boolean) => {

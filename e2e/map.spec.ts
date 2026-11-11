@@ -212,7 +212,7 @@ test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보�
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);
 });
 
-test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기타가 없다', async ({ page }) => {
+test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류는 낚시·맛집·숙박·기타다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, { ...base, places: [...base.places!, place('p9', '예전 기타 장소', 'etc')] });
   await page.goto('./');
@@ -222,9 +222,9 @@ test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기�
   const classes = await page.evaluate(() => (window as unknown as { __overlayClasses: string[] }).__overlayClasses);
   const pins = classes.filter((name) => name !== '' && !name.includes('map-popup'));
   expect(pins.length).toBeGreaterThan(0);
-  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|etc)\b/);
+  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|lodging|etc)\b/);
   const filters = page.getByRole('group', { name: '분류' });
-  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집']);
+  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']); // 숙박·기타를 다시 더했습니다(사용자 요청).
 });
 
 test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없으면 안내한다', async ({ page, context }) => {
@@ -350,4 +350,26 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   await list.getByRole('button', { name: /^거문도 방파제/ }).click();
   await expect(page.locator('.list-expanded')).toHaveCount(0);
   await expect(page.getByRole('group', { name: '거문도 방파제 정보' })).toBeVisible();
+});
+
+test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']);
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '장소 수정' }).click();
+  const dialog = page.getByRole('dialog', { name: '장소 수정' });
+  await expect(dialog.getByRole('radio', { name: '숙박' })).toBeVisible();
+  await dialog.getByLabel('여는 시각').fill('11:00');
+  await dialog.getByLabel('닫는 시각').fill('21:30');
+  await dialog.getByRole('group', { name: '휴무 요일' }).getByLabel('월').check();
+  await dialog.getByRole('group', { name: '휴무 요일' }).getByLabel('화').check();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.places!.find((item) => item.id === 'p2')).toMatchObject({ open_time: '11:00', close_time: '21:30', closed_days: [1, 2] });
+  await expect(page.getByText('11:00–21:30 · 월·화 휴무')).toBeVisible();
+  // 낚시 장소에는 영업 정보 칸이 없습니다.
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '장소 수정' }).click();
+  await expect(page.getByRole('dialog', { name: '장소 수정' }).getByLabel('여는 시각')).toHaveCount(0);
 });

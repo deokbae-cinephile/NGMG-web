@@ -35,6 +35,7 @@ export const WEATHER_STATES = ['맑음', '구름', '흐림', '비', '폭우', '�
 export const RECORD_FIELDS: Record<PlaceKind, { name: TextField; label: string; placeholder?: string }[]> = {
   fishing: [], // 장비·채비·미끼는 사용자 요청으로 받지 않습니다(예전 값은 저장해 둔 채 둡니다).
   restaurant: [], // 메뉴는 MenuFieldset에서 줄마다 받습니다.
+  lodging: [],
   etc: [],
 };
 

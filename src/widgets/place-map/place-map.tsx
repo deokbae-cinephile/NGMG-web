@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, KIND_LABEL, KindBadge } from '@/entities/place';
+import { ALL_KINDS, BASE_PLACE, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
 import type { Place } from '@/shared/api';
@@ -275,6 +275,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
+            {!isBase && formatHours(selected) && <p className="break-words text-sm">{`영업 ${formatHours(selected)}`}</p>}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 자세히 보기
