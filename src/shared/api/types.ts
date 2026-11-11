@@ -52,40 +52,11 @@ export type MenuItem = {
   photo_thumb_url?: string;
 };
 
-/** 조사의 장비 세트. items는 세트에 넣은 장비입니다. */
-export type GearSet = {
-  id: string;
-  angler: string;
-  name: string;
-  position: number;
-  created_at: string;
-  items: { gear_id: string; position: number }[];
-};
-
 /** 기록에 남긴 장비 세트. 그때의 장비 이름을 그대로 담아 장비를 고치거나 지워도 기록은 그대로입니다. */
 export type RecordGearSet = {
   angler: string;
   name: string;
   items: { gear_id: string | null; category: string; subcategory: string; label: string }[];
-};
-
-/** 조사별 장비 한 개 */
-export type Gear = {
-  id: string;
-  angler: string;
-  /** 로드, 릴, 라인, 채비, 미끼, 기타 */
-  category: string;
-  /** 라인의 세부 분류(원줄, 목줄). 다른 분류는 빈 문자열입니다. */
-  subcategory: string;
-  brand: string;
-  name: string;
-  memo: string;
-  photo_path: string | null;
-  position: number;
-  created_at: string;
-  photo_url?: string;
-  /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
-  photo_thumb_url?: string;
 };
 
 /** 기록의 자세한 항목. 낚시는 인원부터 수온까지, 맛집은 메뉴와 가격을 씁니다. */

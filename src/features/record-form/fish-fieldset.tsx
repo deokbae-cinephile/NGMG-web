@@ -5,7 +5,7 @@ import { RemovablePhoto } from '@/shared/ui';
 /** 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다. */
 export type FishDraft = Omit<FishInput, 'length_cm' | 'position'> & { length: string; photo_url?: string };
 
-export const newFish = (angler: string = ANGLERS[0]): FishDraft => ({
+const newFish = (angler: string = ANGLERS[0]): FishDraft => ({
   id: crypto.randomUUID(),
   angler,
   species: '',

@@ -35,7 +35,7 @@ const baseHolidays = (date: Date) => {
 const cache = new Map<number, Map<string, string>>();
 
 /** 그해의 공휴일(대체공휴일 포함). 선거일 같은 임시 공휴일은 들어 있지 않습니다. */
-export const holidaysOf = (year: number) => {
+const holidaysOf = (year: number) => {
   const cached = cache.get(year);
   if (cached) return cached;
   const result = new Map<string, string>();

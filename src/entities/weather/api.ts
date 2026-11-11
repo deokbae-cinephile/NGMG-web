@@ -9,7 +9,7 @@ export type WeatherState = '맑음' | '구름' | '흐림' | '비' | '폭우' | '
 export type CurrentWeather = { state: WeatherState; temperature: number };
 
 /** WMO 날씨 코드(Open-Meteo)를 기록의 날씨 선택지로 옮깁니다. */
-export const weatherState = (code: number): WeatherState => {
+const weatherState = (code: number): WeatherState => {
   if (code <= 1) return '맑음';
   if (code === 2) return '구름';
   if (code === 3) return '흐림';

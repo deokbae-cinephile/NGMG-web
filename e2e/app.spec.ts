@@ -323,6 +323,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await dialog.getByLabel('이름').fill('새 포인트');
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog.getByRole('alert')).toContainText('위치가 없습니다');
+  await expect(page.getByRole('button', { name: '지도에서 위치 옮기기' })).toHaveCount(0); // 위치 옮기기 기능은 없앴습니다.
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   // 지도를 눌러 위치를 지정하면 위도·경도가 채워진 새 장소 창이 열립니다.
@@ -342,8 +343,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await page.keyboard.press('Escape');
   await expect(popup).toBeHidden();
 
-  await page.getByRole('button', { name: '위성 지도' }).click();
-  await expect(page.getByRole('button', { name: '일반 지도' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /위성 지도|일반 지도/ })).toHaveCount(0); // 지도 종류 단추는 없앴습니다(사용자 요청).
 });
 
 test('달력: 연도와 월을 골라 이동한다', async ({ page }) => {
@@ -1086,39 +1086,26 @@ test('음식 도감: 가격이 바뀌면 지난번보다 오르내린 금액을 
   await expect(pieces).toHaveText(['55,000원', '(+5,000원)']);
 });
 
-test('지도: 핀을 고르면 왼쪽 아래에 그곳의 날씨와 기온을 보여 준다', async ({ page }) => {
+test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 기온만 보여 주고, 고르기 전에는 날씨 아이콘만 둔다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
-  await expect(page.locator('.weather-badge')).toHaveCount(0); // 고르기 전에는 없습니다.
-  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   const badge = page.locator('.weather-badge');
+  // 고르기 전: 날씨 상징 아이콘만 있고 기온은 없습니다.
   await expect(badge).toBeVisible();
+  await expect(badge.locator('svg')).toHaveCount(1);
+  await expect(badge).not.toContainText('°');
+  // 높이는 평점 안내와 같고 가로는 두 배입니다.
+  const [legend, box] = [await page.locator('.map-legend').boundingBox(), await badge.boundingBox()];
+  expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
+  expect(Math.round(box!.width)).toBe(Math.round(box!.height * 2));
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('14°');
-  await expect(badge).toContainText('구름'); // 기록의 날씨 선택지 이름을 씁니다.
-  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도');
+  await expect(badge.locator('[aria-hidden="true"]').filter({ hasText: '구름' })).toHaveCount(0); // 날씨 이름은 화면에 쓰지 않습니다.
+  await expect(badge).toContainText('거문도 방파제 지금 날씨 구름, 기온 14도'); // 화면 읽기 프로그램용 문장
   await expectAccessible(page);
   // 무악재역도 같은 방식입니다.
   await page.getByRole('button', { name: '무악재역', exact: true }).click();
   await expect(badge).toContainText('무악재역 지금 날씨');
-});
-
-test('지도: 고른 장소를 지도에서 새 위치로 옮긴다(좌표는 보이지 않음)', async ({ page }) => {
-  const db = await fakeBackend(page, seed());
-  await page.goto('./');
-  // 휴대폰은 위에 붙은 지도와 하단 탭 사이라 자동 스크롤이 가리므로 눌림 이벤트를 바로 보냅니다.
-  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
-  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
-  await expect(page.getByText("지도에서 '거문도 방파제'의 새 위치를 눌러 주세요.")).toBeVisible();
-  const box = (await page.getByTestId('map').boundingBox())!;
-  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } });
-  const dialog = page.getByRole('dialog', { name: '장소 수정' });
-  await expect(dialog.getByLabel('이름')).toHaveValue('거문도 방파제');
-  await expect(dialog.getByLabel('위도')).toHaveCount(0);
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  const moved = db.places!.find((item) => item.id === 'p1')!;
-  expect(moved.latitude).not.toBe(34.03); // 같은 장소(기록은 그대로)의 좌표만 바뀝니다.
-  expect(db.places).toHaveLength(3);
 });
 
 test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데로 위치 지정)', async ({ page }) => {
@@ -1136,23 +1123,6 @@ test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데�
   await expect(dialog).toBeHidden();
   expect(db.places!.at(-1)).toMatchObject({ name: '가운데 포인트', latitude: 36, longitude: 127 }); // 지도 가운데 좌표
   await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
-});
-
-test('입력 칸 안내는 칸의 설명으로 읽힌다(위치 옮기기에서 이전 주소 안내)', async ({ page }) => {
-  await fakeBackend(page, seed());
-  await page.goto('./');
-  await expect(page.locator('.pin').first()).toBeVisible();
-  // 새 위치의 주소를 찾지 못하는 경우를 흉내 냅니다.
-  await page.evaluate(() => {
-    const w = window as unknown as { kakao: { maps: { services: { Geocoder: { prototype: { coord2Address: (lng: number, lat: number, done: (result: unknown[], status: string) => void) => void } } } } } };
-    w.kakao.maps.services.Geocoder.prototype.coord2Address = (_lng, _lat, done) => done([], 'ZERO_RESULT');
-  });
-  await page.getByRole('list', { name: '장소 목록' }).getByRole('button', { name: /^거문도 방파제/ }).dispatchEvent('click');
-  await page.getByRole('button', { name: '지도에서 위치 옮기기' }).dispatchEvent('click');
-  await page.getByRole('button', { name: '가운데로 위치 지정' }).click();
-  const address = page.getByRole('dialog', { name: '장소 수정' }).getByLabel('주소');
-  await expect(address).toHaveValue('전남 여수시 삼산면');
-  await expect(address).toHaveAccessibleDescription(/이전 주소를 그대로 두었습니다/);
 });
 
 test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {

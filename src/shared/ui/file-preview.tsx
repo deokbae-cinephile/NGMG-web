@@ -2,7 +2,7 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import { Icon } from './icon';
 
 /** 고른 사진 파일을 올리기 전에 미리 보여 줍니다. 읽는 동안에는 빈 칸을 둡니다. */
-export const FilePreview = ({ file, alt, className = '' }: { file: File; alt: string; className?: string }) => {
+const FilePreview = ({ file, alt, className = '' }: { file: File; alt: string; className?: string }) => {
   const [src, setSrc] = useState<string>();
 
   useEffect(() => {

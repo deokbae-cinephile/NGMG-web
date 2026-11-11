@@ -28,14 +28,11 @@ export const MapPage = () => {
   const [selectedId, setSelectedId] = useState<string>();
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
-  // 지도에서 위치 옮기기: 고른 장소의 새 위치를 지도에서 누르면, 좌표와 주소를 바꾼 수정 창을 엽니다(좌표는 화면에 쓰지 않음).
-  const [moving, setMoving] = useState<Place>();
   const pickRequest = useRef(0);
-  /** 위치 지정을 켜고 끄거나 다른 장소로 바꾸면, 진행 중인 주소 조회 결과를 버립니다(이전 선택의 창이 늦게 열리지 않게). */
+  /** 위치 지정을 켜고 끄거나 장소 추가 창을 열면, 진행 중인 주소 조회 결과를 버립니다(이전 선택의 창이 늦게 열리지 않게). */
   const dropPendingPick = () => {
     pickRequest.current += 1;
   };
-  const [editDraft, setEditDraft] = useState<{ place: Partial<PlaceDraft>; addressHint?: string }>();
   const [draft, setDraft] = useState<Partial<PlaceDraft>>();
   const [keyword, setKeyword] = useState('');
   const items = useRef(new Map<string, HTMLLIElement>());
@@ -74,18 +71,6 @@ export const MapPage = () => {
     setPicking(false);
     // 위치를 고를 때마다 번호를 매겨, 주소 조회가 늦게 끝나도 가장 최근 고른 것만 창에 씁니다.
     const request = ++pickRequest.current;
-    if (moving) {
-      const place = moving;
-      setMoving(undefined);
-      const found = await findAddress(latitude, longitude);
-      if (request !== pickRequest.current) return;
-      setEditDraft({
-        place: { ...place, latitude, longitude, address: found || place.address },
-        // 새 위치의 주소를 못 찾으면 이전 주소를 그대로 두고, 확인하거나 고치라고 알립니다.
-        addressHint: found ? undefined : '새 위치의 주소를 찾지 못해 이전 주소를 그대로 두었습니다. 맞는지 확인하고 필요하면 고쳐 주세요.',
-      });
-      return;
-    }
     const address = await findAddress(latitude, longitude);
     if (request !== pickRequest.current) return;
     setDraft({ latitude, longitude, address });
@@ -112,7 +97,6 @@ export const MapPage = () => {
                 onClick={() => {
                   dropPendingPick();
                   setPicking(!picking);
-                  setMoving(undefined);
                 }}
               >
                 {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
@@ -121,11 +105,10 @@ export const MapPage = () => {
             <Writable>
               <button
                 type="button"
-                className="button button-primary"
+                className="button" // '지도를 눌러 위치 지정'과 같은 모양
                 onClick={() => {
                   dropPendingPick();
-                  setPicking(false); // 위치 지정·위치 옮기기를 끝내고 새 장소 입력으로 넘어갑니다.
-                  setMoving(undefined);
+                  setPicking(false); // 위치 지정을 끝내고 새 장소 입력으로 넘어갑니다.
                   setDraft({});
                 }}
               >
@@ -141,7 +124,7 @@ export const MapPage = () => {
         <div className="cell-body flex flex-col gap-5">
           <p role="status" className="text-sm text-muted empty:hidden">
             {picking
-              ? `${moving ? `지도에서 '${moving.name}'의 새 위치를 눌러 주세요.` : '지도에서 저장할 위치를 눌러 주세요.'} 키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤 '가운데로 위치 지정'을 누릅니다.`
+              ? "지도에서 저장할 위치를 눌러 주세요. 키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤 '가운데로 위치 지정'을 누릅니다."
               : ''}
           </p>
 
@@ -194,21 +177,6 @@ export const MapPage = () => {
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">
                       <PlaceActions place={place} />
-                      <Writable>
-                        <button
-                          type="button"
-                          className="button self-start"
-                          aria-pressed={moving?.id === place.id}
-                          onClick={() => {
-                            const start = moving?.id !== place.id;
-                            setMoving(start ? place : undefined);
-                            dropPendingPick();
-                            setPicking(start);
-                          }}
-                        >
-                          {moving?.id === place.id ? '위치 옮기기 취소' : '지도에서 위치 옮기기'}
-                        </button>
-                      </Writable>
                       <Link to={`/places/${place.id}`} className="button button-primary self-start" aria-label={`${place.name} 자세히 보기`}>
                         자세히 보기
                       </Link>
@@ -224,11 +192,6 @@ export const MapPage = () => {
       {draft && (
         <Modal title="새 장소" onClose={() => setDraft(undefined)}>
           <PlaceForm initial={draft} onDone={() => setDraft(undefined)} />
-        </Modal>
-      )}
-      {editDraft && (
-        <Modal title="장소 수정" onClose={() => setEditDraft(undefined)}>
-          <PlaceForm initial={editDraft.place} addressHint={editDraft.addressHint} onDone={() => setEditDraft(undefined)} />
         </Modal>
       )}
     </div>

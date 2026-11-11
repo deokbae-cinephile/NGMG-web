@@ -97,7 +97,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const [map, setMap] = useState<{ kakao: Kakao; instance: Kakao }>();
   const [error, setError] = useState(false);
   const [tilesReady, setTilesReady] = useState(false);
-  const [satellite, setSatellite] = useState(() => getPreference('map-satellite', false));
   const [legendOpen, setLegendOpen] = useState(() => getPreference('map-legend-open', true));
   // 현재 위치: 누를 때만 위치를 묻고, 지도에 파란 점으로 표시한 뒤 그곳으로 옮깁니다.
   const [locating, setLocating] = useState(false);
@@ -230,12 +229,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   useEffect(() => {
     pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
   }, [map, places, selectedId, dark]);
-
-  useEffect(() => {
-    if (!map) return;
-    const { MapTypeId } = map.kakao.maps;
-    map.instance.setMapTypeId(satellite ? MapTypeId.HYBRID : MapTypeId.ROADMAP);
-  }, [map, satellite]);
 
   useEffect(() => {
     if (!map || !selected) return;
@@ -427,7 +420,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     <div className="relative h-full w-full bg-surface">
       {/* 위치 지정 중에는 지도가 초점을 받아 방향키로 옮길 수 있게 합니다(스크롤 영역에 초점을 주는 것과 같은 이유). */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
-      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={picking ? 0 : -1} className={`map-view h-full w-full ${satellite ? '' : 'map'} ${tilesReady ? '' : 'map-loading'}`} />
+      <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={picking ? 0 : -1} className={`map-view map h-full w-full ${tilesReady ? '' : 'map-loading'}`} />
       {/* 평점 색 안내는 '평점' 단추로 여닫습니다. 고른 상태는 기억합니다. */}
       <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
         <button
@@ -449,20 +442,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           ))}
         </span>
       </div>
-      <button
-        type="button"
-        className="map-layer-toggle"
-        aria-label={satellite ? '일반 지도' : '위성 지도'} // 누르면 바뀔 지도 이름입니다.
-        title={satellite ? '일반 지도' : '위성 지도'}
-        onClick={() => {
-          setSatellite(!satellite);
-          setPreference('map-satellite', !satellite);
-        }}
-      >
-        <Icon name={satellite ? 'map' : 'satellite'} size={22} />
-      </button>
-      {/* 다시 받기에 실패하면 예전 날씨를 지금 날씨처럼 보여 주지 않도록 감춥니다. */}
-      {selected && weather.data && !weather.isError && !picking && <WeatherBadge place={selected.name} weather={weather.data} />}
+      {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
+      <WeatherBadge place={selected?.name} weather={selected && !weather.isError ? weather.data : undefined} />
       {/* 위치 지정 중: 가운데 십자 표시와, 그 자리로 정하는 단추(키보드·화면 읽기 사용자도 위치를 고를 수 있게). */}
       {picking && (
         <>
