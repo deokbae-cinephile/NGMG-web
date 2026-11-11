@@ -78,7 +78,7 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await expectFits(page);
   await expectAccessible(page);
 
-  // 장비 주소는 다시 장비 화면입니다(설정의 '장비 관리'에서 갑니다).
+  // 장비 주소는 장비 화면입니다(주요 메뉴의 '장비').
   await page.goto('./gear');
   await expect(page).toHaveTitle('장비 | 낚고먹고');
 });
@@ -112,7 +112,7 @@ test('넓은 화면: 메뉴 왼쪽 선이 오른쪽 칸의 왼쪽 선과 맞는�
   expect(Math.round(nav.x + nav.width)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
   await check('./records', '전체 기록');
   const links = await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('link').evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().width)));
-  expect(new Set(links).size).toBe(1); // 5칸이 같은 너비입니다.
+  expect(new Set(links).size).toBe(1); // 6칸이 같은 너비입니다.
 });
 
 test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기가 보이지 않는다', async ({ page }) => {
