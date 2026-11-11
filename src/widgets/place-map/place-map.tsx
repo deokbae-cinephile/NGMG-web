@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, KIND_LABEL, KindBadge } from '@/entities/place';
+import { ALL_KINDS, BASE_PLACE, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
 import type { Place } from '@/shared/api';
@@ -18,9 +18,11 @@ type Props = {
   onSelect: (id: string) => void;
   onClose: () => void;
   onPick: (latitude: number, longitude: number) => void;
+  /** 같은 장소를 다시 골라도 지도를 그 장소로 옮기도록, 고를 때마다 바뀌는 값 */
+  focusKey?: number;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -160,7 +162,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       window.clearTimeout(settleTimer);
       moving.current = false;
     };
-  }, [map, selected, offsets]);
+  }, [map, selected, offsets, focusKey]);
 
   useEffect(() => {
     basePin.current?.setAttribute('data-selected', String(isBase));
@@ -275,6 +277,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
               </div>
             )}
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
+            {!isBase && formatHours(selected) && <p className="break-words text-sm">{`영업 ${formatHours(selected)}`}</p>}
             {!isBase && (
               <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
                 자세히 보기

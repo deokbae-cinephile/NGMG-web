@@ -69,6 +69,9 @@ test('장소: 긴 이름도 화면을 넘치지 않는다', async ({ page }) => 
   await page.goto('./');
   await expect(page.getByRole('button', { name: new RegExp(LONG_NAME) }).first()).toBeVisible();
   await expectFits(page);
+  // 목록의 긴 이름은 한 줄로 줄입니다(오른쪽 사진과 겹치지 않게).
+  const title = page.getByRole('list', { name: '장소 목록' }).locator(`[title="${LONG_NAME}"]`);
+  expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth && getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
   await page.goto('./places/p3');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expectFits(page);
@@ -87,7 +90,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   // 지도를 눌러 위치를 지정하면 위도·경도가 채워진 새 장소 창이 열립니다.
-  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).click();
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
   const box = (await page.getByTestId('map').boundingBox())!;
   await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } }); // 평점 안내·핀이 없는 자리
   dialog = page.getByRole('dialog', { name: '새 장소' });
@@ -117,12 +120,14 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 세 버튼이 한 줄에 놓이며, 길찾기 출발지가 된다', async ({ page }) => {
+test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 맨 위 단추(위치 지정·지도 확대·목록 확대·장소 추가·무악재역)가 한 줄에 놓이며, 길찾기 출발지가 된다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
   const base = page.getByRole('button', { name: '무악재역', exact: true });
   await expect(base).toHaveAttribute('aria-pressed', 'false');
-  const boxes = await Promise.all([page.getByRole('button', { name: '지도를 눌러 위치 지정' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()));
+  const boxes = await Promise.all(
+    [page.getByRole('button', { name: '위치 지정', exact: true }), page.getByRole('button', { name: '지도 확대' }), page.getByRole('button', { name: '목록 확대' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()),
+  );
   expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
   await base.click();
   await expect(base).toHaveAttribute('aria-pressed', 'true');
@@ -210,7 +215,7 @@ test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보�
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);
 });
 
-test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기타가 없다', async ({ page }) => {
+test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류는 낚시·맛집·숙박·기타다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, { ...base, places: [...base.places!, place('p9', '예전 기타 장소', 'etc')] });
   await page.goto('./');
@@ -220,9 +225,9 @@ test('지도: 핀은 지도에 올릴 때부터 핀 모양이고, 분류에 기�
   const classes = await page.evaluate(() => (window as unknown as { __overlayClasses: string[] }).__overlayClasses);
   const pins = classes.filter((name) => name !== '' && !name.includes('map-popup'));
   expect(pins.length).toBeGreaterThan(0);
-  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|etc)\b/);
+  for (const name of classes.filter((item) => !item.includes('pin-base'))) if (name) expect(name).toMatch(/\bpin pin-(fishing|restaurant|lodging|etc)\b/);
   const filters = page.getByRole('group', { name: '분류' });
-  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집']);
+  await expect(filters.getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']); // 숙박·기타를 다시 더했습니다(사용자 요청).
 });
 
 test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없으면 안내한다', async ({ page, context }) => {
@@ -319,6 +324,73 @@ test('장소 추가 창: 폼 코드를 받지 못하면(오프라인 등) 앱 �
 test('지도: 위치 지정 중에는 키보드 사용자에게 장소 추가의 찾기를 안내한다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
-  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).click();
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
   await expect(page.getByText("키보드로는 '장소 추가'에서 주소나 이름으로 찾아 추가할 수 있습니다.", { exact: false })).toBeVisible();
+});
+
+test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목록이 지도 위를 채우고, 작게 단추나 Esc로 돌아온다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  const viewport = page.viewportSize()!;
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  const map = page.getByRole('region', { name: '장소 지도' });
+  await expect.poll(async () => Math.round((await map.boundingBox())!.height)).toBe(viewport.height);
+  await expect(page.getByRole('button', { name: '지도 작게' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: '지도 작게' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeFocused();
+  expect((await map.boundingBox())!.height).toBeLessThan(viewport.height);
+
+  await page.getByRole('button', { name: '목록 확대' }).click();
+  const list = page.getByRole('list', { name: '장소 목록' });
+  await expect(page.getByRole('button', { name: '목록 작게' })).toBeFocused();
+  const pane = page.locator('.list-expanded');
+  await expect.poll(async () => Math.round((await pane.boundingBox())!.height)).toBe(viewport.height);
+  await expect(list).toBeVisible();
+  await expectAccessible(page);
+  // 목록에서 장소를 고르면 목록을 줄이고 지도에서 그 장소를 보여 줍니다.
+  await list.getByRole('button', { name: /^거문도 방파제/ }).click();
+  await expect(page.locator('.list-expanded')).toHaveCount(0);
+  const popup = page.getByRole('group', { name: '거문도 방파제 정보' });
+  await expect(popup).toBeVisible();
+
+  // 확대 중 Esc는 확대만 닫고 고른 장소는 그대로 둡니다. Tab 초점은 확대 화면 밖(가려진 단추)으로 나가지 않습니다.
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toBeFocused();
+  for (let i = 0; i < 6; i += 1) {
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.map-expanded')) || document.activeElement === document.body)).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.map-expanded')).toHaveCount(0);
+  await expect(popup).toBeVisible();
+  await expect(page.locator('[inert]')).toHaveCount(0);
+
+  // 목록 확대 중 위치 지정을 누르면 목록을 줄여 지도를 보여 줍니다.
+  await page.getByRole('button', { name: '목록 확대' }).click();
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
+  await expect(page.locator('.list-expanded')).toHaveCount(0);
+});
+
+test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveText(['전체', '낚시', '맛집', '숙박', '기타']);
+  await page.goto('./places/p2');
+  await page.getByRole('button', { name: '장소 수정' }).click();
+  const dialog = page.getByRole('dialog', { name: '장소 수정' });
+  await expect(dialog.getByRole('radio', { name: '숙박' })).toBeVisible();
+  await dialog.getByLabel('여는 시각').fill('11:00');
+  await dialog.getByLabel('닫는 시각').fill('21:30');
+  await dialog.getByRole('group', { name: '휴무 요일' }).getByLabel('월').check();
+  await dialog.getByRole('group', { name: '휴무 요일' }).getByLabel('화').check();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.places!.find((item) => item.id === 'p2')).toMatchObject({ open_time: '11:00', close_time: '21:30', closed_days: [1, 2] });
+  await expect(page.getByText('11:00–21:30 · 월·화 휴무')).toBeVisible();
+  // 낚시 장소에는 영업 정보 칸이 없습니다.
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '장소 수정' }).click();
+  await expect(page.getByRole('dialog', { name: '장소 수정' }).getByLabel('여는 시각')).toHaveCount(0);
 });

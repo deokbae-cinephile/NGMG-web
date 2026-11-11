@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft, PlaceKind } from '@/shared/api';
 import { findAddress, Link } from '@/shared/lib';
-import { ErrorText, Modal, SearchField, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = PlaceKind | 'all';
@@ -26,8 +26,49 @@ export const MapPage = () => {
   // 지도에 들어올 때마다 '전체'에서 시작합니다(사용자 요청).
   const [filter, setFilter] = useState<Filter>('all');
   const [selectedId, setSelectedId] = useState<string>();
+  const [focusKey, setFocusKey] = useState(0); // 목록에서 같은 장소를 다시 골라도 지도를 그 장소로 옮깁니다.
   const closePopup = useCallback(() => setSelectedId(undefined), []);
   const [picking, setPicking] = useState(false);
+  // 지도 확대(지도를 화면 전체로) / 목록 확대(장소 목록이 지도 위를 꽉 채움). Esc나 '작게' 단추로 돌아옵니다.
+  const [expanded, setExpanded] = useState<'map' | 'list'>();
+  const mapToggle = useRef<HTMLButtonElement>(null);
+  const listToggle = useRef<HTMLButtonElement>(null);
+  const shrinkButton = useRef<HTMLButtonElement>(null);
+  const collapse = useCallback(() => {
+    setExpanded((current) => {
+      // 줄인 뒤에는 키보드 초점을 그 화면을 연 단추로 돌려 둡니다.
+      requestAnimationFrame(() => (current === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true }));
+      return undefined;
+    });
+  }, []);
+  const expandedPane = useRef<HTMLElement | null>(null);
+  const setExpandedPane = useCallback((node: HTMLElement | null) => {
+    expandedPane.current = node;
+  }, []);
+  useEffect(() => {
+    if (!expanded) return;
+    requestAnimationFrame(() => shrinkButton.current?.focus({ preventScroll: true }));
+    // 확대 화면이 덮은 뒤쪽(머리글·메뉴·다른 칸)은 inert로 막아 Tab 초점이 가려진 곳으로 나가지 않게 합니다.
+    const blocked: Element[] = [];
+    for (let node: Element | null = expandedPane.current; node && node !== document.body; node = node.parentElement) {
+      for (const sibling of node.parentElement?.children ?? []) {
+        if (sibling === node || sibling.hasAttribute('inert') || sibling.tagName === 'SCRIPT') continue;
+        sibling.setAttribute('inert', '');
+        blocked.push(sibling);
+      }
+    }
+    // 확대 중의 Esc는 확대만 닫습니다. 지도의 Esc(말풍선 닫기·선택 풀기)보다 먼저 받아 넘기지 않습니다.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+      event.stopPropagation();
+      collapse();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      blocked.forEach((element) => element.removeAttribute('inert'));
+    };
+  }, [expanded, collapse]);
   const pickRequest = useRef(0);
   /** 위치 지정을 켜고 끄거나 장소 추가 창을 열면, 진행 중인 주소 조회 결과를 버립니다(이전 선택의 창이 늦게 열리지 않게). */
   const dropPendingPick = () => {
@@ -81,11 +122,26 @@ export const MapPage = () => {
       <title>지도 | 낚고먹고</title>
       <h1 className="sr-only">내 장소 지도</h1>
       {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
-      <div className="pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0">
-        <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} />
+      <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-64 border-b border-line bg-paper lg:static lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
+        <PlaceMap places={visible} selectedId={selectedId} picking={picking} onSelect={setSelectedId} onClose={closePopup} onPick={onPick} focusKey={focusKey} />
+        {expanded === 'map' && (
+          <button ref={shrinkButton} type="button" className="button button-primary expanded-close" onClick={collapse}>
+            <Icon name="minimize" size={18} />
+            지도 작게
+          </button>
+        )}
       </div>
 
-      <section aria-labelledby="places-title" className="pane">
+      <section ref={expanded === 'list' ? setExpandedPane : undefined} aria-labelledby="places-title" className={`pane ${expanded === 'list' ? 'list-expanded' : ''}`}>
+        {expanded === 'list' && (
+          <div className="cell-head">
+            <p className="title text-xl" aria-hidden="true">장소 목록</p>
+            <button ref={shrinkButton} type="button" className="button" onClick={collapse}>
+              <Icon name="minimize" size={18} />
+              목록 작게
+            </button>
+          </div>
+        )}
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
@@ -97,25 +153,36 @@ export const MapPage = () => {
                 onClick={() => {
                   dropPendingPick();
                   setPicking(!picking);
+                  if (expanded === 'list') setExpanded(undefined); // 가려진 지도에서 위치를 고르지 않게 목록을 줄입니다.
                 }}
               >
-                {picking ? '위치 지정 취소' : '지도를 눌러 위치 지정'}
+                {picking ? '위치 지정 취소' : '위치 지정'}
               </button>
             </Writable>
+            <button ref={mapToggle} type="button" className="button map-icon-button" aria-label="지도 확대" title="지도 확대" onClick={() => setExpanded('map')}>
+              <Icon name="maximize" size={20} />
+            </button>
+            <button ref={listToggle} type="button" className="button map-icon-button" aria-label="목록 확대" title="목록 확대" aria-pressed={expanded === 'list'} onClick={() => setExpanded(expanded === 'list' ? undefined : 'list')}>
+              <Icon name="list" size={20} />
+            </button>
             <Writable>
               <button
                 type="button"
-                className="button" // '지도를 눌러 위치 지정'과 같은 모양
+                className="button" // '위치 지정'과 같은 모양
                 onClick={() => {
                   dropPendingPick();
                   setPicking(false); // 위치 지정을 끝내고 새 장소 입력으로 넘어갑니다.
+                  setExpanded(undefined); // 확대 중이면 줄여 둡니다(새 장소 창이 막힌 뒤쪽에 뜨지 않게).
                   setDraft({});
                 }}
               >
                 장소 추가
               </button>
             </Writable>
-            <button type="button" className="button" aria-pressed={selectedId === BASE_PLACE.id} onClick={() => setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id)}>
+            <button type="button" className="button" aria-pressed={selectedId === BASE_PLACE.id} onClick={() => {
+                setSelectedId(selectedId === BASE_PLACE.id ? undefined : BASE_PLACE.id);
+                if (expanded === 'list') setExpanded(undefined); // 지도에서 무악재역을 보여 줍니다.
+              }}>
               {BASE_PLACE.name}
             </button>
           </div>
@@ -164,11 +231,16 @@ export const MapPage = () => {
                     type="button"
                     className="flex min-h-11 w-full cursor-pointer items-start gap-3 text-left"
                     aria-pressed={selected}
-                    onClick={() => setSelectedId(place.id)}
+                    onClick={() => {
+                      setSelectedId(place.id);
+                      setFocusKey((key) => key + 1);
+                      if (expanded === 'list') setExpanded(undefined); // 목록 확대에서 고르면 목록을 줄여 지도에서 그 장소를 보여 줍니다.
+                    }}
                   >
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        {place.name} <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
+                      <span className="flex max-w-full flex-wrap items-center gap-2">
+                        {/* 긴 이름은 한 줄로 줄여 오른쪽 사진과 겹치지 않게 합니다. 전체 이름은 자세히 보기에서 봅니다. */}
+                        <span className="min-w-0 max-w-full truncate" title={place.name}>{place.name}</span> <KindBadge kind={place.kind} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                     </span>

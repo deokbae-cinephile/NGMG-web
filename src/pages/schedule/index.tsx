@@ -4,6 +4,7 @@ import { useDeleteEvent, useMonthEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
 import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
+import { GearChecklist } from '@/features/gear-checklist';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
 import { formatDate, formatDayLabel, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
@@ -164,6 +165,7 @@ export const SchedulePage = () => {
                       </Link>
                     )}
                     {event.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{event.memo}</p>}
+                    <GearChecklist event={event} />
                   </div>
                   <Writable>
                     <div className="flex shrink-0 flex-wrap items-center">

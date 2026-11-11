@@ -1,4 +1,4 @@
-export type PlaceKind = 'fishing' | 'restaurant' | 'etc';
+export type PlaceKind = 'fishing' | 'restaurant' | 'lodging' | 'etc';
 
 export type Place = {
   id: string;
@@ -9,6 +9,10 @@ export type Place = {
   longitude: number;
   memo: string;
   photo_path: string | null;
+  /** 맛집 영업시간('11:00:00')과 휴무 요일(0=일 … 6=토). 다른 분류는 비워 둡니다. */
+  open_time?: string | null;
+  close_time?: string | null;
+  closed_days?: number[];
   created_at?: string;
   /** 화면에 보여 줄 서명된 사진 주소 (저장하지 않습니다) */
   photo_url?: string;
@@ -104,8 +108,11 @@ export type CalendarEvent = {
   title: string;
   place_id: string | null;
   memo: string;
-  /** 조사마다 고른 장비 세트 */
+  /** 조사마다 고른 장비 세트(예전 기능, 화면에서는 쓰지 않음) */
   gear_set_ids: string[];
+  /** 챙길 장비(angler_gear id)와 그중 챙긴 것 */
+  gear_ids: string[];
+  packed_gear_ids: string[];
   place: Place | null;
 };
 

@@ -46,6 +46,28 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.records!.at(-1)).toMatchObject({ rating: 4.3, angler_ratings: { '김 조사': 5, '류 조사': 3.5 } });
 });
 
+test('기록: 물고기·음식 사진 칸에서 여러 장을 고르면 그만큼 줄이 늘어 한 장씩 들어간다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  const files = [1, 2, 3].map((n) => ({ name: `사진-${n}.png`, mimeType: 'image/png', buffer: png }));
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  let dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByRole('button', { name: '물고기 추가' }).click();
+  await dialog.getByRole('group', { name: '물고기 1' }).getByRole('radio', { name: '류 조사' }).check();
+  await dialog.getByRole('group', { name: '물고기 1' }).getByLabel('사진', { exact: true }).setInputFiles(files);
+  for (const n of [1, 2, 3]) await expect(dialog.getByRole('img', { name: `물고기 ${n} 새 사진 미리보기` })).toBeVisible();
+  await expect(dialog.getByRole('group', { name: '물고기 3' }).getByRole('radio', { name: '류 조사' })).toBeChecked(); // 같은 조사로 늘립니다.
+  await dialog.getByRole('button', { name: '닫기' }).click();
+
+  await page.goto('./places/p2'); // 맛집
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByLabel('음식 1 사진').setInputFiles(files.slice(0, 2));
+  await expect(dialog.getByRole('img', { name: '음식 1 새 사진 미리보기' })).toBeVisible();
+  await expect(dialog.getByRole('img', { name: '음식 2 새 사진 미리보기' })).toBeVisible();
+});
+
 test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연박 날짜를 저장한다', async ({ page }) => {
   const base = seed();
   base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선', weather: '맑음' };

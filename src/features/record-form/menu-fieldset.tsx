@@ -106,9 +106,20 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                     id={`${row.id}-photo`}
                     type="file"
                     accept="image/*"
+                    multiple
+                    aria-describedby={`${row.id}-photo-hint`}
                     className="min-h-11 w-full border border-field bg-surface px-3 py-2"
-                    onChange={(event) => set(row.id, { file: event.target.files?.[0] ?? null })}
+                    onChange={(event) => {
+                      // 여러 장을 고르면 첫 장은 이 음식에, 나머지는 음식 줄을 늘려 한 장씩 넣습니다.
+                      const [first = null, ...rest] = [...(event.target.files ?? [])];
+                      onChange([
+                        ...value.map((item) => (item.id === row.id ? { ...item, file: first } : item)),
+                        ...rest.map((file) => ({ ...newMenuRow(), file })),
+                      ]);
+                      event.target.value = '';
+                    }}
                   />
+                  <p id={`${row.id}-photo-hint`} className="text-sm text-muted">여러 장을 고르면 음식이 그만큼 늘어납니다.</p>
                 </div>
               </div>
               {value.length > 1 && (

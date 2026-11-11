@@ -65,6 +65,7 @@ const bucket = (id: string) => ({
 export const supabase = {
   auth,
   from: (table: string) => rest.from(table),
+  rpc: (fn: string, args: Record<string, unknown>) => rest.rpc(fn, args),
   storage: { from: bucket },
   /** Edge Function 호출. 로그인 토큰과 공개 키를 붙입니다. */
   functions: { fetch: (name: string, init?: RequestInit) => authedFetch(`${url}/functions/v1/${name}`, init) },

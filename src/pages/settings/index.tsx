@@ -55,6 +55,14 @@ export const SettingsPage = () => {
       <title>설정 | 낚고먹고</title>
       <h1 className="sr-only">설정</h1>
       <PendingRatingSection />
+      <Section id="settings-gear" title="장비">
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-muted">조사별 장비를 등록해 두면 일정을 만들 때 챙길 장비로 고르고, 그날 체크리스트로 확인할 수 있습니다.</p>
+          <Link to="/gear" className="button">
+            장비 관리
+          </Link>
+        </div>
+      </Section>
       <Section id="settings-push" title="알림">
         {canWrite ? <PushToggle /> : <p className="text-sm text-muted">{role === 'guest' ? '게스트 계정은 알림을 켤 수 없습니다.' : '계정 권한을 확인한 뒤 알림을 켤 수 있습니다.'}</p>}
       </Section>

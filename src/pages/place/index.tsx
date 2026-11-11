@@ -1,6 +1,6 @@
 import { Writable } from '@/entities/session';
 import { useState } from 'react';
-import { KindBadge, PlaceActions, useDeletePlace, usePlaces } from '@/entities/place';
+import { KindBadge, PlaceActions, useDeletePlace, usePlaces, formatHours } from '@/entities/place';
 import { FishPhotoGrid, RecordCard, summarizeRecords, usePlaceRecords } from '@/entities/record';
 import { PlaceForm } from '@/features/place-form';
 import { RecordForm } from '@/features/record-form';
@@ -47,6 +47,12 @@ export const PlacePage = ({ id }: { id: string }) => {
         <div className="cell-body flex flex-col gap-4">
           <h2 id="place-title" className="title border-b border-line pb-2 text-4xl lg:text-5xl">{place.name}</h2>
           <p className="text-lg">{place.address || '주소 없음'}</p>
+          {formatHours(place) && (
+            <p>
+              <span className="mono-label mr-2">영업</span>
+              {formatHours(place)}
+            </p>
+          )}
           {place.memo && <p className="whitespace-pre-wrap break-words">{place.memo}</p>}
           <PlaceActions place={place} />
           <Writable>

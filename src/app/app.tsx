@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, useCallback, useEffect, useState } from 'react';
 import { useSession } from '@/entities/session';
 import { preloadEventForm } from '@/features/event-form';
+import { preloadGearForm } from '@/features/gear-form';
 import { preloadPlaceForm } from '@/features/place-form';
 import { preloadRecordForm } from '@/features/record-form';
 import { LoginPage } from '@/pages/login';
@@ -17,6 +18,7 @@ const pages = {
   place: () => import('@/pages/place').then((page) => ({ default: page.PlacePage })),
   settings: () => import('@/pages/settings').then((page) => ({ default: page.SettingsPage })),
   dex: () => import('@/pages/dex').then((page) => ({ default: page.DexPage })),
+  gear: () => import('@/pages/gear').then((page) => ({ default: page.GearPage })),
 };
 const MapPage = lazy(pages.map);
 const SchedulePage = lazy(pages.schedule);
@@ -24,6 +26,7 @@ const StatsPage = lazy(pages.stats);
 const PlacePage = lazy(pages.place);
 const SettingsPage = lazy(pages.settings);
 const DexPage = lazy(pages.dex);
+const GearPage = lazy(pages.gear);
 
 // 조회는 offlineFirst: 오프라인이어도 한 번은 요청해 서비스 워커(public/sw.js)에 저장된 마지막 응답을 받습니다.
 // 오프라인에서 저장된 응답도 없으면 재시도를 연결이 돌아올 때까지 미뤄 로딩에 머무르므로, 오프라인이면 다시 시도하지 않고 오류로 끝냅니다.
@@ -51,7 +54,7 @@ const Page = () => {
   if (pathname === '/records') return <Navigate to={`/schedule${search}`} />;
   if (pathname === '/stats') return <StatsPage />;
   if (pathname === '/settings') return <SettingsPage />;
-  if (pathname === '/gear') return <Navigate to="/settings" />; // 장비 메뉴는 없어졌습니다.
+  if (pathname === '/gear') return <GearPage />;
   if (pathname === '/dex') return <DexPage />;
   const place = /^\/places\/([^/]+)$/.exec(pathname);
   if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;
@@ -83,7 +86,7 @@ export const App = () => {
     // 폼 코드(장소·기록·일정)도 함께 받아 두어, 오프라인에서도 창이 열립니다.
     const timer = window.setTimeout(() => {
       Object.values(pages).forEach((load) => void load());
-      [preloadPlaceForm, preloadRecordForm, preloadEventForm].forEach((preload) => preload());
+      [preloadPlaceForm, preloadRecordForm, preloadEventForm, preloadGearForm].forEach((preload) => preload());
     }, 1000);
     return () => window.clearTimeout(timer);
   }, [session]);

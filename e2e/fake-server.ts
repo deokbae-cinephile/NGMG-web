@@ -74,9 +74,9 @@ const RECORD_DEFAULTS = {
   companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '', gear_sets: [], angler_ratings: {},
 };
 const DEFAULTS: Record<string, Record<string, unknown>> = {
-  places: { memo: '', address: '', photo_path: null, created_at: '2026-01-01T00:00:00Z' },
+  places: { memo: '', address: '', photo_path: null, open_time: null, close_time: null, closed_days: [], created_at: '2026-01-01T00:00:00Z' },
   records: RECORD_DEFAULTS,
-  events: { memo: '', end_time: null, place_id: null, gear_set_ids: [] },
+  events: { memo: '', end_time: null, place_id: null, gear_set_ids: [], gear_ids: [], packed_gear_ids: [] },
   checklist_items: { checked: false },
   angler_gear: { category: '기타', subcategory: '', brand: '', memo: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
   fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
@@ -100,6 +100,11 @@ export const createFakeServer = (seed: Seed = {}) => {
   // DB 트리거처럼 끝 날짜가 없으면 시작 날짜로 채웁니다.
   const withEndDate = (table: string, row: Row): Row =>
     table === 'events' ? { ...row, end_date: row.end_date ?? row.date } : table === 'records' ? { ...row, end_date: row.end_date ?? row.visited_on } : row;
+  // DB 트리거(keep_packed_in_gear)처럼 챙김 표시는 챙길 장비에 있는 것만 남깁니다.
+  const keepPacked = (table: string, row: Row): Row => {
+    if (table === 'events' && Array.isArray(row.gear_ids)) row.packed_gear_ids = ((row.packed_gear_ids as string[]) ?? []).filter((id) => (row.gear_ids as string[]).includes(id));
+    return row;
+  };
   const withDefaults = (table: string, rows: Row[] = []) => rows.map((row) => withEndDate(table, { ...DEFAULTS[table], ...row } as Row));
   const db: Record<string, Row[]> = Object.fromEntries(
     ['places', 'records', 'record_photos', 'fish_catches', 'menu_items', 'gear_sets', 'gear_set_items', 'angler_gear', 'events', 'checklist_items', 'members'].map((table) => [table, withDefaults(table, seed[table as keyof Seed])]),
@@ -212,6 +217,17 @@ export const createFakeServer = (seed: Seed = {}) => {
     }
     if (path.startsWith('/storage/v1/object')) return json({ Key: path, Id: 'x', path });
 
+    // 챙김 표시 함수(set_packed_gear): 장비 하나만 넣거나 뺍니다.
+    if (method === 'POST' && path.endsWith('/rest/v1/rpc/set_packed_gear')) {
+      const { event_id, gear_id, packed } = request.body as { event_id: string; gear_id: string; packed: boolean };
+      const event = db.events!.find((row) => row.id === event_id);
+      if (!event) return json(null);
+      const list = (event.packed_gear_ids as string[]) ?? [];
+      if (packed && (event.gear_ids as string[]).includes(gear_id)) event.packed_gear_ids = list.includes(gear_id) ? list : [...list, gear_id];
+      if (!packed) event.packed_gear_ids = list.filter((id) => id !== gear_id);
+      return json(event.packed_gear_ids);
+    }
+
     const table = path.split('/rest/v1/')[1] ?? '';
     const rows = db[table];
     if (!rows) return json({ message: `unknown ${table}` }, 404);
@@ -244,7 +260,7 @@ export const createFakeServer = (seed: Seed = {}) => {
       const body = request.body;
       const created = [body].flat().map((value: Row) => {
         const defaults = DEFAULTS[table] ?? {};
-        const row = withEndDate(table, { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` } as Row);
+        const row = keepPacked(table, withEndDate(table, { ...defaults, ...value, id: value.id ?? `gen-${nextId++}` } as Row));
         if (table === 'records') row.updated_at = new Date(Date.now() + nextId++).toISOString(); // DB 트리거처럼 저장할 때마다 바뀝니다.
         const index = rows.findIndex((item) => item.id === row.id || (item.storage_path && item.storage_path === value.storage_path));
         if (index >= 0) rows[index] = row;
@@ -255,7 +271,7 @@ export const createFakeServer = (seed: Seed = {}) => {
       return json(single ? created[0] : created, 201);
     }
     if (method === 'PATCH') {
-      const updated = apply(rows, params).map((row) => Object.assign(row, request.body));
+      const updated = apply(rows, params).map((row) => keepPacked(table, Object.assign(row, request.body)));
       const single = request.accept.includes('vnd.pgrst.object');
       return json(single ? updated[0] : updated);
     }
