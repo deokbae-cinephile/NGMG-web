@@ -8,7 +8,7 @@ import { GearChecklist } from '@/features/gear-checklist';
 import { RecordForm } from '@/features/record-form';
 import type { CalendarEvent, PlaceRecord } from '@/shared/api';
 import { formatDate, formatDayLabel, eachDay, formatDateRange, formatStay, holidayName, normalizeDateKey, parseDateKey, toDateKey, Link, useSearchParams } from '@/shared/lib';
-import { ErrorText, Icon, Modal, SkeletonRows } from '@/shared/ui';
+import { ErrorText, Icon, IconButton, Modal, SkeletonRows } from '@/shared/ui';
 import { AllRecords } from './all-records';
 import { MonthCalendar } from './month-calendar';
 import { ScheduleSide } from './schedule-side';
@@ -61,6 +61,8 @@ export const SchedulePage = () => {
     }),
   );
   const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
+  // 출조 알림을 누르면 ?focus=gear로 들어옵니다. 그날 첫 일정의 챙길 물품 체크리스트를 바로 보여 줍니다.
+  const revealId = params.get('focus') === 'gear' ? events.find((event) => event.gear_ids?.length)?.id : undefined;
   const recorded = useRecordedEventIds(events);
   const waiting = events.filter((event) => event.place && !recorded.data?.has(event.id));
   const holiday = holidayName(selected);
@@ -83,9 +85,7 @@ export const SchedulePage = () => {
 
       <section aria-labelledby="calendar-title" className="pane pane-calendar">
         <PaneHead id="calendar-title" title="달력">
-          <button type="button" className="button" onClick={() => goTo(toDateKey(new Date()))}>
-            오늘
-          </button>
+          <IconButton icon="calendarCheck" label="오늘" onClick={() => goTo(toDateKey(new Date()))} />
         </PaneHead>
         <div className="flex justify-center px-5 py-4">
           <MonthCalendar
@@ -137,9 +137,7 @@ export const SchedulePage = () => {
           </div>
           {/* 휴대폰에서는 감추고, 날짜를 누르면 올라오는 알림창에서 추가합니다. */}
           <Writable>
-            <button type="button" className="button button-primary max-lg:hidden" onClick={() => openForm()}>
-              일정 추가
-            </button>
+            <IconButton icon="plus" label="일정 추가" primary className="max-lg:hidden" onClick={() => openForm()} />
           </Writable>
         </div>
         {/* 이날 일정, 기록을 기다리는 일정, 기록 사이에 선을 그어 나눕니다. */}
@@ -165,22 +163,12 @@ export const SchedulePage = () => {
                       </Link>
                     )}
                     {event.memo && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted">{event.memo}</p>}
-                    <GearChecklist event={event} />
+                    <GearChecklist event={event} reveal={event.id === revealId} />
                   </div>
                   <Writable>
-                    <div className="flex shrink-0 flex-wrap items-center">
-                      <button type="button" className="text-action" aria-label={`${event.title} 일정 수정`} onClick={() => setForm({ event })}>
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        className="text-action text-action-accent"
-                        aria-label={`${event.title} 일정 삭제`}
-                        disabled={remove.isPending}
-                        onClick={() => onDelete(event)}
-                      >
-                        삭제
-                      </button>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <IconButton icon="pencil" label={`${event.title} 일정 수정`} onClick={() => setForm({ event })} />
+                      <IconButton icon="trash" label={`${event.title} 일정 삭제`} className="button-accent" disabled={remove.isPending} onClick={() => onDelete(event)} />
                     </div>
                   </Writable>
                 </li>
@@ -200,9 +188,7 @@ export const SchedulePage = () => {
                       <span className="text-sm text-muted">{event.place?.name}</span>
                     </span>
                     <Writable>
-                      <button type="button" className="button" aria-label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })}>
-                        기록 남기기
-                      </button>
+                      <IconButton icon="notePlus" label={`${event.title} 기록 남기기`} onClick={() => setRecordForm({ event })} />
                     </Writable>
                   </li>
                 ))}
@@ -230,9 +216,7 @@ export const SchedulePage = () => {
                   }
                   actions={
                     <Writable>
-                      <button type="button" className="text-action" aria-label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })}>
-                        수정
-                      </button>
+                      <IconButton icon="pencil" label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })} />
                     </Writable>
                   }
                 />
@@ -253,9 +237,7 @@ export const SchedulePage = () => {
               {holiday && <span className="truncate text-sm text-sun">{holiday}</span>}
             </p>
             <Writable>
-              <button type="button" className="button button-primary shrink-0" onClick={() => openForm('sheet')}>
-                일정 추가
-              </button>
+              <IconButton icon="plus" label="일정 추가" primary onClick={() => openForm('sheet')} />
             </Writable>
             <button type="button" className="day-sheet-close" aria-label="일정 추가 알림창 닫기" onClick={() => setSheet(false)}>
               <Icon name="close" size={18} />

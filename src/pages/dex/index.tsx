@@ -104,7 +104,7 @@ const FishDex = ({ keyword }: { keyword: string }) => {
               <dt className="mono-label">장소</dt>
               <dd className="break-words">{big.record.place.name}</dd>
               <dt className="mono-label">마릿수</dt>
-              <dd>{`${count}마리`}</dd>
+              <dd>{count}</dd>
             </DexCard>
           );
         })}
@@ -159,7 +159,7 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               <dt className="mono-label">장소</dt>
               <dd className="break-words">{latest.record.place.name}</dd>
               <dt className="mono-label">먹은 횟수</dt>
-              <dd>{`${count}회`}</dd>
+              <dd>{count}</dd>
             </DexCard>
           );
         })}

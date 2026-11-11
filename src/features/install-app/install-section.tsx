@@ -1,4 +1,4 @@
-import { Icon } from '@/shared/ui';
+import { IconButton } from '@/shared/ui';
 
 import { install, useInstallPrompt } from './install-prompt';
 
@@ -20,10 +20,7 @@ export const InstallSection = () => {
     return (
       <div className="flex flex-col items-start gap-2">
         <p className="text-sm text-muted">홈 화면이나 바탕화면에 앱으로 설치하면 주소창 없이 바로 열 수 있습니다.</p>
-        <button type="button" className="button button-primary" onClick={() => void install(prompt)}>
-          <Icon name="download" size={18} />
-          앱 설치
-        </button>
+        <IconButton icon="download" label="앱 설치" primary onClick={() => void install(prompt)} />
       </div>
     );
   }

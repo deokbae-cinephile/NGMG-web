@@ -78,9 +78,9 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await expectFits(page);
   await expectAccessible(page);
 
-  // 장비 주소는 장비 화면입니다(주요 메뉴의 '장비').
+  // 물품 주소(/gear)는 물품 화면입니다(주요 메뉴의 '물품').
   await page.goto('./gear');
-  await expect(page).toHaveTitle('장비 | 낚고먹고');
+  await expect(page).toHaveTitle('물품 | 낚고먹고');
 });
 
 test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', async ({ page }, testInfo) => {

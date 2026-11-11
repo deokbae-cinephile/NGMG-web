@@ -99,6 +99,13 @@
     cursor: not-allowed;
     opacity: 0.45;
   }
+  /* 글자 없는 아이콘 단추(IconButton): 누르는 면적 44px */
+  .icon-only {
+    width: 2.75rem;
+    flex-shrink: 0;
+    justify-content: center;
+    padding-inline: 0;
+  }
   .button[aria-pressed='true'] {
     background: var(--color-accent);
     color: var(--color-on-accent);

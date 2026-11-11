@@ -9,7 +9,7 @@ export const useGear = () =>
     queryKey: ['gear'],
     queryFn: async (): Promise<Gear[]> => {
       const { data, error } = await supabase.from('angler_gear').select('*');
-      if (error) throw new Error('장비 목록을 불러오지 못했습니다.');
+      if (error) throw new Error('물품 목록을 불러오지 못했습니다.');
       return sortGear(data as Gear[]);
     },
   });
@@ -17,7 +17,7 @@ export const useGear = () =>
 /** id는 폼을 열 때 정합니다. 실패 뒤 다시 저장해도 장비가 중복되지 않습니다. 예전 사진(photo_path)은 그대로 둡니다. */
 const saveGear = async (gear: Omit<Gear, 'created_at'> & { created_at?: string }) => {
   const { error } = await supabase.from('angler_gear').upsert(gear);
-  if (error) throw new Error('장비를 저장하지 못했습니다.');
+  if (error) throw new Error('물품을 저장하지 못했습니다.');
 };
 
 export const useSaveGear = () => {
@@ -27,7 +27,7 @@ export const useSaveGear = () => {
 
 const deleteGear = async (id: string) => {
   const { error } = await supabase.from('angler_gear').delete().eq('id', id);
-  if (error) throw new Error('장비를 삭제하지 못했습니다.');
+  if (error) throw new Error('물품을 삭제하지 못했습니다.');
 };
 
 export const useDeleteGear = () => {

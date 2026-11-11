@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { GEAR_CATEGORIES, LINE_SUBCATEGORIES, useSaveGear, type Gear } from '@/entities/gear';
 import { ANGLERS } from '@/shared/api';
-import { ErrorText, Field, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, IconButton, TextareaField } from '@/shared/ui';
 
 type Values = { angler: string; category: string; subcategory: string; brand: string; name: string; memo: string };
 
@@ -86,9 +86,7 @@ export const GearForm = ({ initial, angler, onDone }: Props) => {
       <TextareaField label="메모" maxLength={500} {...register('memo')} />
       <ErrorText error={save.error} />
       <div className="flex justify-end">
-        <button type="submit" className="button button-primary" disabled={save.isPending}>
-          {save.isPending ? '저장하는 중' : '저장'}
-        </button>
+        <IconButton type="submit" icon="check" label={save.isPending ? '저장하는 중' : '저장'} primary disabled={save.isPending} />
       </div>
     </form>
   );

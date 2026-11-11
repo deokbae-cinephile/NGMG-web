@@ -49,16 +49,18 @@ const send = async (subscriptions: Subscription[], message: Message) => {
 const dailyMessages = async (): Promise<Message[]> => {
   const messages: Message[] = [];
   const tomorrow = kst(1).key;
-  const events = await sql<{ title: string; start_time: string | null; place: string | null }[]>`
-    select e.title, e.start_time::text as start_time, p.name as place
+  const events = await sql<{ title: string; start_time: string | null; place: string | null; gear: number }[]>`
+    select e.title, e.start_time::text as start_time, p.name as place, coalesce(cardinality(e.gear_ids), 0)::int as gear
     from public.events e left join public.places p on p.id = e.place_id
     where e.date = ${tomorrow}
     order by e.start_time nulls last`;
   if (events.length) {
     messages.push({
       title: '내일 출조',
-      body: events.map((event) => [event.title, event.place].filter(Boolean).join(' · ')).join('\n'), // 시작 시간은 쓰지 않습니다(사용자 요청).
-      url: `/schedule?date=${tomorrow}`,
+      // 시작 시간은 쓰지 않습니다(사용자 요청). 챙길 물품이 있으면 개수를 붙입니다.
+      body: events.map((event) => [event.title, event.place, event.gear ? `챙길 물품 ${event.gear}개` : ''].filter(Boolean).join(' · ')).join('\n'),
+      // 누르면 그날 일정으로 가서 챙길 물품 체크리스트를 바로 보여 줍니다.
+      url: `/schedule?date=${tomorrow}${events.some((event) => event.gear) ? '&focus=gear' : ''}`,
       tag: `trip-${tomorrow}`,
     });
   }

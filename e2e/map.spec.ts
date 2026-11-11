@@ -120,19 +120,24 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('무악재역 버튼: 장소로 고르면 말풍선이 뜨고, 맨 위 단추(위치 지정·지도 확대·목록 확대·장소 추가·무악재역)가 한 줄에 놓이며, 길찾기 출발지가 된다', async ({ page }) => {
+test('지도 단추: 위치 지정·무악재역·지도 확대는 지도 위(현재 위치 단추 위)에 세로로, 목록 확대·장소 추가는 목록 위에 놓인다. 무악재역은 길찾기 출발지다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
-  const base = page.getByRole('button', { name: '무악재역', exact: true });
+  const tools = page.getByRole('group', { name: '지도 단추' });
+  const base = tools.getByRole('button', { name: '무악재역', exact: true });
   await expect(base).toHaveAttribute('aria-pressed', 'false');
-  const boxes = await Promise.all(
-    [page.getByRole('button', { name: '위치 지정', exact: true }), page.getByRole('button', { name: '지도 확대' }), page.getByRole('button', { name: '목록 확대' }), page.getByRole('button', { name: '장소 추가' }), base].map((button) => button.boundingBox()),
-  );
-  expect(new Set(boxes.map((box) => Math.round(box!.y))).size).toBe(1);
-  // 다섯 단추 모두 글자 없는 같은 크기의 아이콘 단추이고, 누를 수 있는 크기(44px)입니다.
-  for (const box of boxes) expect([Math.round(box!.width), Math.round(box!.height)]).toEqual([44, 44]);
+  const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
+  const locate = (await page.getByRole('button', { name: '현재 위치로 이동' }).boundingBox())!;
+  const onMap = await Promise.all(['위치 지정', '무악재역', '지도 확대'].map((name) => tools.getByRole('button', { name, exact: true }).boundingBox()));
+  for (const box of onMap) {
+    expect(Math.round(box!.x)).toBe(Math.round(locate.x)); // 현재 위치 단추와 같은 세로줄
+    expect(box!.y + box!.height).toBeLessThanOrEqual(locate.y);
+    expect(box!.y).toBeGreaterThanOrEqual(map.y);
+  }
+  expect(onMap.map((box) => Math.round(box!.y))).toEqual([...onMap.map((box) => Math.round(box!.y))].sort((a, b) => a - b)); // 위에서부터 위치 지정·무악재역·지도 확대
+  for (const name of ['목록 확대', '장소 추가']) await expect(page.getByRole('region', { name: '내 장소' }).getByRole('button', { name })).toBeVisible(); // 목록 칸 위
   // 위치 지정은 다시 누르면 취소합니다(켜짐은 aria-pressed).
-  const pick = page.getByRole('button', { name: '위치 지정', exact: true });
+  const pick = tools.getByRole('button', { name: '위치 지정', exact: true });
   await expect(pick).toHaveText('');
   await pick.click();
   await expect(pick).toHaveAttribute('aria-pressed', 'true');
@@ -340,7 +345,7 @@ test('지도: 확대한 지도에서도 위치를 지정하고, 고르면 지도
   await page.getByRole('button', { name: '위치 지정', exact: true }).click();
 
   await page.getByRole('button', { name: '지도 확대' }).click();
-  const pick = page.getByRole('group', { name: '확대한 지도' }).getByRole('button', { name: '위치 지정', exact: true });
+  const pick = page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '위치 지정', exact: true });
   await expect(pick).toBeVisible();
   await pick.click();
   await expect(pick).toHaveAttribute('aria-pressed', 'true');
@@ -447,10 +452,18 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   await expect(popup).toBeVisible();
   await expect(page.locator('[inert]')).toHaveCount(0);
 
-  // 목록 확대 중 위치 지정을 누르면 목록을 줄여 지도를 보여 줍니다.
-  await page.getByRole('button', { name: '목록 확대' }).click();
-  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
-  await expect(page.locator('.list-expanded')).toHaveCount(0);
+  // 지도 확대 단추는 확대한 뒤에도 같은 자리에서 '지도 작게'로 바뀝니다(토글).
+  const toggle = page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 확대' });
+  const before = (await toggle.boundingBox())!;
+  await toggle.click();
+  const shrink = page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 작게' });
+  const after = (await shrink.boundingBox())!;
+  const mapBox = (await map.boundingBox())!;
+  // 지도 칸 안에서 오른쪽·아래로부터 같은 거리에 있습니다.
+  expect(Math.round(mapBox.x + mapBox.width - (after.x + after.width))).toBe(12);
+  expect(Math.round(before.width)).toBe(Math.round(after.width));
+  await shrink.click();
+  await expect(page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 확대' })).toBeVisible();
 });
 
 test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
-import { ErrorText, Field, RemovablePhoto, TextareaField } from '@/shared/ui';
+import { ErrorText, Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
 import { menuRowError, MenuFieldset, newMenuRow, type MenuRow } from './menu-fieldset';
@@ -274,13 +274,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       <ErrorText error={save.error ?? remove.error} />
       <div className="flex flex-wrap justify-end gap-2">
         {record && (
-          <button type="button" className="button button-accent mr-auto" disabled={remove.isPending} onClick={onDelete}>
-            삭제
-          </button>
+          <IconButton icon="trash" label="삭제" className="button-accent mr-auto" disabled={remove.isPending} onClick={onDelete} />
         )}
-        <button type="submit" className="button button-primary" disabled={save.isPending}>
-          {save.isPending ? '저장하는 중' : '저장'}
-        </button>
+        <IconButton type="submit" icon="check" label={save.isPending ? '저장하는 중' : '저장'} primary disabled={save.isPending} />
       </div>
     </form>
   );

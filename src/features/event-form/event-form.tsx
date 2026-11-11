@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { saveEvent } from '@/entities/event';
 import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
 import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
-import { ErrorText, Field, TextareaField, SAVE_KEY } from '@/shared/ui';
+import { ErrorText, Field, IconButton, SAVE_KEY, TextareaField } from '@/shared/ui';
 import { GearPicker } from './gear-picker';
 
 type Values = { title: string; date: string; end_date: string; memo: string };
@@ -97,9 +97,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
               <p className="font-semibold">{place.name}</p>
               <p className="text-sm text-muted">{place.address}</p>
             </div>
-            <button type="button" className="button" onClick={() => setPlace(null)}>
-              장소 빼기
-            </button>
+            <IconButton icon="close" label="장소 빼기" onClick={() => setPlace(null)} />
           </div>
         ) : (
           <PlaceSearch saved={places.data} onPick={setPlace} />
@@ -125,9 +123,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
       <TextareaField label="메모" {...register('memo')} />
       <ErrorText error={save.error} />
       <div className="flex flex-wrap justify-end gap-2">
-        <button type="submit" className="button button-primary" disabled={save.isPending}>
-          {save.isPending ? '저장하는 중' : '저장'}
-        </button>
+        <IconButton type="submit" icon="check" label={save.isPending ? '저장하는 중' : '저장'} primary disabled={save.isPending} />
       </div>
     </form>
   );

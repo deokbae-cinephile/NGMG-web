@@ -8,3 +8,4 @@ export * from './skeleton';
 export * from './file-preview';
 export * from './weather-icon';
 export * from './search-field';
+export * from './icon-button';
