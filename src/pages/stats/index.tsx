@@ -111,7 +111,17 @@ export const StatsPage = () => {
       {/* 넓은 화면은 왼쪽 낚시 포인트, 오른쪽 맛집. 좁은 화면은 위아래로 놓습니다. 1px 틈으로 바탕이 보여 선이 됩니다. */}
       <div className="grid gap-px border-t border-line bg-line md:grid-cols-2">
         <div className="bg-paper">
-          <Ranking id="top-spots" title="자주 간 낚시 포인트" rows={stats.spots} detail={({ fish }) => <span className="shrink-0 text-sm text-muted">{`${fish}마리`}</span>} />
+          <Ranking
+            id="top-spots"
+            title="자주 간 낚시 포인트"
+            rows={stats.spots}
+            detail={({ fish, rating }) => (
+              <>
+                <RatingChip rating={rating} /> {/* 자주 간 맛집처럼 평균 평점을 보여 줍니다. */}
+                <span className="shrink-0 text-sm text-muted">{`${fish}마리`}</span>
+              </>
+            )}
+          />
         </div>
         <div className="bg-paper">
           <Ranking id="top-restaurants" title="자주 간 맛집" rows={stats.restaurants} detail={({ rating }) => <RatingChip rating={rating} />} />

@@ -11,10 +11,14 @@ export const startFakeBackend = async (page: Page, seed: Seed = {}, { signedIn =
   const server = createFakeServer(seed);
 
   await page.route('https://dapi.kakao.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: KAKAO_SDK }));
-  // 지도 날씨(Open-Meteo): 구름 조금, 14.3도
-  await page.route('https://api.open-meteo.com/**', (route) =>
-    route.fulfill({ contentType: 'application/json', headers: CORS, body: JSON.stringify({ current: { temperature_2m: 14.3, weather_code: 2 } }) }),
-  );
+  // 지도 날씨(Open-Meteo): 구름 조금. 기온은 위도마다 달라 장소별로 따로 받는지 볼 수 있습니다(위도 34.03 → 14.3도).
+  // 좌표를 쉼표로 여러 개 보내면 실제 API처럼 목록으로 돌려줍니다.
+  await page.route('https://api.open-meteo.com/**', (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    const latitudes = (params.get('latitude') ?? '').split(',').map(Number);
+    const body = latitudes.map((latitude) => ({ current: { temperature_2m: Math.round((14.3 + (latitude - 34.03) * 2) * 10) / 10, weather_code: 2 } }));
+    return route.fulfill({ contentType: 'application/json', headers: CORS, body: JSON.stringify(body.length === 1 ? body[0] : body) });
+  });
   await page.route('**/fake-supabase/**', (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.split('/fake-supabase')[1] ?? '';

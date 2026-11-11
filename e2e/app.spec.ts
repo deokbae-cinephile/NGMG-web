@@ -710,8 +710,8 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
   await fakeBackend(page, {
     places: [place('p1', '거문도 방파제'), place('p4', '가거도 갯바위'), place('p2', '바다횟집', 'restaurant')],
     records: [
-      { id: 'a', place_id: 'p1', visited_on: `${year}-01-05`, catches: '' },
-      { id: 'b', place_id: 'p1', visited_on: `${year}-01-20`, catches: '' },
+      { id: 'a', place_id: 'p1', visited_on: `${year}-01-05`, catches: '', rating: 4 },
+      { id: 'b', place_id: 'p1', visited_on: `${year}-01-20`, catches: '', rating: 5 },
       { id: 'c', place_id: 'p4', visited_on: `${year}-02-03`, catches: '' },
       { id: 'old', place_id: 'p1', visited_on: `${year - 1}-01-10`, catches: '' },
       {
@@ -734,9 +734,9 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
 
   // 사용자 요청으로 뺀 통계
   for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
-  // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나눕니다.
+  // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나누고, 둘 다 평균 평점을 보여 줍니다(평점이 없으면 생략).
   const spots = page.getByRole('region', { name: '자주 간 낚시 포인트' });
-  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*2마리\s*2번/, /가거도 갯바위\s*1마리\s*1번/]);
+  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*평균 평점\s*4\.5\s*2마리\s*2번/, /가거도 갯바위\s*1마리\s*1번/]);
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
   await expect(restaurants.getByRole('listitem')).toHaveText([/바다횟집\s*평균 평점\s*4\.0\s*1번/]);
   await expectFits(page);
@@ -1113,23 +1113,6 @@ test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 �
   await expect(badge).toContainText('무악재역 지금 날씨');
 });
 
-test('지도: 키보드로도 위치를 고른다(가운데 십자 + 가운데로 위치 지정)', async ({ page }) => {
-  const db = await fakeBackend(page, seed());
-  await page.goto('./');
-  await page.getByRole('button', { name: '지도를 눌러 위치 지정' }).focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByText(/키보드로는 지도에 초점을 두고 방향키로 옮긴 뒤/)).toBeVisible();
-  await expect(page.getByRole('region', { name: '장소 지도' })).toHaveAttribute('tabindex', '0'); // 방향키로 옮기도록 초점을 받을 수 있습니다.
-  await page.getByRole('button', { name: '가운데로 위치 지정' }).focus();
-  await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: '새 장소' });
-  await dialog.getByLabel('이름').fill('가운데 포인트');
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog).toBeHidden();
-  expect(db.places!.at(-1)).toMatchObject({ name: '가운데 포인트', latitude: 36, longitude: 127 }); // 지도 가운데 좌표
-  await expect(page.getByRole('button', { name: '가운데로 위치 지정' })).toHaveCount(0);
-});
-
 test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'desktop');
   await fakeBackend(page, { ...seed(), members: [{ id: 'm-u1', user_id: 'u1', role: 'guest' }] });
@@ -1173,4 +1156,24 @@ test('전체 기록: 입력하는 대로 찾고, 결과를 상태 영역으로 �
   await expect(page.getByRole('status').filter({ hasText: "'없는말'이(가) 들어간 기록이 없습니다." })).toBeAttached();
   await page.getByRole('searchbox', { name: /기록 찾기/ }).fill('감성돔');
   await expect(page.getByRole('status').filter({ hasText: /'감성돔'이\(가\) 들어간 기록 \d+건( 이상)?을 찾았습니다\./ })).toBeAttached();
+});
+
+test('지도 날씨: 모든 핀의 날씨를 한 번에 미리 받아, 핀마다 그곳 기온을 바로 보여 준다', async ({ page }) => {
+  const base = seed();
+  await fakeBackend(page, { ...base, places: [...base.places!, { ...place('p8', '북쪽 포인트'), latitude: 36.03 }] });
+  const requests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().startsWith('https://api.open-meteo.com/')) requests.push(request.url());
+  });
+  await page.goto('./');
+  await expect.poll(() => requests.length).toBe(1); // 한 번의 요청에 모든 핀(무악재역 포함)의 좌표를 담습니다.
+  expect(new URL(requests[0]!).searchParams.get('latitude')!.split(',').length).toBeGreaterThanOrEqual(3);
+  const badge = page.getByRole('status').filter({ hasText: '날씨' });
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  await expect(badge).toContainText('14°');
+  await page.getByRole('button', { name: /^북쪽 포인트 \(낚시\) 선택/ }).click();
+  await expect(badge).toContainText('18°'); // 장소마다 그곳의 기온(위도가 다르면 다름)
+  await page.getByRole('button', { name: '무악재역', exact: true }).click();
+  await expect(badge).toContainText('21°');
+  expect(requests).toHaveLength(1); // 핀을 눌러도 다시 받지 않습니다(미리 받은 값).
 });

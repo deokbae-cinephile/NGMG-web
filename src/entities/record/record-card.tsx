@@ -5,11 +5,11 @@ import { WeatherIcon } from '@/shared/ui';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
-import { ANGLERS, isPartialRating, missingRaters, pendingRating, ratingDetail, RECORD_LABELS } from './model';
+import { ANGLERS, isPartialRating, missingRaters, pendingRating, RECORD_LABELS } from './model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
-/** 평점: 두 사람이 다 주면 평균과 각자의 점수, 한 사람만 주면 기다리는 사람을 보여 줍니다. */
+/** 평점: 두 사람이 다 주면 평균, 한 사람만 주면 기다리는 사람을 보여 줍니다. 조사별 점수 줄('김 조사 3점 / 류 조사 3.5점')은 쓰지 않습니다(사용자 요청). */
 const Rating = ({ record }: { record: PlaceRecord }) => {
   if (pendingRating(record)) {
     // 기록 평점과 음식 평점의 대기를 나눠 누가 어느 평점을 줘야 하는지 씁니다. ('김 조사 평점을 기다리는 중', '류 조사 음식 평점을 기다리는 중')
@@ -20,19 +20,16 @@ const Rating = ({ record }: { record: PlaceRecord }) => {
       <dl>
         <dt className="mono-label">평점</dt>
         {recordWaiting.length > 0 && <dd>{`${recordWaiting.join(', ')} 평점을 기다리는 중`}</dd>}
-        {recordWaiting.length > 0 && <dd className="text-sm text-muted">{ratingDetail(record.angler_ratings)}</dd>}
         {menuWaiting.length > 0 && <dd>{`${menuWaiting.join(', ')} 음식 평점을 기다리는 중`}</dd>}
       </dl>
     );
   }
   if (record.rating === null) return null;
   const restaurant = record.place.kind === 'restaurant' && record.menu_items.some((item) => item.rating !== null);
-  const detail = ratingDetail(record.angler_ratings);
   return (
     <dl>
       <dt className="mono-label">{restaurant ? '평균 평점' : '평점'}</dt>
       <dd>{`${Number(record.rating).toFixed(1)}점`}</dd>
-      {detail && <dd className="text-sm text-muted">{detail}</dd>}
     </dl>
   );
 };

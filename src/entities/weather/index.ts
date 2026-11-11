@@ -1,2 +1,2 @@
-export { useCurrentWeather } from './api';
+export { useCurrentWeather, usePrefetchWeather } from './api';
 export { WeatherBadge } from './ui/weather-badge';

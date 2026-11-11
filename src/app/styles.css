@@ -185,12 +185,11 @@ body::after {
   }
 
   /* 목록 항목 사이의 옅은 선 */
+  /* 목록 한 칸. 위 경계선 없이 위아래 여백으로만 나눕니다(사용자 요청). */
   .panel {
-    border-top: 1px solid var(--color-soft);
     padding: 1rem 0;
   }
   .panel:first-child {
-    border-top: 0;
     padding-top: 0;
   }
   /* 지도 목록에서 고른 장소로 옮길 때 위에 붙은 지도(휴대폰)나 칸 위쪽에 가리지 않게 띄웁니다. 휴대폰의 지도 높이는 지도 화면(map/index.tsx)과 같습니다. */
@@ -997,7 +996,8 @@ body::after {
     border: 1px solid var(--color-ink);
     background: var(--color-paper);
     color: var(--color-ink);
-    font-size: 0.9375rem; /* 평점 안내와 같은 글자 크기 */
+    font-size: 0.9375rem; /* 평점 안내와 같은 글자 크기와 줄 높이 */
+    line-height: 1;
     pointer-events: none; /* 보기만 하는 상자라, 위치 지정 중에도 아래 지도를 누를 수 있게 합니다. */
   }
   /* 지도 폭이 좁아(평점 안내를 펼친 너비 + 날씨 상자) 둘이 겹치면 날씨 상자를 평점 안내 아래로 내립니다. */
@@ -1008,27 +1008,6 @@ body::after {
     .weather-badge {
       top: 3.75rem;
     }
-  }
-  /* 위치 지정 중 지도 가운데 십자 표시와, 그 자리로 정하는 단추(왼쪽 아래) */
-  .map-crosshair {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: 10;
-    width: 2rem;
-    height: 2rem;
-    translate: -50% -50%;
-    pointer-events: none;
-    background:
-      linear-gradient(var(--color-ink), var(--color-ink)) center / 2px 100% no-repeat,
-      linear-gradient(var(--color-ink), var(--color-ink)) center / 100% 2px no-repeat;
-    filter: drop-shadow(0 0 1px var(--color-paper)) drop-shadow(0 0 1px var(--color-paper));
-  }
-  .map-pick-center {
-    position: absolute;
-    bottom: 2.25rem;
-    left: 0.75rem;
-    z-index: 10;
   }
   /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
   .my-location {
