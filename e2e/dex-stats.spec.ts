@@ -86,7 +86,8 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
   for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
   // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나누고, 둘 다 평균 평점을 보여 줍니다(평점이 없으면 생략).
   const spots = page.getByRole('region', { name: '자주 간 낚시 포인트' });
-  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*평균 평점\s*4\.5\s*2마리\s*2번/, /가거도 갯바위\s*1마리\s*1번/]);
+  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*평균 평점\s*4\.5\s*2번$/, /가거도 갯바위\s*1번$/]);
+  await expect(spots).not.toContainText(/마리/); // 마릿수는 사용자 요청으로 뺐습니다.
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
   await expect(restaurants.getByRole('listitem')).toHaveText([/바다횟집\s*평균 평점\s*4\.0\s*1번/]);
   await expectFits(page);

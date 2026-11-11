@@ -115,12 +115,7 @@ export const StatsPage = () => {
             id="top-spots"
             title="자주 간 낚시 포인트"
             rows={stats.spots}
-            detail={({ fish, rating }) => (
-              <>
-                <RatingChip rating={rating} /> {/* 자주 간 맛집처럼 평균 평점을 보여 줍니다. */}
-                <span className="shrink-0 text-sm text-muted">{`${fish}마리`}</span>
-              </>
-            )}
+            detail={({ rating }) => <RatingChip rating={rating} />} // 자주 간 맛집처럼 평균 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
           />
         </div>
         <div className="bg-paper">

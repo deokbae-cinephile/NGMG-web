@@ -260,19 +260,17 @@
     padding-inline: 0.3125rem; /* 360px 화면에서 단추 다섯 개가 한 줄에 들어가는 여백 */
     white-space: nowrap;
   }
-  .map-actions .button:first-child {
-    flex: 1 1 auto;
-  }
   /* 위치 지정 옆 지도 확대·목록 확대 아이콘 단추 */
   .map-actions .map-icon-button {
     width: 2.5rem;
     padding-inline: 0;
   }
   /* 지도 확대: 지도 칸을 화면 전체로 키웁니다(하단 메뉴 위까지 덮음). */
+  /* 칸에 붙은 유틸리티 클래스(sticky top-topbar z-20 등)가 컴포넌트 층보다 앞서므로 !important로 덮습니다. */
   .pane.map-expanded {
     position: fixed !important;
-    inset: 0;
-    z-index: 60;
+    inset: 0 !important;
+    z-index: 60 !important;
     height: 100dvh !important;
     border: 0 !important; /* 아래 선(유틸리티 클래스)까지 없애 화면을 꽉 채웁니다. */
   }
