@@ -44,7 +44,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   ).toBeVisible();
 
   // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   // 음식 줄: 화면 읽기 프로그램에도 노출되는지(접근성 트리) 확인합니다.
   const menuLine = page.getByRole('listitem').filter({ hasText: '매운탕' }).first();
   expect(await menuLine.ariaSnapshot()).toContain('김 조사 평점을 기다리는 중 (류 조사 3.5점)');
@@ -128,7 +128,7 @@ test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 
   await fakeBackend(page, seed());
   await page.goto('./stats');
   await page.getByRole('region', { name: '자주 간 낚시 포인트' }).getByRole('link', { name: /거문도 방파제/ }).click();
-  await expect(page).toHaveURL(/\/places\/p1$/);
+  await expect(page).toHaveURL(/\/place\?id=p1$/);
   // 평점 대기 조회가 끝난 뒤에도 칸이 없는지 봅니다(조회 중에도 칸을 그리지 않으므로).
   const pending = page.waitForResponse((response) => /\/rest\/v1\/records\?select=id%2C\+?visited_on%2C\+?angler_ratings/.test(response.url()));
   await page.goto('./settings');

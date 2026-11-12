@@ -140,7 +140,7 @@ test('일정 및 기록: 넓은 화면은 페이지 전체가 아니라 칸마�
 
 test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 없다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await expect(dialog.getByLabel('날짜', { exact: true })).toBeVisible();

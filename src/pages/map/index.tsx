@@ -7,6 +7,7 @@ import type { Place, PlaceDraft } from '@/shared/api';
 import { findAddress } from '@/shared/lib';
 import { DefaultImage, ErrorText, Icon, IconLink, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
+import { placePath } from '@/shared/config';
 
 type Filter = KindFilterValue;
 
@@ -296,7 +297,7 @@ export const MapPage = () => {
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">
                       <PlaceActions place={place} />
-                      <IconLink to={`/places/${place.id}`} icon="arrowRight" label={`${place.name} 자세히 보기`} primary className="self-start" />
+                      <IconLink to={placePath(place.id)} icon="arrowRight" label={`${place.name} 자세히 보기`} primary className="self-start" />
                     </div>
                   )}
                 </li>

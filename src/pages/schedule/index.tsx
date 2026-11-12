@@ -13,6 +13,7 @@ import { ErrorText, Icon, IconButton, Modal, SkeletonRows } from '@/shared/ui';
 import { AllRecords } from './all-records';
 import { MonthCalendar } from './month-calendar';
 import { ScheduleSide } from './schedule-side';
+import { placePath } from '@/shared/config';
 
 const PaneHead = ({ id, title, children }: { id: string; title: string; children?: ReactNode }) => (
   <div className="cell-head">
@@ -195,7 +196,7 @@ export const SchedulePage = () => {
                       <p className="text-sm text-muted">{`${formatStay(event.date, event.end_date)} · ${formatDateRange(event.date, event.end_date)}`}</p>
                     )}
                     {event.place && (
-                      <Link to={`/places/${event.place.id}`} className="text-sm underline underline-offset-4">
+                      <Link to={placePath(event.place.id)} className="text-sm underline underline-offset-4">
                         {event.place.name}
                       </Link>
                     )}
@@ -246,7 +247,7 @@ export const SchedulePage = () => {
                   record={record}
                   heading={
                     <p className="flex flex-wrap items-center gap-2">
-                      <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
+                      <Link to={placePath(record.place.id)} className="underline underline-offset-4">
                         {record.place.name}
                       </Link>
                       <KindBadge kind={record.place.kind} />

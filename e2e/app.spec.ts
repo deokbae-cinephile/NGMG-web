@@ -132,7 +132,7 @@ test('게스트: 보기만 되고 추가·수정·삭제 버튼과 알림 켜기
   await page.goto('./');
   await expect(page.getByRole('button', { name: '장소 추가' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '무악재역', exact: true })).toBeVisible();
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await expect(page.getByRole('button', { name: /장소 수정|장소 삭제|기록 추가|기록 수정/ })).toHaveCount(0);
   await page.goto('./settings');
   await expect(page.getByText('게스트 계정은 알림을 켤 수 없습니다.')).toBeVisible();
@@ -155,7 +155,7 @@ test('아이콘 단추: 모든 화면에서 아이콘이 실제 크기로 보인
   await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
   for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme });
-    for (const [url, ready] of [['./', '장소 추가'], ['./schedule?date=2026-11-07', '오늘'], ['./items', '물품 추가'], ['./places/p1', '장소 수정']] as const) {
+    for (const [url, ready] of [['./', '장소 추가'], ['./schedule?date=2026-11-07', '오늘'], ['./items', '물품 추가'], ['./place?id=p1', '장소 수정']] as const) {
       await page.goto(url);
       await expect(page.getByRole('button', { name: ready, exact: true }).first()).toBeAttached();
       await expect.poll(() => page.locator('.icon-only, .map-tool').count(), { message: `${url}에 검사할 아이콘 단추가 없습니다` }).toBeGreaterThan(0);
@@ -172,4 +172,15 @@ test('아이콘 단추: 모든 화면에서 아이콘이 실제 크기로 보인
       expect(broken, `${theme} ${url}`).toEqual([]);
     }
   }
+});
+
+test('장소 상세: 예전 주소(/places/<id>)로 들어와도 새 주소(/place?id=)로 넘어가고, 새 주소는 place.html이 200으로 받는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./places/p1');
+  await expect(page).toHaveURL(/\/place\?id=p1$/);
+  await expect(page.getByRole('button', { name: '장소 수정', exact: true })).toBeVisible();
+  const response = await page.goto('./place?id=p1');
+  expect(response?.status()).toBe(200);
+  await page.goto('./place');
+  await expect(page.getByRole('heading', { name: '페이지를 찾을 수 없습니다' })).toBeVisible();
 });

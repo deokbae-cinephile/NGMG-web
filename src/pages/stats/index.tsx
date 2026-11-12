@@ -3,6 +3,7 @@ import { RatingChip, useStatRecords } from '@/entities/record';
 import { Link } from '@/shared/lib';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { summarize, yearsOf, type PlaceRank } from './model';
+import { placePath } from '@/shared/config';
 
 /** 자주 간 장소 순위. 낚시 포인트는 잡은 마릿수, 맛집은 평균 평점을 이름 옆에 함께 보여 줍니다. */
 const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows: PlaceRank[]; detail: (row: PlaceRank) => ReactNode }) => {
@@ -21,7 +22,7 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
             {rows.map((row, index) => (
               <li key={row.id}>
                 {/* 줄 전체가 그 장소의 상세로 가는 링크입니다(도감 카드처럼). */}
-                <Link to={`/places/${row.id}`} className="rank-link grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+                <Link to={placePath(row.id)} className="rank-link grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
                   <span aria-hidden="true" className="mono-label">{index + 1}</span>
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="truncate underline-offset-4">{row.name}</span>

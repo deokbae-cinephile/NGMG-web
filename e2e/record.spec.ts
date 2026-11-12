@@ -6,7 +6,7 @@ acceptDialogs();
 
 test('기록: 사진과 함께 저장한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   // 평점은 조사마다 따로 주고, 두 사람이 다 주면 평균을 냅니다.
@@ -50,7 +50,7 @@ test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 �
   const db = await fakeBackend(page, seed());
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
   const files = [1, 2, 3, 4, 5, 6].map((n) => ({ name: `사진-${n}.png`, mimeType: 'image/png', buffer: png }));
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   let dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByRole('button', { name: '물고기 추가' }).click();
@@ -87,7 +87,7 @@ test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 �
   expect(db.removedFiles).toContain(removedPath);
 
   // 음식도 같은 칸입니다.
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await page.getByRole('button', { name: '기록 추가' }).click();
   dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByLabel('음식 1 사진').setInputFiles(files.slice(0, 2));
@@ -99,7 +99,7 @@ test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연�
   const base = seed();
   base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선', weather: '맑음' };
   const db = await fakeBackend(page, base);
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 수정' }).first().click();
   const dialog = page.getByRole('dialog', { name: '기록 수정' });
   for (const label of ['인원', '동행', '물때', '바람', '수온']) await expect(dialog.getByLabel(label, { exact: true })).toHaveCount(0);
@@ -143,7 +143,7 @@ test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) =>
 test('기록: 크기·시각이 같은 사진 두 장도 서로 덮어쓰지 않고 모두 저장한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByLabel('사진 추가').setInputFiles([
@@ -163,7 +163,7 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   const base = seed();
   base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선' };
   await fakeBackend(page, base);
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await expect(page.getByText('감성돔 1마리')).toBeVisible();
   await expect(page.getByText('국환, 창선')).toHaveCount(0);
   await page.getByRole('button', { name: '기록 추가' }).click();
@@ -201,7 +201,7 @@ test('저장하는 동안 저장 중 화면을 띄우고 닫기를 막는다', a
     if (route.request().method() === 'POST') await held;
     await route.fallback();
   });
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByRole('button', { name: '저장' }).click();
@@ -224,7 +224,7 @@ test('기록 사진 여러 장은 슬라이드로 넘긴다', async ({ page }) =
       { id: 'b', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },
     ],
   });
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   const slider = page.getByRole('region', { name: /기록 사진 2장/ });
   await expect(slider.getByText('1 / 2')).toBeVisible();
   await expect(slider.getByRole('button', { name: '이전 사진' })).toBeDisabled();
@@ -245,7 +245,7 @@ test.describe('터치 화면', () => {
         { id: 'b', record_id: 'r00', storage_path: 'r00/2.jpg', position: 1 },
       ],
     });
-    await page.goto('./places/p1');
+    await page.goto('./place?id=p1');
     const slider = page.getByRole('region', { name: /기록 사진 2장/ });
     await expect(slider.getByText('1 / 2')).toBeVisible();
     await slider.scrollIntoViewIfNeeded();
@@ -280,7 +280,7 @@ test('기록: 폼을 연 뒤 다른 사람이 고쳤으면 덮어쓸지 묻는�
 
 test('기록: 오프라인에서 저장하면 대기열에 두었다가 연결되면 올린다', async ({ page, context }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await expect(page.getByText('감성돔 1마리')).toBeVisible();
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
@@ -357,7 +357,7 @@ test('기록 카드: n박 n일을 쓰지 않고, 잡은 물고기는 메모 아�
 
 test('기록 폼: 전에 잡은 어종을 눌러 고른다', async ({ page }) => {
   await fakeBackend(page, { ...seed(), fish_catches: [{ id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 40, position: 0 }] });
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByRole('button', { name: '물고기 추가' }).click();
@@ -394,7 +394,7 @@ test('전체 기록: 분류 필터는 지도와 같은 붙인 아이콘 단추�
 
 test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 바뀌지 않고, 쉼표·원만 지우며 잘못된 값은 안내한다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   const price = dialog.getByLabel('음식 1 가격 (원)');
@@ -419,7 +419,7 @@ test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 
 
 test('큰 사진(가로 5000px 이상)도 줄여 읽어 1600px 사진으로 올린다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   const big = Buffer.from(
     (
       await page.evaluate(() => {

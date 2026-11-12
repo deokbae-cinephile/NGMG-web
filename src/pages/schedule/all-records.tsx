@@ -6,6 +6,7 @@ import { RecordForm } from '@/features/record-form';
 import type { PlaceRecord } from '@/shared/api';
 import { formatDate, getPreference, Link, setPreference } from '@/shared/lib';
 import { ErrorText, Icon, IconButton, Modal, SearchField, SkeletonRows } from '@/shared/ui';
+import { placePath } from '@/shared/config';
 
 type Filter = KindFilterValue;
 
@@ -105,7 +106,7 @@ export const AllRecords = () => {
               }
               heading={
                 <h3 className="flex flex-wrap items-center gap-2">
-                  <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
+                  <Link to={placePath(record.place.id)} className="underline underline-offset-4">
                     {record.place.name}
                   </Link>
                   <KindBadge kind={record.place.kind} />

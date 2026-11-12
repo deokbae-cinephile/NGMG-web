@@ -9,6 +9,7 @@ import { Icon } from '@/shared/ui';
 import { useLocateControl } from './locate-control';
 import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets, START_VIEW } from './pins';
 import { useKakaoMap } from './use-kakao-map';
+import { placePath } from '@/shared/config';
 
 type Props = {
   places: Place[];
@@ -333,7 +334,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
             {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
             {!isBase && formatHours(selected) && <p className="break-words text-sm">{`영업 ${formatHours(selected)}`}</p>}
             {!isBase && (
-              <Link to={`/places/${selected.id}`} className="text-sm underline underline-offset-4">
+              <Link to={placePath(selected.id)} className="text-sm underline underline-offset-4">
                 자세히 보기
               </Link>
             )}
