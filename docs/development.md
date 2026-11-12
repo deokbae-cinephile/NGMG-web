@@ -95,7 +95,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 3개가 모두 없으면 `deploy.yml`이 웹 데모(`build:demo`)를 배포하고, 일부만 있으면 실패합니다.
 3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://ngmg.kr`입니다.
 
-사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `index.html`을 `404.html`로 복사합니다.
+사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `scripts/spa-pages.mjs`가 `index.html`을 `404.html`과 화면 주소별 파일(`schedule.html`, `stats.html` 등)로 복사합니다. GitHub Pages는 `/schedule` 요청에 `schedule.html`을 200으로 돌려주므로 브라우저 콘솔에 404가 남지 않습니다. 장소 상세(`/places/<id>`)처럼 정해지지 않은 주소는 `404.html`이 맡아 앱은 뜨지만 404 상태로 받습니다. 화면 주소를 새로 만들면 이 스크립트의 목록에도 넣습니다.
 
 ## PR 리뷰
 
