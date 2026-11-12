@@ -642,3 +642,19 @@ test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소�
   await expect(noPhoto.locator('.default-image')).toHaveAttribute('aria-hidden', 'true');
   await expect(noPhoto.locator('.default-image svg')).toHaveCount(1); // 분류(낚시) 아이콘
 });
+
+test('지도 위 단추·평점 안내·날씨 상자는 목록 위 단추(장소 추가)와 같은 높이(44px)다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const add = (await page.getByRole('button', { name: '장소 추가' }).boundingBox())!;
+  const tools = page.getByRole('group', { name: '지도 단추' });
+  const boxes = await Promise.all([
+    tools.getByRole('button', { name: '지도 확대' }).boundingBox(),
+    tools.getByRole('button', { name: '현재 위치로 이동' }).boundingBox(),
+    tools.getByRole('button', { name: '지도 단추 접기' }).boundingBox(),
+    page.locator('.map-legend').boundingBox(),
+    page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox(),
+  ]);
+  for (const box of boxes) expect(Math.round(box!.height)).toBe(Math.round(add.height));
+  for (const box of boxes.slice(0, 3)) expect(Math.round(box!.width)).toBe(Math.round(add.width));
+});
