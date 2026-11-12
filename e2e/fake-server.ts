@@ -70,13 +70,13 @@ export const KAKAO_SDK = `
 export const PHOTO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><rect width="4" height="4" fill="#bdbdbd"/><path d="M0 3l1.5-1.5L3 3l.5-.5L4 3v1H0z" fill="#8c8c8c"/></svg>';
 
 const RECORD_DEFAULTS = {
-  memo: '', catches: '', rating: null, event_id: null, people: null, price: null,
+  memo: '', catches: '', rating: null, event_id: null, people: null, price: null, day_order: 0, created_at: '2026-01-01T00:00:00Z',
   companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '', gear_sets: [], angler_ratings: {},
 };
 const DEFAULTS: Record<string, Record<string, unknown>> = {
   places: { memo: '', address: '', photo_path: null, open_time: null, close_time: null, closed_days: [], created_at: '2026-01-01T00:00:00Z' },
   records: RECORD_DEFAULTS,
-  events: { memo: '', end_time: null, place_id: null, gear_set_ids: [], gear_ids: [], packed_gear_ids: [] },
+  events: { memo: '', end_time: null, place_id: null, gear_set_ids: [], gear_ids: [], packed_gear_ids: [], day_order: 0 },
   checklist_items: { checked: false },
   angler_gear: { category: '기타', subcategory: '', brand: '', memo: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
   fish_catches: { species: '', photo_path: null, extra_photo_paths: [], position: 0, created_at: '2026-01-01T00:00:00Z' },

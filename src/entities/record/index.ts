@@ -8,6 +8,7 @@ export {
   usePlaceRatings,
   useRecordPages,
   useSaveRecord,
+  useReorderRecords,
   useRecordOutbox,
   RecordConflictError,
   useStatRecords,

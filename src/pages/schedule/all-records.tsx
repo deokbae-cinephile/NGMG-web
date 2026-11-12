@@ -93,25 +93,27 @@ export const AllRecords = () => {
             {keyword ? `'${keyword}'이(가) 들어간 기록이 없습니다.` : '아직 기록이 없습니다. 지도에서 장소를 고르거나 지난 일정에서 기록을 남길 수 있습니다.'}
           </p>
         )}
-        {records.map((record) => (
-          <RecordCard
-            key={record.id}
-            record={record}
-            actions={
-              <Writable>
-                <IconButton icon="pencil" label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)} />
-              </Writable>
-            }
-            heading={
-              <h3 className="flex flex-wrap items-center gap-2">
-                <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
-                  {record.place.name}
-                </Link>
-                <KindBadge kind={record.place.kind} />
-              </h3>
-            }
-          />
-        ))}
+        <div className="record-list">
+          {records.map((record) => (
+            <RecordCard
+              key={record.id}
+              record={record}
+              actions={
+                <Writable>
+                  <IconButton icon="pencil" label={`${record.place.name} ${formatDate(record.visited_on)} 기록 수정`} onClick={() => setEditing(record)} />
+                </Writable>
+              }
+              heading={
+                <h3 className="flex flex-wrap items-center gap-2">
+                  <Link to={`/places/${record.place.id}`} className="underline underline-offset-4">
+                    {record.place.name}
+                  </Link>
+                  <KindBadge kind={record.place.kind} />
+                </h3>
+              }
+            />
+          ))}
+        </div>
         {/* 무한 스크롤: 이 자리가 화면 근처에 오면 다음 기록을 불러옵니다. 실패했을 때만 다시 불러오기 버튼이 나옵니다. */}
         {hasNextPage &&
           (isFetchNextPageError ? (
