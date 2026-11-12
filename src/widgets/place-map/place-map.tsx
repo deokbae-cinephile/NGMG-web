@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, ClosedToday, formatHours, KIND_LABEL, KindBadge } from '@/entities/place';
-import { RatingChip, usePlaceRatings } from '@/entities/record';
+import { ALL_KINDS, BASE_PLACE, KIND_LABEL } from '@/entities/place';
+import { usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
 import type { Place } from '@/shared/api';
-import { getPreference, Link, setPreference, useTheme } from '@/shared/lib';
-import { Icon } from '@/shared/ui';
+import { useTheme } from '@/shared/lib';
 import { useLocateControl } from './locate-control';
-import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets, START_VIEW } from './pins';
+import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets } from './pins';
+import { MapPopup } from './map-popup';
+import { MapTools } from './map-tools';
+import { useFollowSelected } from './use-follow-selected';
 import { useKakaoMap } from './use-kakao-map';
-import { placePath } from '@/shared/config';
 
 type Props = {
   places: Place[];
@@ -47,9 +48,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
-  // 고른 장소로 지도를 옮기는 동안에는 말풍선 맞춤(panBy)을 미룹니다. 옮기는 도중에 panBy가 끼면 이동이 멈춰 핀이 가장자리에 남습니다.
-  const moving = useRef(false);
-  const fitPopup = useRef<() => void>(undefined);
   const selectFromPin = useCallback(
     (id: string) => {
       focusPopup.current = true;
@@ -64,11 +62,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     latest.current = { picking, onPick };
   });
   const { map, error, tilesReady } = useKakaoMap(container, latest);
-  const [toolsOpen, setToolsOpen] = useState(() => getPreference('map-tools-open', true));
-  // 지도 단추 묶음을 펼치거나 접으면 말풍선이 그 밑에 가리지 않게 위치를 다시 맞춥니다.
-  useEffect(() => {
-    fitPopup.current?.();
-  }, [toolsOpen]);
+  const refitPopup = useFollowSelected({ map, container, popup, selected, offsets, focusKey });
   const locateControl = useLocateControl({ map, onMove: onClose, onLocated: (latitude, longitude) => setHere({ latitude, longitude }) });
 
   useEffect(() => {
@@ -113,69 +107,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     pins.current.forEach((pin, id) => pin.setAttribute('aria-pressed', String(id === selectedId)));
   }, [map, places, selectedId, dark]);
 
-  useEffect(() => {
-    if (!map || !selected) return;
-    if (selected.id === BASE_PLACE.id && map.instance.getLevel() > START_VIEW.level) map.instance.setLevel(START_VIEW.level); // 멀리서 봐도 무악재역으로 다가갑니다.
-    // 핀 위에 말풍선이 뜨므로 핀을 지도 가운데보다 조금 아래에 놓습니다.
-    const bounds = map.instance.getBounds();
-    const latitudePerPixel = (bounds.getNorthEast().getLat() - bounds.getSouthWest().getLat()) / (container.current?.clientHeight || 1);
-    // 겹쳐서 옆으로 벌려 놓은 핀은 그만큼 더 옮겨 말풍선이 지도 밖으로 나가지 않게 합니다.
-    const longitudePerPixel = (bounds.getNorthEast().getLng() - bounds.getSouthWest().getLng()) / (container.current?.clientWidth || 1);
-    // 말풍선 높이만큼 핀을 가운데보다 내립니다. (말풍선의 물고기 사진은 사용자 요청으로 뺐습니다. 사진은 장소 상세에서 봅니다)
-    const lift = 100;
-    const target = new map.kakao.maps.LatLng(selected.latitude + latitudePerPixel * lift, selected.longitude + longitudePerPixel * (offsets.get(selected.id) ?? 0));
-    const [north, south] = [bounds.getNorthEast().getLat(), bounds.getSouthWest().getLat()];
-    const [east, west] = [bounds.getNorthEast().getLng(), bounds.getSouthWest().getLng()];
-    const near = selected.latitude <= north && selected.latitude >= south && selected.longitude <= east && selected.longitude >= west;
-    // 옮기기가 끝나면(idle, 늦어도 1초 뒤) 말풍선이 지도 밖으로 나갔는지 확인합니다.
-    let settleTimer = 0;
-    const settle = () => {
-      map.kakao.maps.event.removeListener(map.instance, 'idle', settle);
-      window.clearTimeout(settleTimer);
-      if (!moving.current) return;
-      moving.current = false;
-      fitPopup.current?.();
-    };
-    const startMoving = () => {
-      moving.current = true;
-      map.kakao.maps.event.addListener(map.instance, 'idle', settle);
-      settleTimer = window.setTimeout(settle, 1000);
-    };
-    if (near) {
-      startMoving();
-      map.instance.panTo(target); // 화면 안이면 부드럽게 옮깁니다.
-      return () => {
-        map.kakao.maps.event.removeListener(map.instance, 'idle', settle);
-        window.clearTimeout(settleTimer);
-        moving.current = false;
-      };
-    }
-    // 화면 밖 먼 곳은 지도가 한 번에 넘어가고, 새 지역의 지도 그림이 오기 전까지 빈 화면이 보여 번쩍입니다.
-    // 지도를 잠깐 감췄다가 옮기고, 새 그림을 다 받은 뒤(늦어도 1.2초 뒤) 다시 보여 줍니다.
-    const { kakao, instance } = map;
-    const node = container.current;
-    let fallback = 0;
-    const reveal = () => {
-      kakao.maps.event.removeListener(instance, 'tilesloaded', reveal);
-      window.clearTimeout(fallback);
-      node?.classList.remove('map-moving');
-    };
-    node?.classList.add('map-moving');
-    moving.current = true; // 감춘 동안의 말풍선 맞춤도 옮긴 뒤로 미룹니다.
-    const timer = window.setTimeout(() => {
-      kakao.maps.event.addListener(instance, 'tilesloaded', reveal);
-      startMoving();
-      instance.setCenter(target);
-      fallback = window.setTimeout(reveal, 1200);
-    }, 220); // styles/components-map.css의 .map-view 감춤(0.2초)이 끝난 뒤 옮깁니다.
-    return () => {
-      window.clearTimeout(timer);
-      reveal();
-      kakao.maps.event.removeListener(instance, 'idle', settle);
-      window.clearTimeout(settleTimer);
-      moving.current = false;
-    };
-  }, [map, selected, offsets, focusKey]);
 
   // 기준 위치(무악재역) 핀
   useEffect(() => {
@@ -215,33 +146,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     return () => overlay.setMap(null);
   }, [map, selected, popupHost]);
 
-  // 말풍선이 나중에 커지면(사진이 뜨거나 긴 주소) 위쪽이 지도 밖으로 잘리지 않게 지도를 그만큼 내립니다.
-  useEffect(() => {
-    const node = popup.current;
-    const area = container.current;
-    if (!map || !selected || !node || !area || typeof ResizeObserver === 'undefined') return;
-    const fit = () => {
-      if (moving.current) return; // 옮기기가 끝난 뒤 다시 부릅니다.
-      const areaTop = area.getBoundingClientRect().top;
-      // 위쪽 날씨 상자와 왼쪽 위 지도 단추 아래로 8px 띄워, 말풍선이 그 밑에 가리지 않게 합니다.
-      // 말풍선과 가로로 겹치는 것만 봅니다(왼쪽 위 단추 묶음은 가운데 말풍선과 보통 겹치지 않음).
-      const box = node.getBoundingClientRect();
-      const widgets = [...(area.parentElement?.querySelectorAll<HTMLElement>('.weather-badge, .map-tools') ?? [])]
-        .map((widget) => widget.getBoundingClientRect())
-        .filter((rect) => rect.left < box.right && box.left < rect.right);
-      const margin = Math.max(8, ...widgets.map((rect) => rect.bottom - areaTop + 8));
-      const top = node.getBoundingClientRect().top - areaTop;
-      if (top < margin) map.instance.panBy(0, top - margin); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
-    };
-    fitPopup.current = fit;
-    const observer = new ResizeObserver(fit);
-    observer.observe(node);
-    observer.observe(area); // 지도 칸이 줄어도 다시 확인합니다.
-    return () => {
-      observer.disconnect();
-      if (fitPopup.current === fit) fitPopup.current = undefined;
-    };
-  }, [map, selected]);
 
   // Esc로 팝업을 닫습니다.
   useEffect(() => {
@@ -260,32 +164,12 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     container.current?.focus({ preventScroll: true });
   };
 
-  // 왼쪽 위 지도 단추 묶음: 맨 위 여닫기 단추를 누르면 아래로 위치 지정·무악재역·현재 위치가 펼쳐집니다.
-  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억하며, 지도를 키웠을 때도 접고 펼칩니다. 오른쪽 아래에는 지도 확대·작게 단추만 둡니다.
+  // 지도를 확대한 채 지도를 못 불러와도 '지도 작게'로 돌아올 수 있게, 실패 화면에도 단추 묶음은 남깁니다.
   const toolGroup = (
-    <>
-      <div role="group" aria-label="지도 단추" className="map-tools">
-        <button
-          type="button"
-          className="map-tool map-tools-toggle"
-          aria-expanded={toolsOpen}
-          aria-controls="map-tools-items"
-          aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-          title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-          onClick={() => {
-            setToolsOpen(!toolsOpen);
-            setPreference('map-tools-open', !toolsOpen);
-          }}
-        >
-          <Icon name={toolsOpen ? 'chevronUp' : 'chevronDown'} size={20} />
-        </button>
-        <div id="map-tools-items" className="map-tools-items" hidden={!toolsOpen}>
-          {tools}
-          {locateControl.button}
-        </div>
-      </div>
-      {corner && <div className="map-corner">{corner}</div>}
-    </>
+    <MapTools corner={corner} onToggle={refitPopup}>
+      {tools}
+      {locateControl.button}
+    </MapTools>
   );
 
   if (error) {
@@ -311,34 +195,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       {locateControl.notices}
       {selected &&
         createPortal(
-          <div
-            ref={popup}
-            role="group"
-            aria-label={`${selected.name} 정보`}
-            className="map-popup"
-            style={{ transform: `translateX(${offsets.get(selected.id) ?? 0}px)` }} // 벌려 놓은 핀 위에 맞춥니다.
-          >
-            <div className="flex w-full items-start justify-between gap-2">
-              <p className="min-w-0 flex-1 truncate" title={selected.name}>{selected.name}</p> {/* 긴 이름은 한 줄로 줄이고 말줄임표를 붙입니다. 전체 이름은 자세히 보기에서 볼 수 있습니다. */}
-              <button type="button" className="map-popup-close" aria-label="정보 닫기" onClick={closePopup}>
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-            {!isBase && (
-              <div className="flex items-center gap-1.5">
-                <KindBadge kind={selected.kind} />
-                <RatingChip rating={ratings?.get(selected.id)} />
-                <ClosedToday place={selected} />
-              </div>
-            )}
-            {selected.address && <p className="break-words text-sm text-muted">{selected.address}</p>}
-            {!isBase && formatHours(selected) && <p className="break-words text-sm">{`영업 ${formatHours(selected)}`}</p>}
-            {!isBase && (
-              <Link to={placePath(selected.id)} className="text-sm underline underline-offset-4">
-                자세히 보기
-              </Link>
-            )}
-          </div>,
+          <MapPopup ref={popup} place={selected} isBase={isBase} rating={ratings?.get(selected.id)} offset={offsets.get(selected.id) ?? 0} onClose={closePopup} />,
           popupHost,
         )}
     </div>
