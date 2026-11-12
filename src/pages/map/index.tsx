@@ -182,7 +182,6 @@ export const MapPage = () => {
           onPick={onPick}
           focusKey={focusKey}
           // 현재 위치 단추 바로 앞에 그려, 키보드 이동 순서가 화면 위아래 순서와 같습니다.
-          expanded={expanded === 'map'}
           tools={
             // 지도 위 단추(오른쪽 아래): 위에서부터 지도 확대·작게(토글), 위치 지정, 무악재역. 그 아래 현재 위치와 접기 단추는 PlaceMap이 붙입니다.
             <>

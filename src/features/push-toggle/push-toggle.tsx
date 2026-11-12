@@ -4,6 +4,8 @@ import { currentSubscription, disablePush, enablePush, pushSupported } from './p
 /** 이 기기에서 출조 알림을 켜고 끕니다. 켜면 테스트 알림이 바로 옵니다. */
 export const PushToggle = () => {
   const [on, setOn] = useState<boolean>();
+  // 설정에 들어올 때 구독 여부를 받아 켜짐으로 바뀌는 순간에는 손잡이가 미끄러지지 않게, 사용자가 누른 뒤에만 움직입니다.
+  const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const lock = useRef(false);
@@ -58,7 +60,11 @@ export const PushToggle = () => {
         aria-describedby="push-help"
         className="switch self-start"
         disabled={busy || on === undefined}
-        onClick={() => void toggle()}
+        data-still={touched ? undefined : ''}
+        onClick={() => {
+          setTouched(true);
+          void toggle();
+        }}
       >
         <span className="switch-track" aria-hidden="true">
           <span className="switch-thumb" />

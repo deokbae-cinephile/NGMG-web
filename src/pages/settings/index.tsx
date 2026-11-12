@@ -4,7 +4,7 @@ import { useCanWrite, useRole } from '@/entities/session';
 import { InstallSection } from '@/features/install-app';
 import { PushToggle } from '@/features/push-toggle';
 import { ThemeChoices } from '@/features/theme-toggle';
-import { APP_VERSION } from '@/shared/config';
+import { APP_VERSION, BUILD_DATE } from '@/shared/config';
 import { formatDate, Link } from '@/shared/lib';
 import { ErrorText } from '@/shared/ui';
 
@@ -67,7 +67,7 @@ export const SettingsPage = () => {
       <Section id="settings-about" title="앱 정보">
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2">
           <dt className="mono-label">버전</dt>
-          <dd>{`v${APP_VERSION}`}</dd>
+          <dd>{`v${APP_VERSION} (${BUILD_DATE})`}</dd> {/* 배포한 날(빌드 날짜) */}
         </dl>
       </Section>
     </div>

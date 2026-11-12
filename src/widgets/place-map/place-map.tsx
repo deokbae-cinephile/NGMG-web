@@ -22,11 +22,9 @@ type Props = {
   focusKey?: number;
   /** 현재 위치 단추 위에 붙일 지도 단추들(화면 쪽에서 넘김) */
   tools?: ReactNode;
-  /** 지도를 화면 전체로 키웠는지. 키우면 지도 단추를 모두 보여 줍니다. */
-  expanded?: boolean;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools, expanded = false }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -251,30 +249,27 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   };
 
   // 지도 오른쪽 아래 단추 묶음: 화면이 넘긴 단추(지도 확대·위치 지정·무악재역)와 현재 위치를 틈 없이 쌓고, 맨 아래 단추로 접고 펼칩니다.
-  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억합니다. 지도를 키우면 모두 보여 주고 접기 단추는 감춥니다.
-  const showTools = expanded || toolsOpen;
+  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억합니다. 지도를 키웠을 때도 접고 펼칩니다(사용자 요청).
   const toolGroup = (
     <div role="group" aria-label="지도 단추" className="map-tools">
-      <div id="map-tools-items" className="map-tools-items" hidden={!showTools}>
+      <div id="map-tools-items" className="map-tools-items" hidden={!toolsOpen}>
         {tools}
         {locateControl.button}
       </div>
-      {!expanded && (
-        <button
-          type="button"
-          className="map-tool map-tools-toggle"
-          aria-expanded={toolsOpen}
-          aria-controls="map-tools-items"
-          aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-          title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-          onClick={() => {
-            setToolsOpen(!toolsOpen);
-            setPreference('map-tools-open', !toolsOpen);
-          }}
-        >
-          <Icon name={toolsOpen ? 'chevronDown' : 'chevronUp'} size={20} />
-        </button>
-      )}
+      <button
+        type="button"
+        className="map-tool map-tools-toggle"
+        aria-expanded={toolsOpen}
+        aria-controls="map-tools-items"
+        aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+        title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+        onClick={() => {
+          setToolsOpen(!toolsOpen);
+          setPreference('map-tools-open', !toolsOpen);
+        }}
+      >
+        <Icon name={toolsOpen ? 'chevronDown' : 'chevronUp'} size={20} />
+      </button>
     </div>
   );
 

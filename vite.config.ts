@@ -35,8 +35,15 @@ export default defineConfig(({ mode }) => ({
   base: '/', // GitHub Pages 사용자 도메인(ngmg.kr)의 루트
   plugins: [woff2Only(), react(), tailwindcss(), mode === 'demo' && demo()],
   define: {
-    // 설정의 앱 정보: 버전
+    // 설정의 앱 정보: 버전과 배포(빌드) 날짜. 날짜는 한국 시간으로 'YYYY.MM.DD'입니다.
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_DATE__: JSON.stringify(
+      new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' })
+        .formatToParts(new Date())
+        .filter((part) => part.type !== 'literal')
+        .map((part) => part.value)
+        .join('.'),
+    ),
     ...(mode === 'demo'
       ? {
           'import.meta.env.VITE_SUPABASE_URL': 'globalThis.__DEMO_API__',
