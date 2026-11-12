@@ -296,10 +296,12 @@ test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 �
   await expect(badge).toBeVisible();
   await expect(badge.locator('svg')).toHaveCount(1);
   await expect(badge).not.toContainText('°');
-  // 높이는 평점 안내와 같고 가로는 두 배입니다.
+  // 높이는 평점 안내와 같고, 좌우 여백도 평점 안내와 같습니다(너비는 내용만큼).
   const [legend, box] = [await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(), await badge.boundingBox()];
   expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
-  expect(Math.round(box!.width)).toBe(Math.round(box!.height * 2));
+  const pad = (node: Element) => `${getComputedStyle(node).paddingLeft} ${getComputedStyle(node).paddingRight}`;
+  expect(await badge.evaluate(pad)).toBe(await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).evaluate(pad));
+  expect(box!.width).toBeLessThan(box!.height * 2); // 예전처럼 넓게 고정하지 않습니다.
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('14°');
   await expect(badge.locator('[aria-hidden="true"]').filter({ hasText: '구름' })).toHaveCount(0); // 날씨 이름은 화면에 쓰지 않습니다.
@@ -607,14 +609,16 @@ test('지도 단추: 맨 아래 단추로 접고 펼치며(상태 기억), 지�
   for (const name of ['지도 확대', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
   await page.reload(); // 접은 상태를 기억합니다.
   await expect(tools.getByRole('button', { name: '지도 단추 펼치기' })).toBeVisible();
-  // 키운 지도에서는 모두 보이고 접기 단추는 없습니다. 줄이면 다시 접기 단추가 나옵니다.
+  // 키운 지도에서도 접고 펼칩니다(사용자 요청).
   await tools.getByRole('button', { name: '지도 단추 펼치기' }).click();
   await tools.getByRole('button', { name: '지도 확대' }).click();
-  await expect(page.locator('.map-expanded')).toHaveCount(1);
-  await expect(tools.getByRole('button', { name: /지도 단추 (접기|펼치기)/ })).toHaveCount(0);
+  await expect(tools.getByRole('button', { name: '지도 작게' })).toBeVisible();
+  await tools.getByRole('button', { name: '지도 단추 접기' }).click();
+  for (const name of ['지도 작게', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
+  await tools.getByRole('button', { name: '지도 단추 펼치기' }).click();
   for (const name of ['지도 작게', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
-  await tools.getByRole('button', { name: '지도 작게' }).click();
-  await expect(tools.getByRole('button', { name: '지도 단추 접기' })).toBeVisible();
+  await page.keyboard.press('Escape'); // 접어 둔 채로도 Esc·뒤로 가기로 줄일 수 있습니다.
+  await expect(tools.getByRole('button', { name: '지도 확대' })).toBeVisible();
 });
 
 test('지도가 가장 낮아도(가로 휴대폰) 오른쪽 아래 지도 단추가 위쪽 날씨 상자와 겹치지 않는다', async ({ page }) => {

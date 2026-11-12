@@ -134,6 +134,11 @@
     background: var(--color-paper);
     transition: translate 0.15s;
   }
+  /* 처음 상태를 받아 그릴 때는 움직이지 않습니다(누른 뒤에만 미끄러짐). */
+  .switch[data-still] .switch-track,
+  .switch[data-still] .switch-thumb {
+    transition: none;
+  }
   .switch:disabled {
     cursor: progress;
     opacity: 0.55;
@@ -530,11 +535,12 @@
     display: inline-flex;
     max-width: 100%;
     min-width: 0;
-    align-items: center;
+    align-items: flex-start; /* 이름이 여러 줄이어도 아이콘은 첫 줄 옆(위쪽)에 둡니다. */
     gap: 0.375rem;
   }
   .gear-tag > svg {
     flex-shrink: 0;
+    margin-top: 0.15em; /* 첫 줄 글자의 가운데에 맞춥니다. */
   }
   .gear-choice {
     max-width: 100%;

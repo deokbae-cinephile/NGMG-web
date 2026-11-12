@@ -194,18 +194,19 @@
     color: var(--color-ink);
     font-size: 0.875rem;
   }
-  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.75rem) 가로는 두 배입니다. */
+  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.75rem), 좌우 여백도 같습니다. */
   .weather-badge {
     position: absolute;
     top: var(--map-inset);
     right: var(--map-inset);
     z-index: 10;
     display: flex;
-    width: 5.5rem;
+    min-width: 2.75rem;
     height: 2.75rem;
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
+    padding: 0 0.5rem; /* 평점 안내와 같은 좌우 여백. 너비는 내용(아이콘·기온)만큼입니다. */
     border: 1px solid var(--color-ink);
     background: var(--color-paper);
     color: var(--color-ink);

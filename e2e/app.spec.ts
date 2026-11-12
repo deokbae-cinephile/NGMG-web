@@ -61,6 +61,8 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   const pushSwitch = page.getByRole('region', { name: '알림', exact: true }).getByRole('switch', { name: '이 기기에서 알림 받기' });
   await expect(pushSwitch).toBeEnabled();
   await expect(pushSwitch).toHaveAttribute('aria-checked', 'false');
+  // 들어올 때 손잡이가 미끄러지지 않습니다(누르기 전에는 전환 효과 없음).
+  expect(await pushSwitch.locator('.switch-thumb').evaluate((node) => getComputedStyle(node).transitionDuration)).toBe('0s');
 
   // 화면 테마: '다크 모드' 스위치(role=switch)로 켜고 끕니다.
   const theme = page.getByRole('region', { name: '화면 테마' });
@@ -78,7 +80,7 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
     window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }));
   });
   await expect(page.getByRole('region', { name: '앱 설치' }).getByRole('button', { name: '앱 설치' })).toBeVisible();
-  await expect(page.getByRole('region', { name: '앱 정보' })).toContainText(/v\d+\.\d+\.\d+/);
+  await expect(page.getByRole('region', { name: '앱 정보' })).toContainText(/v\d+\.\d+\.\d+ \(\d{4}\.\d{2}\.\d{2}\)/); // 버전 뒤에 배포 날짜
   await expectFits(page);
   await expectAccessible(page);
 
