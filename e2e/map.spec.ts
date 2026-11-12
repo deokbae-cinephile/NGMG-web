@@ -236,7 +236,7 @@ test('사진 지도: 장소 상세에서 잡은 물고기 사진을 모아 보�
 
 test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보여 준다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.route(/\/rest\/v1\/records\?select=place_id%2C\+?rating/, () => undefined); // 평점 응답이 오지 않음
+  await page.route(/\/rest\/v1\/rpc\/place_ratings/, () => undefined); // 평점 응답이 오지 않음
   await page.goto('./');
   await expect(page.getByText('평점을 불러오는 중이라 이름순으로 보여 줍니다.')).toBeVisible({ timeout: 6000 });
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);

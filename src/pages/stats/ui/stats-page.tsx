@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { RatingChip, useStatRecords } from '@/entities/record';
+import { RatingChip, useStatYears, useYearStats, type PlaceRank } from '@/entities/record';
 import { Link } from '@/shared/lib';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
-import { summarize, yearsOf, type PlaceRank } from '../model';
+import { withThisYear } from '../model';
 import { placePath } from '@/shared/config';
 
 /** 자주 간 장소 순위. 낚시 포인트는 잡은 마릿수, 맛집은 평균 평점을 이름 옆에 함께 보여 줍니다. */
@@ -19,16 +19,20 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
           <p className="text-muted">아직 기록이 없습니다.</p>
         ) : (
           <ol className="flex flex-col gap-1">
-            {rows.map((row, index) => (
+            {rows.map((row) => (
               <li key={row.id}>
                 {/* 줄 전체가 그 장소의 상세로 가는 링크입니다(도감 카드처럼). */}
                 <Link to={placePath(row.id)} className="rank-link grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
-                  <span aria-hidden="true" className="mono-label">{index + 1}</span>
+                  {/* 횟수가 같으면 같은 순위입니다(1, 1, 1, 4). */}
+                  <span className="mono-label">
+                    {row.rank}
+                    <span className="sr-only">위</span>
+                  </span>
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="truncate underline-offset-4">{row.name}</span>
                     {detail(row)}
                   </span>
-                  <span className="mono-label">{`${row.count}번`}</span>
+                  <span className="mono-label">{`${row.count}회`}</span>
                 </Link>
               </li>
             ))}
@@ -40,17 +44,20 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
 };
 
 export const StatsPage = () => {
-  const { data: records = [], isPending, error } = useStatRecords();
-  const years = yearsOf(records);
-  const [year, setYear] = useState(years[0] ?? new Date().getFullYear());
-  const stats = summarize(records, year);
-  const maxMonth = Math.max(1, ...stats.months);
+  const yearList = useStatYears();
+  const years = withThisYear(yearList.data);
+  const [picked, setPicked] = useState<number>();
+  const year = picked ?? years[0]!; // 고르기 전에는 기록이 있는 가장 최근 해
+  const { data: stats, error: statsError } = useYearStats(year);
+  const error = yearList.error ?? statsError;
 
-  if (isPending) return <PageSkeleton variant="stats" />;
+  if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
+  const { trips = 0, fish = 0, months = Array<number>(12).fill(0), spots = [], restaurants = [] } = stats ?? {};
+  const maxMonth = Math.max(1, ...months);
 
   const tiles = [
-    { label: '출조 횟수', value: `${stats.trips}`, unit: '회' },
-    { label: '잡은 물고기', value: `${stats.fish}`, unit: '마리' },
+    { label: '출조 횟수', value: `${trips}`, unit: '회' },
+    { label: '잡은 물고기', value: `${fish}`, unit: '마리' },
   ];
 
   return (
@@ -61,7 +68,7 @@ export const StatsPage = () => {
         <div className="flex items-baseline gap-3">
           <h2 className="title text-xl">{`${year}년 통계`}</h2>
         </div>
-        <select aria-label="연도" className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setYear(Number(event.target.value))}>
+        <select aria-label="연도" className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setPicked(Number(event.target.value))}>
           {years.map((item) => (
             <option key={item} value={item}>{`${item}년`}</option>
           ))}
@@ -89,7 +96,7 @@ export const StatsPage = () => {
           </div>
         </div>
         <ol className="grid grid-cols-12 items-end gap-1 px-5 pt-6 pb-4 sm:gap-3">
-          {stats.months.map((count, index) => (
+          {months.map((count, index) => (
             <li key={index} className="flex flex-col items-center gap-1">
               <span aria-hidden="true" className="mono-label">{count}</span>
               {/* 가장 많이 나간 달은 검정, 나머지는 포인트 색(연두)으로 칠합니다. */}
@@ -113,12 +120,12 @@ export const StatsPage = () => {
           <Ranking
             id="top-spots"
             title="자주 간 낚시 포인트"
-            rows={stats.spots}
+            rows={spots}
             detail={({ rating }) => <RatingChip rating={rating} />} // 자주 간 맛집처럼 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
           />
         </div>
         <div className="bg-paper">
-          <Ranking id="top-restaurants" title="자주 간 맛집" rows={stats.restaurants} detail={({ rating }) => <RatingChip rating={rating} />} />
+          <Ranking id="top-restaurants" title="자주 간 맛집" rows={restaurants} detail={({ rating }) => <RatingChip rating={rating} />} />
         </div>
       </div>
     </div>

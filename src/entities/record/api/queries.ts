@@ -87,16 +87,10 @@ export const usePlaceRatings = () =>
   useQuery({
     queryKey: ['records', 'place-ratings'],
     queryFn: async () => {
-      const rows: { place_id: string; rating: number }[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase.from('records').select('place_id, rating').not('rating', 'is', null).order('id').range(from, from + 999);
-        if (error) throw new Error('평점을 불러오지 못했습니다.');
-        rows.push(...(data as typeof rows));
-        if (data.length < 1000) break;
-      }
-      const grouped = new Map<string, number[]>();
-      rows.forEach((row) => grouped.set(row.place_id, [...(grouped.get(row.place_id) ?? []), row.rating]));
-      return new Map([...grouped].map(([id, ratings]) => [id, ratings.reduce((sum, value) => sum + value, 0) / ratings.length]));
+      // 평균은 DB(place_ratings)가 냅니다.
+      const { data, error } = await supabase.rpc('place_ratings', {});
+      if (error) throw new Error('평점을 불러오지 못했습니다.');
+      return new Map((data as { place_id: string; rating: number }[]).map((row) => [row.place_id, Number(row.rating)]));
     },
   });
 

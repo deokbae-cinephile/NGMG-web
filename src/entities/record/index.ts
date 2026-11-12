@@ -11,7 +11,8 @@ export {
   useReorderRecords,
   useRecordOutbox,
   RecordConflictError,
-  useStatRecords,
+  useStatYears,
+  useYearStats,
   useFishDex,
   useSpeciesOptions,
   useMenuDex,
@@ -21,7 +22,9 @@ export {
   type DexFish,
   type FishInput,
   type RecordInput,
-  type StatRecord,
+  type PlaceRank,
+  type YearStats,
+  type DexEntry,
   type DexMenu,
 } from './api';
 export { ANGLERS, combinedRating, formatMenu, isPartialRating, missingRaters, ratingDetail, RECORD_FIELDS, summarizeRecords, WEATHER_STATES } from './model';

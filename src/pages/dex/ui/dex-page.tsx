@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { useFishDex, useMenuDex, useSignedPhotos, type DexFish, type DexMenu } from '@/entities/record';
+import { useFishDex, useMenuDex, useSignedPhotos, type DexEntry, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
 import { CardGridSkeleton, ErrorText, Icon, SearchField, type IconName } from '@/shared/ui';
-import { buildDex, buildMenuDex } from '../model';
+import { toMenuEntry } from '../model';
 import { useBatches } from '../lib/use-batches';
 
 const TABS = [
@@ -62,7 +62,7 @@ const DexSkeleton = () => (
   </div>
 );
 
-const NO_FISH: DexFish[] = [];
+const NO_FISH: DexEntry[] = [];
 const NO_MENU: DexMenu[] = [];
 
 /** 끝까지 내리면 다음 카드를 붙이는 자리 */
@@ -70,8 +70,7 @@ const DexEnd = ({ end }: { end: RefObject<HTMLDivElement | null> }) => <div ref=
 
 /** 잡아 본 어종을 모으고, 어종별 빅원의 길이와 잡은 조사를 보여 줍니다. */
 const FishDex = ({ keyword }: { keyword: string }) => {
-  const { data = NO_FISH, isPending, error } = useFishDex();
-  const all = useMemo(() => buildDex(data), [data]);
+  const { data: all = NO_FISH, isPending, error } = useFishDex();
   // 어종 이름, 빅원을 잡은 조사와 장소로 찾습니다. 번호는 전체 도감 기준 그대로 둡니다.
   const entries = useMemo(() => all.filter(({ species, big }) => matches(keyword, species, big.angler, big.record.place.name)), [all, keyword]);
   const { visible, more, end } = useBatches(isPending ? undefined : entries);
@@ -117,7 +116,7 @@ const FishDex = ({ keyword }: { keyword: string }) => {
 /** 맛집 기록에 적은 메뉴를 모으고, 메뉴별 최근 가격, 평균 평점, 먹은 횟수를 보여 줍니다. */
 const MenuDex = ({ keyword }: { keyword: string }) => {
   const { data = NO_MENU, isPending, error } = useMenuDex();
-  const all = useMemo(() => buildMenuDex(data), [data]);
+  const all = useMemo(() => data.map(toMenuEntry), [data]);
   // 메뉴 이름과 최근에 먹은 장소로 찾습니다.
   const entries = useMemo(() => all.filter(({ name, latest }) => matches(keyword, name, latest.record.place.name)), [all, keyword]);
   const { visible, more, end } = useBatches(isPending ? undefined : entries);
