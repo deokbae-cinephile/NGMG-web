@@ -4,7 +4,8 @@ import { searchKakaoPlaces, type KakaoPlace } from '@/shared/lib';
 import { ErrorText, IconButton } from '@/shared/ui';
 import { KindBadge } from './kind-badge';
 
-type Props = { saved?: Place[]; onPick: (place: PlaceDraft) => void };
+/** unavailable: 저장한 장소를 고를 수 없는 이유(예: 일정 날짜가 휴무일). 있으면 그 장소는 누를 수 없고 이유를 보여 줍니다. */
+type Props = { saved?: Place[]; onPick: (place: PlaceDraft) => void; unavailable?: (place: Place) => string | undefined };
 
 const toDraft = ({ isRestaurant, ...place }: KakaoPlace): PlaceDraft => ({
   ...place,
@@ -12,7 +13,7 @@ const toDraft = ({ isRestaurant, ...place }: KakaoPlace): PlaceDraft => ({
 });
 
 /** 다른 폼 안에 들어가므로 form을 쓰지 않고 Enter를 직접 처리합니다. */
-export const PlaceSearch = ({ saved = [], onPick }: Props) => {
+export const PlaceSearch = ({ saved = [], onPick, unavailable }: Props) => {
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
   const [results, setResults] = useState<KakaoPlace[]>([]);
@@ -72,11 +73,14 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
         <ul className="max-h-60 divide-y divide-line overflow-y-auto border border-line">
           {savedMatches.map((place) => (
             <li key={place.id}>
-              <button type="button" className="result" onClick={() => { onPick(place); clear(); }}>
+              <button type="button" className="result" disabled={Boolean(unavailable?.(place))} aria-describedby={unavailable?.(place) ? `closed-${place.id}` : undefined} onClick={() => { onPick(place); clear(); }}>
                 <span className="flex items-center gap-2 font-semibold">
                   {place.name} <KindBadge kind={place.kind} />
                 </span>
                 <span className="text-sm text-muted">저장한 장소 · {place.address}</span>
+                {unavailable?.(place) && (
+                  <span id={`closed-${place.id}`} className="text-sm text-danger">{`${unavailable(place)}라 이 일정에는 고를 수 없습니다.`}</span>
+                )}
               </button>
             </li>
           ))}

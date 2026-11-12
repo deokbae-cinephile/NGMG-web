@@ -7,7 +7,6 @@ import type { Place } from '@/shared/api';
 import { getPreference, Link, setPreference, useTheme } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
 import { useLocateControl } from './locate-control';
-import { MapLegend } from './map-legend';
 import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets, START_VIEW } from './pins';
 import { useKakaoMap } from './use-kakao-map';
 
@@ -20,11 +19,13 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
   /** 같은 장소를 다시 골라도 지도를 그 장소로 옮기도록, 고를 때마다 바뀌는 값 */
   focusKey?: number;
-  /** 현재 위치 단추 위에 붙일 지도 단추들(화면 쪽에서 넘김) */
+  /** 왼쪽 위 여닫는 묶음에 넣을 지도 단추들(화면 쪽에서 넘김). 현재 위치 단추는 그 아래에 붙입니다. */
   tools?: ReactNode;
+  /** 오른쪽 아래 구석 단추(지도 확대·작게) */
+  corner?: ReactNode;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools, corner }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -41,7 +42,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   // 모든 핀(무악재역 포함)의 날씨를 한 번에 미리 받아, 핀을 누르면 바로 보이게 합니다.
   // 장소 목록을 받은 뒤 한 번에 보냅니다(받기 전에 무악재역만 따로 보내지 않게).
   usePrefetchWeather(useMemo(() => (places.length ? [BASE_PLACE, ...places] : []), [places]));
-  const basePin = useRef<HTMLDivElement>(null);
+  const basePin = useRef<HTMLButtonElement>(null);
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
@@ -171,23 +172,25 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     };
   }, [map, selected, offsets, focusKey]);
 
-  useEffect(() => {
-    basePin.current?.setAttribute('data-selected', String(isBase));
-  }, [map, isBase]);
-
   // 기준 위치(무악재역) 핀
   useEffect(() => {
     if (!map) return;
-    const content = createBasePin();
+    const content = createBasePin(selectFromPin);
     basePin.current = content;
     const overlay = new map.kakao.maps.CustomOverlay({
       map: map.instance,
       position: new map.kakao.maps.LatLng(BASE_PLACE.latitude, BASE_PLACE.longitude),
       content,
       yAnchor: 1,
+      clickable: true, // 눌러도(터치) 지도 끌기·위치 지정으로 넘기지 않고 핀이 받습니다.
     });
     return () => overlay.setMap(null);
-  }, [map]);
+  }, [map, selectFromPin]);
+
+  // 무악재역 핀의 눌린 상태(핀을 만든 뒤에 맞춥니다)
+  useEffect(() => {
+    basePin.current?.setAttribute('aria-pressed', String(isBase));
+  }, [map, isBase, selectFromPin]);
 
   // 고른 장소 위에 정보 팝업을 띄웁니다.
   useEffect(() => {
@@ -215,9 +218,13 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const fit = () => {
       if (moving.current) return; // 옮기기가 끝난 뒤 다시 부릅니다.
       const areaTop = area.getBoundingClientRect().top;
-      // 위쪽 평점 안내·날씨 상자 아래로 8px 띄워, 말풍선이 그 밑에 가리지 않게 합니다.
-      const widgets = [...(area.parentElement?.querySelectorAll<HTMLElement>('.map-legend, .weather-badge') ?? [])];
-      const margin = Math.max(8, ...widgets.map((widget) => widget.getBoundingClientRect().bottom - areaTop + 8));
+      // 위쪽 날씨 상자와 왼쪽 위 지도 단추 아래로 8px 띄워, 말풍선이 그 밑에 가리지 않게 합니다.
+      // 말풍선과 가로로 겹치는 것만 봅니다(왼쪽 위 단추 묶음은 가운데 말풍선과 보통 겹치지 않음).
+      const box = node.getBoundingClientRect();
+      const widgets = [...(area.parentElement?.querySelectorAll<HTMLElement>('.weather-badge, .map-tools') ?? [])]
+        .map((widget) => widget.getBoundingClientRect())
+        .filter((rect) => rect.left < box.right && box.left < rect.right);
+      const margin = Math.max(8, ...widgets.map((rect) => rect.bottom - areaTop + 8));
       const top = node.getBoundingClientRect().top - areaTop;
       if (top < margin) map.instance.panBy(0, top - margin); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
     };
@@ -248,29 +255,32 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     container.current?.focus({ preventScroll: true });
   };
 
-  // 지도 오른쪽 아래 단추 묶음: 화면이 넘긴 단추(지도 확대·위치 지정·무악재역)와 현재 위치를 틈 없이 쌓고, 맨 아래 단추로 접고 펼칩니다.
-  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억합니다. 지도를 키웠을 때도 접고 펼칩니다(사용자 요청).
+  // 왼쪽 위 지도 단추 묶음: 맨 위 여닫기 단추를 누르면 아래로 위치 지정·무악재역·현재 위치가 펼쳐집니다.
+  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억하며, 지도를 키웠을 때도 접고 펼칩니다. 오른쪽 아래에는 지도 확대·작게 단추만 둡니다.
   const toolGroup = (
-    <div role="group" aria-label="지도 단추" className="map-tools">
-      <div id="map-tools-items" className="map-tools-items" hidden={!toolsOpen}>
-        {tools}
-        {locateControl.button}
+    <>
+      <div role="group" aria-label="지도 단추" className="map-tools">
+        <button
+          type="button"
+          className="map-tool map-tools-toggle"
+          aria-expanded={toolsOpen}
+          aria-controls="map-tools-items"
+          aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+          title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+          onClick={() => {
+            setToolsOpen(!toolsOpen);
+            setPreference('map-tools-open', !toolsOpen);
+          }}
+        >
+          <Icon name={toolsOpen ? 'chevronUp' : 'chevronDown'} size={20} />
+        </button>
+        <div id="map-tools-items" className="map-tools-items" hidden={!toolsOpen}>
+          {tools}
+          {locateControl.button}
+        </div>
       </div>
-      <button
-        type="button"
-        className="map-tool map-tools-toggle"
-        aria-expanded={toolsOpen}
-        aria-controls="map-tools-items"
-        aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-        title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
-        onClick={() => {
-          setToolsOpen(!toolsOpen);
-          setPreference('map-tools-open', !toolsOpen);
-        }}
-      >
-        <Icon name={toolsOpen ? 'chevronDown' : 'chevronUp'} size={20} />
-      </button>
-    </div>
+      {corner && <div className="map-corner">{corner}</div>}
+    </>
   );
 
   if (error) {
@@ -289,7 +299,6 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     // 지도를 감춘 동안에는 바탕색이 보입니다.
     <div className="map-frame relative h-full w-full bg-surface">
       <div ref={container} data-testid="map" role="region" aria-label="장소 지도" tabIndex={-1} className={`map-view map h-full w-full ${tilesReady ? '' : 'map-loading'}`} />
-      <MapLegend />
       {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
       {/* 다시 받는 중(isFetching)에도 예전 기온을 지금 날씨처럼 보이지 않게 아이콘만 둡니다. */}
       <WeatherBadge place={selected?.name ?? (here ? '현재 위치' : undefined)} weather={weatherTarget && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError && !weather.isFetching} />

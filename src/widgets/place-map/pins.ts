@@ -12,12 +12,16 @@ export const START_VIEW = { latitude: BASE_PLACE.latitude, longitude: BASE_PLACE
 // 그림의 아래 끝(뾰족한 끝, y≈22)을 상자 아래 끝에 맞춰(xMidYMax) 핀 끝이 정확히 장소 위치에 오게 합니다.
 const PIN_SHAPE = '<svg class="pin-shape" viewBox="3 1 18 21" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/></svg>';
 
-export const createBasePin = () => {
-  const pin = document.createElement('div');
+/** 기준 위치(무악재역) 핀. 다른 핀처럼 누르면(터치 포함) 고릅니다. */
+export const createBasePin = (onSelect: (id: string) => void) => {
+  const pin = document.createElement('button');
+  pin.type = 'button';
   pin.className = 'pin pin-base';
-  pin.setAttribute('role', 'img');
-  pin.setAttribute('aria-label', `기준 위치: ${BASE_PLACE.name}`);
+  pin.setAttribute('aria-label', `${BASE_PLACE.name} (기준 위치) 선택`);
+  pin.setAttribute('aria-pressed', 'false');
+  pin.title = BASE_PLACE.name;
   pin.innerHTML = `${PIN_SHAPE}${iconSvg('train', 18)}`; // 이름은 aria-label로만 알리고 핀 옆 이름표는 두지 않습니다.
+  pin.addEventListener('click', () => onSelect(BASE_PLACE.id));
   return pin;
 };
 

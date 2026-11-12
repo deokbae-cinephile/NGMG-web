@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { saveEvent } from '@/entities/event';
-import { KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
+import { closedReason, KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/entities/place';
 import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
 import { ErrorText, Field, IconButton, SAVE_KEY, TextareaField } from '@/shared/ui';
 import { GearPicker } from './gear-picker';
@@ -12,7 +12,7 @@ type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => vo
 type Input = Values & { place: PlaceDraft | null };
 
 export const EventForm = ({ date, event, onDone }: Props) => {
-  const { register, handleSubmit, getValues, setValue, formState: { errors } } = useForm<Values>({
+  const { register, handleSubmit, getValues, setValue, control, formState: { errors } } = useForm<Values>({
     defaultValues: {
       title: event?.title ?? '',
       date: event?.date ?? date,
@@ -21,6 +21,11 @@ export const EventForm = ({ date, event, onDone }: Props) => {
     },
   });
   const [place, setPlace] = useState<PlaceDraft | null>(event?.place ?? null);
+  // 일정 날짜에 휴무 요일이 낀 맛집은 고를 수 없고, 고른 뒤 날짜를 바꿔 휴무일이 되면 저장할 때 막습니다(사용자 요청).
+  const [start, end] = useWatch({ control, name: ['date', 'end_date'] });
+  const placeClosed = place ? closedReason(place as { closed_days?: number[] }, start, end) : undefined;
+  const [closedShown, setClosedShown] = useState(false);
+  const placeArea = useRef<HTMLFieldSetElement>(null);
   const places = usePlaces();
   const client = useQueryClient();
   const [id] = useState(() => event?.id ?? crypto.randomUUID());
@@ -53,6 +58,11 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   });
 
   const onValid = (values: Values) => {
+    if (placeClosed) {
+      setClosedShown(true);
+      requestAnimationFrame(() => placeArea.current?.querySelector<HTMLElement>('button')?.focus());
+      return;
+    }
     if (!event && gearIds.length === 0) {
       // 새 일정은 챙길 물품을 하나 이상 골라야 저장합니다(사용자 요청). 목록을 열고 첫 칸으로 초점을 옮깁니다.
       setGearMissing(true);
@@ -104,7 +114,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         />
       </div>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset ref={placeArea} className="flex flex-col gap-2" aria-describedby={placeClosed ? 'event-place-closed' : undefined}>
         <legend className="mono-label pb-1.5">장소</legend>
         {place ? (
           <div className="flex flex-wrap items-center justify-between gap-2 border border-line p-3">
@@ -115,7 +125,12 @@ export const EventForm = ({ date, event, onDone }: Props) => {
             <IconButton icon="close" label="장소 빼기" onClick={() => setPlace(null)} />
           </div>
         ) : (
-          <PlaceSearch saved={places.data} onPick={setPlace} />
+          <PlaceSearch saved={places.data} onPick={setPlace} unavailable={(item) => closedReason(item, start, end)} />
+        )}
+        {placeClosed && (
+          <p id="event-place-closed" className={`text-sm ${closedShown ? 'text-danger' : 'text-muted'}`}>
+            {`${placeClosed}라 이 날짜에는 고를 수 없습니다. 날짜를 바꾸거나 장소를 빼 주세요.`}
+          </p>
         )}
         {place && !place.id && (
           <label className="flex min-h-11 items-center gap-2">

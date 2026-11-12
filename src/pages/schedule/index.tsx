@@ -30,8 +30,8 @@ export const SchedulePage = () => {
   const [month, setMonth] = useState(selected);
   // from: 어디서 일정 창을 열었는지. 알림창에서 열었으면 저장 뒤 달력의 날짜로 초점을 옮깁니다.
   const [form, setForm] = useState<{ event?: CalendarEvent; from?: 'sheet' }>();
-  // 휴대폰: 달력에서 날짜를 누르면 아래에서 '일정 추가' 알림창이 올라옵니다. 저절로 닫히지 않고 닫기 단추로 닫습니다.
-  const [sheet, setSheet] = useState(false);
+  // 휴대폰: 고른 날(들어오면 오늘)의 '일정 추가' 알림창이 아래에 처음부터 열려 있고, 날짜를 누르면 그날로 바뀝니다. 저절로 닫히지 않고 닫기 단추로 닫습니다.
+  const [sheet, setSheet] = useState(() => window.matchMedia('(width < 64rem)').matches);
   // 일정 창을 여는 동안 알림창은 그대로 두어, 창을 닫으면 키보드 초점이 알림창의 단추로 돌아옵니다. 저장하면 알림창도 닫습니다.
   const openForm = (from?: 'sheet') => setForm({ from });
 
@@ -154,7 +154,8 @@ export const SchedulePage = () => {
             {events.length > 0 && (
             <ol className="flex flex-col">
               {events.map((event) => (
-                <li key={event.id} className="panel panel-roomy flex flex-col gap-2 sm:flex-row sm:items-start">
+                // 수정·삭제는 휴대폰에서도 늘 오른쪽 위에 둡니다.
+                <li key={event.id} className="panel panel-roomy flex items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <h4 className="break-words">{event.title}</h4>
                     {event.end_date !== event.date && (
@@ -169,7 +170,7 @@ export const SchedulePage = () => {
                     <GearChecklist event={event} reveal={event.id === revealId} />
                   </div>
                   <Writable>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <IconButton icon="pencil" label={`${event.title} 일정 수정`} onClick={() => setForm({ event })} />
                       <IconButton icon="trash" label={`${event.title} 일정 삭제`} className="button-accent" disabled={remove.isPending} onClick={() => onDelete(event)} />
                     </div>
@@ -185,7 +186,7 @@ export const SchedulePage = () => {
               <h3 id="waiting-title" className="title text-lg">기록을 기다리는 일정</h3>
               <ul className="flex flex-col">
                 {waiting.map((event) => (
-                  <li key={event.id} className="panel flex flex-wrap items-center justify-between gap-2">
+                  <li key={event.id} className="panel flex items-start justify-between gap-3">
                     <span className="flex min-w-0 flex-col">
                       <span>{event.title}</span>
                       <span className="text-sm text-muted">{event.place?.name}</span>

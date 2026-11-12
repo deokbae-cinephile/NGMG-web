@@ -1,5 +1,5 @@
 // E2E: 일정·달력
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { acceptDialogs, expectAccessible, expectFits, fakeBackend, seed } from './support';
 
 acceptDialogs();
@@ -159,7 +159,7 @@ test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 �
   await expect(page.getByRole('dialog', { name: '일정 수정' }).getByLabel('시작 시간')).toHaveCount(0);
 });
 
-test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창이 올라오고, 머리의 일정 추가는 감춘다. 지도 평점 안내는 여닫는다', async ({ page }, testInfo) => {
+test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창이 올라오고, 머리의 일정 추가는 감춘다', async ({ page }, testInfo) => {
   await fakeBackend(page, seed());
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
@@ -206,15 +206,6 @@ test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창
     await expect(sheet).toContainText('성탄절');
   }
 
-  await page.goto('./');
-  const toggle = page.getByRole('button', { name: '평점', exact: true });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.locator('#map-legend-scale')).toBeVisible();
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('#map-legend-scale')).toBeHidden();
-  await page.reload();
-  await expect(page.getByRole('button', { name: '평점', exact: true })).toHaveAttribute('aria-expanded', 'false'); // 고른 상태를 기억합니다.
 });
 
 test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
@@ -227,4 +218,62 @@ test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 �
   await expect(sheet).toContainText('성탄절');
   await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
   await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
+});
+
+test('휴대폰 일정: 들어오면 오늘(고른 날) 알림창이 처음부터 열려 있다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop');
+  await fakeBackend(page, seed());
+  await page.goto('./schedule');
+  const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
+  await expect(sheet).toBeVisible();
+  const today = new Date();
+  await expect(sheet).toContainText(`${today.getMonth() + 1}월 ${today.getDate()}일`);
+});
+
+test('일정·기록 목록: 수정 단추는 휴대폰에서도 각 항목의 오른쪽 위에 있다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  const check = async (button: Locator, item: Locator) => {
+    const [b, box] = [(await button.boundingBox())!, (await item.boundingBox())!];
+    expect(Math.round(box.x + box.width - (b.x + b.width))).toBeLessThanOrEqual(1); // 오른쪽 끝
+    expect(b.y - box.y).toBeLessThan(40); // 위쪽(내용 아래로 내려가지 않음)
+  };
+  const event = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '새벽 출조' }) });
+  await check(event.getByRole('button', { name: '새벽 출조 일정 삭제' }), event);
+  const pencil = (await event.getByRole('button', { name: '새벽 출조 일정 수정' }).boundingBox())!;
+  const title = (await event.getByRole('heading', { name: '새벽 출조' }).boundingBox())!;
+  expect(Math.abs(pencil.y - title.y)).toBeLessThan(30); // 제목과 같은 줄(위쪽)
+});
+
+test('새 일정: 일정 날짜가 맛집 휴무 요일이면 그 맛집은 고를 수 없고, 고른 뒤 휴무일로 바꾸면 저장을 막는다', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, closed_days: [3] } : item)); // 바다횟집: 수요일 휴무
+  const db = await fakeBackend(page, { ...base, angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
+  await page.goto('./schedule?date=2026-11-11'); // 수요일
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^11 일 \(수\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  await dialog.getByLabel('할 일').fill('저녁');
+  const search = dialog.getByRole('searchbox', { name: '장소 검색' });
+  await search.fill('바다');
+  await search.press('Enter');
+  const saved = dialog.getByRole('button', { name: /바다횟집.*저장한 장소/ });
+  await expect(saved).toBeDisabled();
+  await expect(saved).toContainText('11월 11일(수) 휴무라 이 일정에는 고를 수 없습니다.');
+
+  // 목요일에 고른 뒤 날짜를 수요일로 바꾸면 안내하고 저장하지 않습니다.
+  await dialog.getByLabel('시작 날짜').fill('2026-11-12');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-12');
+  await search.press('Enter');
+  await expect(saved).toBeEnabled();
+  await saved.click();
+  await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
+  await dialog.getByLabel('시작 날짜').fill('2026-11-11');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-11');
+  await expect(dialog.getByText('11월 11일(수) 휴무라 이 날짜에는 고를 수 없습니다.', { exact: false })).toBeVisible();
+  const before = db.events!.length;
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeVisible();
+  expect(db.events!.length).toBe(before);
+  await expect(dialog.getByRole('button', { name: '장소 빼기' })).toBeFocused();
 });
