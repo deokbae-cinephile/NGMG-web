@@ -25,10 +25,9 @@ const Rating = ({ record }: { record: PlaceRecord }) => {
     );
   }
   if (record.rating === null) return null;
-  const restaurant = record.place.kind === 'restaurant' && record.menu_items.some((item) => item.rating !== null);
   return (
     <dl>
-      <dt className="mono-label">{restaurant ? '평균 평점' : '평점'}</dt>
+      <dt className="mono-label">평점</dt>
       <dd>{`${Number(record.rating).toFixed(1)}점`}</dd>
     </dl>
   );

@@ -41,7 +41,6 @@ export const MapPage = () => {
   const [expanded, setExpanded] = useState<Expanded | undefined>(readExpanded);
   const mapToggle = useRef<HTMLButtonElement>(null);
   const listToggle = useRef<HTMLButtonElement>(null);
-  const shrinkButton = useRef<HTMLButtonElement>(null);
   // 뒤로 가기를 보낸 뒤 popstate를 받기 전까지는 다시 보내지 않습니다(빠르게 두 번 누르면 이전 화면까지 가지 않게).
   const goingBack = useRef(false);
   useEffect(() => {
@@ -60,7 +59,9 @@ export const MapPage = () => {
     const before = previous.current;
     previous.current = expanded;
     if (!before || expanded) return;
-    if (refocus.current) (before === 'map' ? mapToggle : listToggle).current?.focus({ preventScroll: true });
+    // 지도 단추를 접어 둔 채 키웠다 줄이면 지도 확대 단추가 감춰지므로, 그때는 펼치기 단추로 초점을 옮깁니다.
+    const target = before === 'map' ? (mapToggle.current?.offsetParent ? mapToggle.current : document.querySelector<HTMLElement>('.map-tools-toggle')) : listToggle.current;
+    if (refocus.current) target?.focus({ preventScroll: true });
     refocus.current = true;
     afterCollapse.current?.();
     afterCollapse.current = undefined;
@@ -85,7 +86,6 @@ export const MapPage = () => {
   }, []);
   useEffect(() => {
     if (!expanded) return;
-    requestAnimationFrame(() => shrinkButton.current?.focus({ preventScroll: true }));
     // 확대 화면이 덮은 뒤쪽(머리글·메뉴·다른 칸)은 inert로 막아 Tab 초점이 가려진 곳으로 나가지 않게 합니다.
     const blocked: Element[] = [];
     for (let node: Element | null = expandedPane.current; node && node !== document.body; node = node.parentElement) {
@@ -182,9 +182,10 @@ export const MapPage = () => {
           onPick={onPick}
           focusKey={focusKey}
           // 현재 위치 단추 바로 앞에 그려, 키보드 이동 순서가 화면 위아래 순서와 같습니다.
+          expanded={expanded === 'map'}
           tools={
-            // 지도 위 단추(오른쪽 아래): 위에서부터 지도 확대·작게(토글), 위치 지정, 무악재역, 그 아래 현재 위치. 틈 없이 붙이고, 확대해도 같은 자리입니다.
-            <div role="group" aria-label="지도 단추" className="map-tools">
+            // 지도 위 단추(오른쪽 아래): 위에서부터 지도 확대·작게(토글), 위치 지정, 무악재역. 그 아래 현재 위치와 접기 단추는 PlaceMap이 붙입니다.
+            <>
               <button
                 ref={mapToggle}
                 type="button"
@@ -210,20 +211,12 @@ export const MapPage = () => {
               >
                 <Icon name="train" size={20} />
               </button>
-            </div>
+            </>
           }
         />
       </div>
 
       <section ref={expanded === 'list' ? setExpandedPane : undefined} aria-labelledby="places-title" className={`pane ${expanded === 'list' ? 'list-expanded' : ''}`}>
-        {expanded === 'list' && (
-          <div className="cell-head">
-            <p className="title text-xl" aria-hidden="true">장소 목록</p>
-            <button ref={shrinkButton} type="button" className="button map-icon-button" aria-label="목록 작게" title="목록 작게" onClick={() => collapse()}>
-              <Icon name="minimize" size={20} />
-            </button>
-          </div>
-        )}
         <div className="cell-head">
           <h2 id="places-title" className="sr-only">내 장소</h2>
           <div className="map-actions">
@@ -275,7 +268,7 @@ export const MapPage = () => {
                 >
                   <button
                     type="button"
-                    className="flex min-h-11 w-full cursor-pointer items-start gap-3 text-left"
+                    className="flex min-h-11 w-full cursor-pointer items-center gap-3 text-left" // 오른쪽 사진은 위아래 가운데
                     aria-pressed={selected}
                     onClick={() => {
                       setSelectedId(place.id);

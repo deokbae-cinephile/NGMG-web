@@ -29,8 +29,8 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(fish.getByText('길이를 입력해 주세요.')).toBeVisible();
   await fish.getByLabel('길이 (cm)').fill('21.5');
-  await fish.getByLabel('사진', { exact: true }).setInputFiles({ name: '볼락-1.png', mimeType: 'image/png', buffer: png });
-  await expect(fish.getByRole('img', { name: '물고기 1 새 사진 미리보기' })).toBeVisible();
+  await fish.getByLabel('물고기 1 사진', { exact: true }).setInputFiles({ name: '볼락-1.png', mimeType: 'image/png', buffer: png });
+  await expect(fish.getByRole('img', { name: '물고기 1 새 사진 1 미리보기' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
   await dialog.getByRole('button', { name: '저장' }).click();
@@ -46,26 +46,52 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.records!.at(-1)).toMatchObject({ rating: 4.3, angler_ratings: { '김 조사': 5, '류 조사': 3.5 } });
 });
 
-test('기록: 물고기·음식 사진 칸에서 여러 장을 고르면 그만큼 줄이 늘어 한 장씩 들어간다', async ({ page }) => {
-  await fakeBackend(page, seed());
+test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 장이 대표), 넘치면 알리며, 기록에 모두 보인다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-  const files = [1, 2, 3].map((n) => ({ name: `사진-${n}.png`, mimeType: 'image/png', buffer: png }));
+  const files = [1, 2, 3, 4, 5, 6].map((n) => ({ name: `사진-${n}.png`, mimeType: 'image/png', buffer: png }));
   await page.goto('./places/p1');
   await page.getByRole('button', { name: '기록 추가' }).click();
   let dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByRole('button', { name: '물고기 추가' }).click();
-  await dialog.getByRole('group', { name: '물고기 1' }).getByRole('radio', { name: '류 조사' }).check();
-  await dialog.getByRole('group', { name: '물고기 1' }).getByLabel('사진', { exact: true }).setInputFiles(files);
-  for (const n of [1, 2, 3]) await expect(dialog.getByRole('img', { name: `물고기 ${n} 새 사진 미리보기` })).toBeVisible();
-  await expect(dialog.getByRole('group', { name: '물고기 3' }).getByRole('radio', { name: '류 조사' })).toBeChecked(); // 같은 조사로 늘립니다.
-  await dialog.getByRole('button', { name: '닫기' }).click();
+  const fish = dialog.getByRole('group', { name: '물고기 1' });
+  await fish.getByLabel('어종').fill('볼락');
+  await fish.getByLabel('길이 (cm)').fill('20');
+  await expect(dialog.getByText(/여러 장을 고르면/)).toHaveCount(0); // 줄을 늘리던 예전 안내는 없습니다.
+  await fish.getByLabel('물고기 1 사진', { exact: true }).setInputFiles(files); // 6장을 골라도 5장만 넣고 알립니다.
+  await expect(fish.getByRole('status')).toHaveText('사진은 5장까지라 5장만 넣었습니다.');
+  await expect(fish.getByRole('list', { name: '물고기 1 사진 5장' }).getByRole('img')).toHaveCount(5);
+  await expect(fish.getByLabel('물고기 1 사진', { exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('group', { name: '물고기 2' })).toHaveCount(0); // 줄은 늘리지 않습니다.
+  await fish.getByRole('button', { name: '물고기 1 새 사진 5 빼기' }).click();
+  await expect(fish.getByLabel('물고기 1 사진', { exact: true })).toBeEnabled();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  const saved = db.fish_catches!.at(-1)!;
+  expect(saved.photo_path).toMatch(/fish-/);
+  expect(saved.extra_photo_paths).toHaveLength(3); // 대표 1장 + 3장
+  // 기록 카드에 대표 사진과 나머지 사진이 함께 보입니다.
+  await expect(page.getByRole('list', { name: /사진 3장 더$/ }).getByRole('img')).toHaveCount(3);
 
-  await page.goto('./places/p2'); // 맛집
+  // 다시 열면 4장이 그대로이고, 하나를 지우면 그 파일도 지웁니다.
+  await page.getByRole('button', { name: /기록 수정/ }).first().click();
+  dialog = page.getByRole('dialog', { name: '기록 수정' });
+  const edit = dialog.getByRole('group', { name: '물고기 1' });
+  await expect(edit.getByRole('list', { name: '물고기 1 사진 4장' }).getByRole('img')).toHaveCount(4);
+  const removedPath = (saved.extra_photo_paths as string[])[2];
+  await edit.getByRole('button', { name: '물고기 1 사진 4 삭제' }).click();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.fish_catches!.at(-1)!.extra_photo_paths).toHaveLength(2);
+  expect(db.removedFiles).toContain(removedPath);
+
+  // 음식도 같은 칸입니다.
+  await page.goto('./places/p2');
   await page.getByRole('button', { name: '기록 추가' }).click();
   dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByLabel('음식 1 사진').setInputFiles(files.slice(0, 2));
-  await expect(dialog.getByRole('img', { name: '음식 1 새 사진 미리보기' })).toBeVisible();
-  await expect(dialog.getByRole('img', { name: '음식 2 새 사진 미리보기' })).toBeVisible();
+  await expect(dialog.getByRole('list', { name: '음식 1 사진 2장' }).getByRole('img')).toHaveCount(2);
+  await expect(dialog.getByRole('group', { name: '음식 2' })).toHaveCount(0);
 });
 
 test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연박 날짜를 저장한다', async ({ page }) => {

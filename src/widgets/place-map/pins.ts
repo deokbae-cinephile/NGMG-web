@@ -71,7 +71,7 @@ export const createPin = (place: Place, offset: number, onSelect: (id: string) =
 /** 평균 평점을 핀의 색과 숫자, 이름에 반영합니다. 핀을 새로 만들지 않아 키보드 초점과 선택 상태가 유지됩니다. */
 export const applyRating = (pin: HTMLButtonElement, place: Place, rating: number | undefined) => {
   pin.className = `pin pin-${place.kind} ${ratingClass(rating)}`;
-  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평균 평점 ${rating.toFixed(1)}`}`);
+  pin.setAttribute('aria-label', `${place.name} (${KIND_LABEL[place.kind]}) 선택${rating === undefined ? '' : `, 평점 ${rating.toFixed(1)}`}`);
   pin.querySelector('.pin-score')?.remove();
   if (rating === undefined) return;
   // 색만으로 구분되지 않도록 평균 평점 숫자를 함께 보여 줍니다.

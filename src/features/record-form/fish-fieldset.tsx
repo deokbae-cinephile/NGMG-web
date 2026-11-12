@@ -1,9 +1,13 @@
 import { useId } from 'react';
 import { ANGLERS, useSpeciesOptions, type FishInput } from '@/entities/record';
-import { IconButton, RemovablePhoto } from '@/shared/ui';
+import { IconButton } from '@/shared/ui';
+import { ItemPhotosField, type SavedPhoto } from './item-photos-field';
 
-/** 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다. */
-export type FishDraft = Omit<FishInput, 'length_cm' | 'position'> & { length: string; photo_url?: string };
+/**
+ * 폼에서 다루는 물고기 한 마리. 길이는 입력 중인 글자 그대로 둡니다.
+ * photo_path·extra_photo_paths는 폼을 열 때의 사진(빠진 사진을 지우는 데 씀), photos·files는 남길 사진과 새 사진입니다.
+ */
+export type FishDraft = Pick<FishInput, 'id' | 'angler' | 'species' | 'photo_path' | 'extra_photo_paths'> & { length: string; photos: SavedPhoto[]; files: File[] };
 
 const newFish = (angler: string = ANGLERS[0]): FishDraft => ({
   id: crypto.randomUUID(),
@@ -11,8 +15,9 @@ const newFish = (angler: string = ANGLERS[0]): FishDraft => ({
   species: '',
   length: '',
   photo_path: null,
-  file: null,
-  removePhoto: false,
+  extra_photo_paths: [],
+  photos: [],
+  files: [],
 });
 
 /** 길이 확인. 비었거나 0 이하, 1000cm 이상이면 안내 문구를 돌려줍니다. */
@@ -23,12 +28,12 @@ export const fishError = (fish: FishDraft) => {
   return undefined;
 };
 
-type ItemProps = { fish: FishDraft; index: number; showError: boolean; species: string[]; listId: string; onChange: (fish: FishDraft) => void; onPhotos: (first: File | null, rest: File[]) => void; onRemove: () => void };
+type ItemProps = { fish: FishDraft; index: number; showError: boolean; species: string[]; listId: string; onChange: (fish: FishDraft) => void; onRemove: () => void };
 
 /** 전에 저장한 어종 가운데 바로 누를 수 있게 보여 줄 개수 */
 const QUICK_SPECIES = 8;
 
-const FishItem = ({ fish, index, showError, species, listId, onChange, onPhotos, onRemove }: ItemProps) => {
+const FishItem = ({ fish, index, showError, species, listId, onChange, onRemove }: ItemProps) => {
   const id = useId();
   const label = `물고기 ${index + 1}`;
   const error = showError ? fishError(fish) : undefined;
@@ -85,32 +90,7 @@ const FishItem = ({ fish, index, showError, species, listId, onChange, onPhotos,
         )}
         {error && <p id={`${id}-length-error`} className="text-sm text-danger">{error}</p>}
 
-        <div className="flex flex-wrap items-end gap-3">
-          {fish.file ? (
-            <RemovablePhoto file={fish.file} alt={`${label} 새 사진 미리보기`} removeLabel={`${label} 새 사진 빼기`} onRemove={() => set({ file: null })} />
-          ) : (
-            fish.photo_path &&
-            !fish.removePhoto && <RemovablePhoto src={fish.photo_url} alt={`${label} 사진`} removeLabel={`${label} 사진 삭제`} onRemove={() => set({ removePhoto: true })} />
-          )}
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <label htmlFor={`${id}-photo`} className="mono-label">{(fish.photo_path && !fish.removePhoto) || fish.file ? '사진 바꾸기' : '사진'}</label>
-            <input
-              id={`${id}-photo`}
-              type="file"
-              accept="image/*"
-              multiple
-              aria-describedby={`${id}-photo-hint`}
-              className="min-h-11 w-full border border-field bg-surface px-3 py-2"
-              onChange={(event) => {
-                // 여러 장을 고르면 첫 장은 이 물고기에, 나머지는 같은 조사의 물고기를 늘려 한 장씩 넣습니다.
-                const [first = null, ...rest] = [...(event.target.files ?? [])];
-                onPhotos(first, rest);
-                event.target.value = '';
-              }}
-            />
-            <p id={`${id}-photo-hint`} className="text-sm text-muted">여러 장을 고르면 물고기가 그만큼 늘어납니다.</p>
-          </div>
-        </div>
+        <ItemPhotosField id={`${id}-photo`} label={label} photos={fish.photos} files={fish.files} onChange={(next) => set(next)} />
         <div className="flex justify-end">
           <IconButton icon="trash" label={`${label} 빼기`} onClick={onRemove} />
         </div>
@@ -121,7 +101,7 @@ const FishItem = ({ fish, index, showError, species, listId, onChange, onPhotos,
 
 type Props = { value: FishDraft[]; showErrors: boolean; onChange: (value: FishDraft[]) => void };
 
-/** 잡은 물고기: 조사, 어종, 길이, 사진 한 장. 여러 마리를 더할 수 있습니다. */
+/** 잡은 물고기: 조사, 어종, 길이, 사진(5장까지). 여러 마리를 더할 수 있습니다. */
 export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
   const { data: species = [] } = useSpeciesOptions();
   const listId = useId();
@@ -145,9 +125,6 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
           species={species}
           listId={listId}
           onChange={(next) => onChange(value.map((item) => (item.id === fish.id ? next : item)))}
-          onPhotos={(first, rest) =>
-            onChange([...value.map((item) => (item.id === fish.id ? { ...item, file: first } : item)), ...rest.map((file) => ({ ...newFish(fish.angler), file }))])
-          }
           onRemove={() => onChange(value.filter((item) => item.id !== fish.id))}
         />
       ))}

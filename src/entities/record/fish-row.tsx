@@ -1,8 +1,9 @@
 import type { FishCatch } from '@/shared/api';
 import { Icon } from '@/shared/ui';
+import { ItemExtraPhotos } from './item-extra-photos';
 import { fishLabel } from './model';
 
-type Props = { fish: Pick<FishCatch, 'species' | 'length_cm' | 'angler' | 'photo_url' | 'photo_thumb_url'>; detail?: string };
+type Props = { fish: Pick<FishCatch, 'species' | 'length_cm' | 'angler' | 'photo_url' | 'photo_thumb_url' | 'extra_photos'>; detail?: string };
 
 /** 잡은 물고기 한 줄: 사진(없으면 물고기 아이콘), 어종과 길이, 조사. 사진을 누르면 새 창에서 크게 봅니다. */
 export const FishRow = ({ fish, detail }: Props) => (
@@ -20,6 +21,7 @@ export const FishRow = ({ fish, detail }: Props) => (
       <span className="break-words">{fishLabel(fish)}</span>
       <span className="text-sm text-muted">{fish.angler}</span>
       {detail && <span className="text-sm text-muted break-words">{detail}</span>}
+      <ItemExtraPhotos photos={fish.extra_photos} label={fishLabel(fish)} />
     </span>
   </div>
 );

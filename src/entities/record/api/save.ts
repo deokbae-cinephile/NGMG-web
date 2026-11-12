@@ -5,7 +5,7 @@ import { forEachLimit } from '@/shared/lib';
 import { removePhotos, supabase, uploadPhoto, type AnglerRatings, type FishCatch, type MenuItem, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto } from '@/shared/api';
 import { OUTBOX_EVENT, outboxList, outboxPut, outboxRemove, type OutboxItem } from '@/shared/lib';
 import { SAVE_KEY } from '@/shared/ui';
-import { UPLOAD_LIMIT } from './shared';
+import { itemPhotoPaths, ITEM_PHOTO_LIMIT, UPLOAD_LIMIT } from './shared';
 
 export type RecordInput = RecordDetails & {
   id: string; // 폼을 열 때 만듭니다. 실패 후 다시 저장해도 기록이 중복되지 않습니다.
@@ -28,34 +28,63 @@ export type RecordInput = RecordDetails & {
   removedPhotos: Pick<RecordPhoto, 'id' | 'storage_path'>[];
   nextPosition: number;
   fish: FishInput[];
-  removedFish: Pick<FishCatch, 'id' | 'photo_path'>[];
+  removedFish: Pick<FishCatch, 'id' | 'photo_path' | 'extra_photo_paths'>[];
   menuItems: MenuInput[];
-  removedMenu: Pick<MenuItem, 'id' | 'photo_path'>[];
+  removedMenu: Pick<MenuItem, 'id' | 'photo_path' | 'extra_photo_paths'>[];
 };
 
-/** 저장할 물고기. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
-export type FishInput = Omit<FishCatch, 'photo_url'> & { file: File | null; removePhoto: boolean };
+/**
+ * 한 칸(물고기·음식)의 사진: 남길 기존 사진 경로(keptPhotos, 순서대로)와 새로 올릴 파일(files). 합쳐서 5장까지이고 첫 장이 대표 사진입니다.
+ * photo_path·extra_photo_paths는 폼을 열 때의 값으로, 빠진 사진 파일을 지우는 데 씁니다.
+ * (예전 저장 대기열 항목은 file·removePhoto 모양이라 photosOf가 함께 읽습니다.)
+ */
+type ItemPhotos = { keptPhotos?: string[]; files?: File[]; file?: File | null; removePhoto?: boolean };
 
-/** 저장할 메뉴. 새 사진(file)을 고르면 올리고, removePhoto면 지금 사진을 지웁니다. */
-export type MenuInput = Omit<MenuItem, 'photo_url'> & { file: File | null; removePhoto: boolean };
+/** 저장할 물고기 */
+export type FishInput = Omit<FishCatch, 'photo_url' | 'photo_thumb_url' | 'extra_photos'> & ItemPhotos;
+
+/** 저장할 메뉴 */
+export type MenuInput = Omit<MenuItem, 'photo_url' | 'photo_thumb_url' | 'extra_photos'> & ItemPhotos;
+
+const photosOf = (item: ItemPhotos & { photo_path: string | null; extra_photo_paths?: string[] }) => ({
+  kept: item.keptPhotos ?? (item.removePhoto || item.file ? [] : itemPhotoPaths(item)),
+  files: item.files ?? (item.file ? [item.file] : []),
+});
+
+/** 파일 이름을 경로에 쓸 수 있는 짧은 글자로 바꿉니다(한글·공백을 경로에 넣지 않음). */
+const nameHash = (name: string) => [...name].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36);
+
+/** 폼에서만 쓰는 사진 값을 뺀 DB 행 */
+const rowOf = (input: object) => Object.fromEntries(Object.entries(input).filter(([key]) => !['file', 'removePhoto', 'keptPhotos', 'files'].includes(key)));
+
+/** 새 사진을 올리고, 남길 사진과 합쳐 대표(photo_path)와 나머지(extra_photo_paths)로 나눕니다. 빠진 옛 사진 경로도 돌려줍니다. */
+const placeItemPhotos = async (recordId: string, prefix: 'fish' | 'menu', item: ItemPhotos & { id: string; photo_path: string | null; extra_photo_paths?: string[] }, label: string) => {
+  const { kept, files } = photosOf(item);
+  const uploaded: string[] = [];
+  for (const [index, file] of files.entries()) {
+    // 같은 저장 내용이면 같은 경로가 되어 다시 저장해도 중복되지 않습니다. 순서와 이름을 넣어, 크기·시각이 같은 사진끼리도 겹치지 않습니다.
+    const path = `${recordId}/${prefix}-${item.id}-${file.lastModified}-${file.size}-${nameHash(file.name)}-${index}.jpg`;
+    const upload = await uploadPhoto(path, file);
+    if (upload.error) throw new Error(`${label} 사진을 올리지 못했습니다: ${file.name}`);
+    uploaded.push(path);
+  }
+  const all = [...new Set([...kept, ...uploaded])].slice(0, ITEM_PHOTO_LIMIT);
+  const stale = itemPhotoPaths(item).filter((path) => !all.includes(path));
+  return { photo_path: all[0] ?? null, extra_photo_paths: all.slice(1), stale };
+};
 
 const saveFish = async (recordId: string, fish: FishInput[], removed: RecordInput['removedFish']) => {
   if (removed.length) {
     const removal = await supabase.from('fish_catches').delete().in('id', removed.map((item) => item.id));
     if (removal.error) throw new Error('물고기 기록을 삭제하지 못했습니다.');
-    await removePhotos(removed.map((item) => item.photo_path));
+    await removePhotos(removed.flatMap(itemPhotoPaths));
   }
-  await forEachLimit(fish, UPLOAD_LIMIT, async ({ file, removePhoto, ...item }, position) => {
-    let photo_path = removePhoto ? null : item.photo_path;
-    if (file) {
-      // 같은 파일은 같은 경로가 되어 다시 저장해도 중복되지 않습니다.
-      photo_path = `${recordId}/fish-${item.id}-${file.lastModified}-${file.size}.jpg`;
-      const upload = await uploadPhoto(photo_path, file);
-      if (upload.error) throw new Error(`물고기 사진을 올리지 못했습니다: ${file.name}`);
-    }
-    const row = await supabase.from('fish_catches').upsert({ ...item, record_id: recordId, photo_path, position });
+  await forEachLimit(fish, UPLOAD_LIMIT, async (input, position) => {
+    const item = rowOf(input);
+    const photos = await placeItemPhotos(recordId, 'fish', input, '물고기');
+    const row = await supabase.from('fish_catches').upsert({ ...item, record_id: recordId, photo_path: photos.photo_path, extra_photo_paths: photos.extra_photo_paths, position });
     if (row.error) throw new Error('물고기 기록을 저장하지 못했습니다.');
-    if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
+    if (photos.stale.length) await removePhotos(photos.stale); // 바꾸거나 지운 옛 사진
   });
 };
 
@@ -63,18 +92,14 @@ const saveMenu = async (recordId: string, items: MenuInput[], removed: RecordInp
   if (removed.length) {
     const removal = await supabase.from('menu_items').delete().in('id', removed.map((item) => item.id));
     if (removal.error) throw new Error('음식을 삭제하지 못했습니다.');
-    await removePhotos(removed.map((item) => item.photo_path));
+    await removePhotos(removed.flatMap(itemPhotoPaths));
   }
-  await forEachLimit(items, UPLOAD_LIMIT, async ({ file, removePhoto, ...item }) => {
-    let photo_path = removePhoto ? null : item.photo_path;
-    if (file) {
-      photo_path = `${recordId}/menu-${item.id}-${file.lastModified}-${file.size}.jpg`;
-      const upload = await uploadPhoto(photo_path, file);
-      if (upload.error) throw new Error(`음식 사진을 올리지 못했습니다: ${file.name}`);
-    }
-    const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path });
+  await forEachLimit(items, UPLOAD_LIMIT, async (input) => {
+    const item = rowOf(input);
+    const photos = await placeItemPhotos(recordId, 'menu', input, '음식');
+    const row = await supabase.from('menu_items').upsert({ ...item, record_id: recordId, photo_path: photos.photo_path, extra_photo_paths: photos.extra_photo_paths });
     if (row.error) throw new Error('음식을 저장하지 못했습니다.');
-    if (item.photo_path && item.photo_path !== photo_path) await removePhotos([item.photo_path]); // 바꾸거나 지운 옛 사진
+    if (photos.stale.length) await removePhotos(photos.stale); // 바꾸거나 지운 옛 사진
   });
 };
 
@@ -206,7 +231,7 @@ const deleteRecord = async (record: PlaceRecord) => {
   // 기록을 먼저 지웁니다. 삭제에 실패했을 때 남은 기록의 사진이 깨지지 않습니다.
   const { error } = await supabase.from('records').delete().eq('id', record.id);
   if (error) throw new Error('기록을 삭제하지 못했습니다.');
-  await removePhotos([...record.photos.map((photo) => photo.storage_path), ...record.fish.map((fish) => fish.photo_path), ...record.menu_items.map((item) => item.photo_path)]);
+  await removePhotos([...record.photos.map((photo) => photo.storage_path), ...record.fish.flatMap(itemPhotoPaths), ...record.menu_items.flatMap(itemPhotoPaths)]);
 };
 
 export const useDeleteRecord = () => {

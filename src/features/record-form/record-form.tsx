@@ -57,9 +57,12 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
       species: item.species,
       length: String(item.length_cm),
       photo_path: item.photo_path,
-      photo_url: item.photo_url,
-      file: null,
-      removePhoto: false,
+      extra_photo_paths: item.extra_photo_paths ?? [],
+      photos: [
+        ...(item.photo_path ? [{ path: item.photo_path, url: item.photo_thumb_url ?? item.photo_url }] : []),
+        ...(item.extra_photos ?? []).map((photo) => ({ path: photo.path, url: photo.thumb ?? photo.url })),
+      ],
+      files: [],
     })),
   );
   const [checkedFish, setCheckedFish] = useState(false);
@@ -121,9 +124,10 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           species: item.species.trim(),
           length_cm: Number(item.length),
           photo_path: item.photo_path,
+          extra_photo_paths: item.extra_photo_paths,
           position,
-          file: item.file,
-          removePhoto: item.removePhoto,
+          keptPhotos: item.photos.map((photo) => photo.path),
+          files: item.files,
         })),
         removedFish: (record?.fish ?? []).filter((item) => !keptFish.some((next) => next.id === item.id)),
         menuItems: keptMenu.map((row, position) => ({
@@ -133,9 +137,10 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           rating: itemRating(row),
           angler_ratings: toRatings(row.ratings),
           photo_path: row.photo_path,
+          extra_photo_paths: row.extra_photo_paths,
           position,
-          file: row.file,
-          removePhoto: row.removePhoto,
+          keptPhotos: row.photos.map((photo) => photo.path),
+          files: row.files,
         })),
         removedMenu: (record?.menu_items ?? []).filter((item) => !keptMenu.some((next) => next.id === item.id)),
     };

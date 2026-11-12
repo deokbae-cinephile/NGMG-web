@@ -1,5 +1,9 @@
 /* 지도: 지도 바탕, 핀, 평점 안내, 현재 위치, 날씨, 말풍선, 사진 모음 */
 @layer components {
+  /* 지도 위 안내·단추(평점·날씨·지도 단추)와 지도 가장자리 사이. 목록 위 장소 추가·목록 확대 단추가 칸 가장자리에서 떨어진 만큼(1.25rem)입니다. */
+  :root {
+    --map-inset: 1.25rem;
+  }
   /* 지도 바탕(타일 이미지)만 흑백에 가깝게 하고 핀 색은 그대로 둡니다. */
   .map img {
     filter: grayscale(0.85) contrast(1.05);
@@ -125,8 +129,8 @@
   }
   .map-legend {
     position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
+    top: var(--map-inset);
+    left: var(--map-inset);
     z-index: 10;
     display: flex;
     height: 2.5rem; /* 오른쪽 날씨 상자와 같은 높이 */
@@ -162,22 +166,7 @@
     width: 1.625rem;
   }
 
-  /* 현재 위치 단추: 지도 오른쪽 아래(카카오 축척 표시와 겹치지 않는 쪽). 위성 단추와 같은 모양입니다. */
-  .map-locate {
-    position: absolute;
-    right: 0.75rem;
-    bottom: 0.75rem;
-    z-index: 10;
-    display: flex;
-    width: 2.5rem;
-    height: 2.5rem;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--color-ink);
-    background: var(--color-paper);
-    color: var(--color-ink);
-    cursor: pointer;
-  }
+  /* 현재 위치 단추: 지도 단추 묶음(.map-tools) 맨 아래 칸. 모양은 .map-tool과 같습니다. */
   .map-locate:disabled {
     cursor: progress;
   }
@@ -195,9 +184,9 @@
     align-items: flex-start;
     gap: 0.5rem;
     position: absolute;
-    right: calc(0.75rem + 2.5rem + 0.5rem); /* 오른쪽 지도 단추 줄(현재 위치·지도 단추)을 비워 겹치지 않게 합니다. */
-    bottom: 0.75rem;
-    left: 0.75rem;
+    right: calc(var(--map-inset) + 2.5rem + 0.5rem); /* 오른쪽 지도 단추 줄을 비워 겹치지 않게 합니다. */
+    bottom: var(--map-inset);
+    left: var(--map-inset);
     z-index: 11;
     border: 1px solid var(--color-ink);
     background: var(--color-paper);
@@ -208,8 +197,8 @@
   /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.5rem) 가로는 두 배입니다. */
   .weather-badge {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
+    top: var(--map-inset);
+    right: var(--map-inset);
     z-index: 10;
     display: flex;
     width: 5rem;
@@ -299,16 +288,21 @@
     overflow-y: auto;
     background: var(--color-paper);
   }
-  /* 지도 위 단추 묶음: 오른쪽 아래 현재 위치 단추(2.5rem) 바로 위에 틈 없이 세로로 쌓습니다(겹치는 선은 1px 하나로). */
+  /* 지도 위 단추 묶음: 오른쪽 아래에 틈 없이 세로로 쌓습니다(겹치는 선은 1px 하나로). 맨 아래는 접기·펼치기 단추입니다. */
   .map-tools {
     position: absolute;
-    right: 0.75rem;
-    bottom: calc(0.75rem + 2.5rem - 1px);
+    right: var(--map-inset);
+    bottom: var(--map-inset);
     z-index: 10;
     display: flex;
     flex-direction: column;
   }
-  .map-tools > * + * {
+  .map-tools-items {
+    display: flex;
+    flex-direction: column;
+  }
+  .map-tools-items > * + *,
+  .map-tools-items:not([hidden]) + .map-tools-toggle {
     margin-top: -1px;
   }
   .map-tool {

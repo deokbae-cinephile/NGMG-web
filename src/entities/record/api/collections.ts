@@ -41,11 +41,11 @@ export const usePlaceFishPhotos = (placeId?: string) =>
     enabled: Boolean(placeId),
     queryFn: async (): Promise<PlaceFishPhoto[]> => {
       // 사진이 많아도 빠지지 않게 1000장씩 모두 받은 뒤 최근 순으로 정렬합니다.
-      const rows: (PlaceFishPhoto & { record: { visited_on: string } })[] = [];
+      const rows: (PlaceFishPhoto & { extra_photo_paths: string[] | null; record: { visited_on: string } })[] = [];
       for (let from = 0; ; from += 1000) {
         const { data, error } = await supabase
           .from('fish_catches')
-          .select('id, angler, species, length_cm, photo_path, record:records!inner(visited_on, place_id)')
+          .select('id, angler, species, length_cm, photo_path, extra_photo_paths, record:records!inner(visited_on, place_id)')
           .eq('record.place_id', placeId!)
           .not('photo_path', 'is', null)
           .order('id')
@@ -54,8 +54,17 @@ export const usePlaceFishPhotos = (placeId?: string) =>
         rows.push(...(data as unknown as typeof rows));
         if (data.length < 1000) break;
       }
+      // 한 마리에 사진이 여러 장이면 모두 모아 보여 줍니다(대표 사진 먼저).
       return rows
-        .map(({ record, ...fish }) => ({ ...fish, length_cm: Number(fish.length_cm), visited_on: record.visited_on }))
+        .flatMap(({ record, extra_photo_paths, ...fish }) =>
+          [fish.photo_path, ...(extra_photo_paths ?? [])].map((photo_path, index) => ({
+            ...fish,
+            id: index ? `${fish.id}-${index}` : fish.id,
+            photo_path,
+            length_cm: Number(fish.length_cm),
+            visited_on: record.visited_on,
+          })),
+        )
         .sort((a, b) => b.visited_on.localeCompare(a.visited_on) || b.length_cm - a.length_cm);
     },
   });

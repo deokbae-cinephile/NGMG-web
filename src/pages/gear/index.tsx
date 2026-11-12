@@ -46,8 +46,9 @@ export const GearPage = () => {
               <h3 className="mono-label">{kind}</h3>
               <ul className="flex flex-col">
                 {items.map((item) => (
-                  <li key={item.id} className="panel flex flex-wrap items-center justify-between gap-2">
-                    <span className="flex min-w-0 flex-col gap-1">
+                  <li key={item.id} className="panel flex items-center justify-between gap-3">
+                    {/* 수정·삭제는 늘 오른쪽에 두고, 물품 이름이 길면 이름만 줄을 바꿉니다. */}
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
                       <GearTag gear={item} />
                       {item.memo && <span className="text-sm text-muted break-words">{item.memo}</span>}
                     </span>

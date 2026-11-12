@@ -4,9 +4,9 @@ import { ALL_KINDS, BASE_PLACE, ClosedToday, formatHours, KIND_LABEL, KindBadge 
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather, WeatherBadge } from '@/entities/weather';
 import type { Place } from '@/shared/api';
-import { Link, useTheme } from '@/shared/lib';
+import { getPreference, Link, setPreference, useTheme } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
-import { LocateControl } from './locate-control';
+import { useLocateControl } from './locate-control';
 import { MapLegend } from './map-legend';
 import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets, START_VIEW } from './pins';
 import { useKakaoMap } from './use-kakao-map';
@@ -20,11 +20,13 @@ type Props = {
   onPick: (latitude: number, longitude: number) => void;
   /** 같은 장소를 다시 골라도 지도를 그 장소로 옮기도록, 고를 때마다 바뀌는 값 */
   focusKey?: number;
-  /** 현재 위치 단추 바로 위에 붙일 지도 단추 묶음(화면 쪽에서 넘김) */
+  /** 현재 위치 단추 위에 붙일 지도 단추들(화면 쪽에서 넘김) */
   tools?: ReactNode;
+  /** 지도를 화면 전체로 키웠는지. 키우면 지도 단추를 모두 보여 줍니다. */
+  expanded?: boolean;
 };
 
-export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools }: Props) => {
+export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPick, focusKey, tools, expanded = false }: Props) => {
   const container = useRef<HTMLDivElement>(null);
   const dark = useTheme() === 'dark';
 
@@ -34,7 +36,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const selected = selectedId === BASE_PLACE.id ? BASE_PLACE : places.find((place) => place.id === selectedId);
   const isBase = selected?.id === BASE_PLACE.id;
   // 고른 핀(무악재역 포함) 자리의 지금 날씨를 왼쪽 아래에 띄웁니다. 못 받으면 상자를 띄우지 않습니다.
-  const weather = useCurrentWeather(selected);
+  // 현재 위치 단추로 찾은 곳. 고른 장소가 없을 때 그곳 날씨를 보여 줍니다(장소를 고르면 그 장소 날씨가 먼저).
+  const [here, setHere] = useState<{ latitude: number; longitude: number }>();
+  const weatherTarget = selected ?? here;
+  const weather = useCurrentWeather(weatherTarget);
   // 모든 핀(무악재역 포함)의 날씨를 한 번에 미리 받아, 핀을 누르면 바로 보이게 합니다.
   // 장소 목록을 받은 뒤 한 번에 보냅니다(받기 전에 무악재역만 따로 보내지 않게).
   usePrefetchWeather(useMemo(() => (places.length ? [BASE_PLACE, ...places] : []), [places]));
@@ -59,6 +64,8 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     latest.current = { picking, onPick };
   });
   const { map, error, tilesReady } = useKakaoMap(container, latest);
+  const [toolsOpen, setToolsOpen] = useState(() => getPreference('map-tools-open', true));
+  const locateControl = useLocateControl({ map, onMove: onClose, onLocated: (latitude, longitude) => setHere({ latitude, longitude }) });
 
   useEffect(() => {
     if (!map) return;
@@ -207,11 +214,14 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     const node = popup.current;
     const area = container.current;
     if (!map || !selected || !node || !area || typeof ResizeObserver === 'undefined') return;
-    const MARGIN = 8;
     const fit = () => {
       if (moving.current) return; // 옮기기가 끝난 뒤 다시 부릅니다.
-      const top = node.getBoundingClientRect().top - area.getBoundingClientRect().top;
-      if (top < MARGIN) map.instance.panBy(0, top - MARGIN); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
+      const areaTop = area.getBoundingClientRect().top;
+      // 위쪽 평점 안내·날씨 상자 아래로 8px 띄워, 말풍선이 그 밑에 가리지 않게 합니다.
+      const widgets = [...(area.parentElement?.querySelectorAll<HTMLElement>('.map-legend, .weather-badge') ?? [])];
+      const margin = Math.max(8, ...widgets.map((widget) => widget.getBoundingClientRect().bottom - areaTop + 8));
+      const top = node.getBoundingClientRect().top - areaTop;
+      if (top < margin) map.instance.panBy(0, top - margin); // 음수로 옮기면 지도 내용이 아래로 내려옵니다.
     };
     fitPopup.current = fit;
     const observer = new ResizeObserver(fit);
@@ -240,6 +250,34 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
     container.current?.focus({ preventScroll: true });
   };
 
+  // 지도 오른쪽 아래 단추 묶음: 화면이 넘긴 단추(지도 확대·위치 지정·무악재역)와 현재 위치를 틈 없이 쌓고, 맨 아래 단추로 접고 펼칩니다.
+  // 평점 안내처럼 처음엔 펼쳐 두고 고른 상태를 기억합니다. 지도를 키우면 모두 보여 주고 접기 단추는 감춥니다.
+  const showTools = expanded || toolsOpen;
+  const toolGroup = (
+    <div role="group" aria-label="지도 단추" className="map-tools">
+      <div id="map-tools-items" className="map-tools-items" hidden={!showTools}>
+        {tools}
+        {locateControl.button}
+      </div>
+      {!expanded && (
+        <button
+          type="button"
+          className="map-tool map-tools-toggle"
+          aria-expanded={toolsOpen}
+          aria-controls="map-tools-items"
+          aria-label={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+          title={toolsOpen ? '지도 단추 접기' : '지도 단추 펼치기'}
+          onClick={() => {
+            setToolsOpen(!toolsOpen);
+            setPreference('map-tools-open', !toolsOpen);
+          }}
+        >
+          <Icon name={toolsOpen ? 'chevronDown' : 'chevronUp'} size={20} />
+        </button>
+      )}
+    </div>
+  );
+
   if (error) {
     return (
       <>
@@ -247,7 +285,7 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           지도를 불러오지 못했습니다. 목록과 검색으로 장소를 관리할 수 있습니다.
         </div>
         {/* 지도를 확대한 채 실패해도 '지도 작게'로 돌아올 수 있게 단추 묶음은 남깁니다. */}
-        {tools}
+        {toolGroup}
       </>
     );
   }
@@ -259,9 +297,9 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
       <MapLegend />
       {/* 오른쪽 위 날씨: 고른 핀 자리의 날씨 아이콘과 기온. 고르지 않았거나 받는 중·실패면 날씨 상징 아이콘만 둡니다(예전 날씨를 지금처럼 보여 주지 않음). */}
       {/* 다시 받는 중(isFetching)에도 예전 기온을 지금 날씨처럼 보이지 않게 아이콘만 둡니다. */}
-      <WeatherBadge place={selected?.name} weather={selected && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError && !weather.isFetching} />
-      {tools}
-      <LocateControl map={map} onMove={onClose} />
+      <WeatherBadge place={selected?.name ?? (here ? '현재 위치' : undefined)} weather={weatherTarget && !weather.isError && !weather.isFetching ? weather.data : undefined} failed={weather.isError && !weather.isFetching} />
+      {toolGroup}
+      {locateControl.notices}
       {selected &&
         createPortal(
           <div

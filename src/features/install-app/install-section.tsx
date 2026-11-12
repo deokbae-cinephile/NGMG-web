@@ -19,7 +19,7 @@ export const InstallSection = () => {
     return (
       <div className="flex flex-col items-start gap-2">
         <p className="text-sm text-muted">홈 화면이나 바탕화면에 앱으로 설치하면 주소창 없이 바로 열 수 있습니다.</p>
-        {/* 설정의 '알림 켜기'와 같은 글자 단추(사용자 요청) */}
+        {/* 글자 단추(사용자 요청) */}
         <button type="button" className="button" onClick={() => void install(prompt)}>
           앱 설치
         </button>

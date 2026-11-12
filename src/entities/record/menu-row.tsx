@@ -1,5 +1,6 @@
 import type { MenuItem } from '@/shared/api';
 import { Icon } from '@/shared/ui';
+import { ItemExtraPhotos } from './item-extra-photos';
 import { isPartialRating, missingRaters, ratingDetail } from './model';
 
 /** 음식 평점 글: 두 사람 평균, 한 사람만 줬으면 기다리는 사람과 준 평점('김 조사 평점을 기다리는 중 (류 조사 3.5점)'), 예전 기록은 그때 준 평점 */
@@ -26,6 +27,7 @@ export const MenuRow = ({ item }: { item: MenuItem }) => {
         <span className="break-words">{item.name}</span>
         {item.price !== null && <span className="text-sm text-muted">{`${item.price.toLocaleString('ko-KR')}원`}</span>}
         {rating && <span className="text-sm text-muted">{rating}</span>}
+        <ItemExtraPhotos photos={item.extra_photos} label={item.name} />
       </span>
     </div>
   );

@@ -126,7 +126,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 ## 화면 설정 저장
 
-지도 위치(`map-view`), 평점 안내 여닫기(`map-legend-open`), 기록 분류 필터(`records-filter`), 화면 테마(`theme`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다. 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
+지도 위치(`map-view`), 평점 안내 여닫기(`map-legend-open`), 기록 분류 필터(`records-filter`), 화면 테마(`theme`), 지도 단추 펼침(`map-tools-open`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다. 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
 
 ## 디자인 토큰
 
@@ -148,9 +148,9 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 ## 단추 원칙
 
 - 단추는 글자 없는 아이콘 단추로 씁니다(`src/shared/ui/icon-button.tsx`의 `IconButton`, 화면 이동은 `IconLink`). 이름은 `aria-label`로 화면 읽기 프로그램에, `title`로 마우스를 올린 사람에게 알리고, 누르는 면적은 44px입니다.
-- 글자를 그대로 두는 예외: 분류 필터(아이콘이지만 고른 분류 이름을 '분류 · 낚시'처럼 글자로도 보여 줌), 화면 테마('다크 모드' 스위치, `role="switch"`), 알림 켜기·끄기와 같은 모양의 앱 설치, 이름 자체를 고르는 단추(도감 탭, 조사 탭, 어종 빠른 선택, 달력 연·월 고르기).
+- 글자를 그대로 두는 예외: 분류 필터(아이콘이지만 고른 분류 이름을 '분류 · 낚시'처럼 글자로도 보여 줌), 화면 테마('다크 모드')와 알림('이 기기에서 알림 받기')은 스위치(`role="switch"`), 앱 설치는 글자 단추, 이름 자체를 고르는 단추(도감 탭, 조사 탭, 어종 빠른 선택, 달력 연·월 고르기).
 - 주요 단추(`button-primary`)·삭제 단추(`button-accent`)에도 아이콘 크기가 지켜지도록 `.button.icon-only`로 여백을 덮습니다. 이 규칙이 깨지면 아이콘이 0px로 사라지므로, E2E의 '아이콘 단추' 검사가 모든 화면을 라이트·다크로 확인합니다.
-- 지도 위 단추는 오른쪽 아래에 위에서부터 지도 확대/작게(토글), 위치 지정, 무악재역, 현재 위치 순서로 틈 없이 붙여 쌓습니다(`role="group"` '지도 단추', 겹치는 선은 1px). 묶음은 `PlaceMap`의 `tools`로 넘겨 현재 위치 단추 바로 앞에 그리므로 키보드 이동 순서가 화면 순서와 같습니다. 목록 위는 장소 추가를 왼쪽 끝, 목록 확대를 오른쪽 끝에 두고, 분류 필터는 틈 없이 붙입니다.
+- 지도 위 단추는 오른쪽 아래에 위에서부터 지도 확대/작게(토글), 위치 지정, 무악재역, 현재 위치, 접기·펼치기 순서로 틈 없이 붙여 쌓습니다(`role="group"` '지도 단추', 겹치는 선은 1px). 평점 안내처럼 처음엔 펼쳐 두고 상태를 기억하며(`map-tools-open`), 지도를 키우면 모두 보여 줍니다. 화면이 넘긴 단추(`PlaceMap`의 `tools`) 뒤에 현재 위치 단추를 그려 키보드 이동 순서가 화면 순서와 같습니다. 지도 위 안내·단추는 지도 가장자리에서 1.25rem(`--map-inset`, 목록 위 단추와 같은 간격)이고, 말풍선은 위쪽 안내 아래로만 올라옵니다. 목록 위는 장소 추가를 왼쪽 끝, 목록 확대를 오른쪽 끝에 두고, 분류 필터는 틈 없이 붙입니다.
 - UI를 바꾸면 휴대폰·PC와 라이트·다크로 전체 화면을 찍어 직접 확인한 뒤 올립니다.
 
 ## 첫 로딩과 화면 전환
@@ -163,7 +163,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
 - Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.
-- 사진은 올릴 때 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올립니다(`forEachLimit`). 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
+- 사진은 올릴 때 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 잡은 물고기·음식은 칸마다 5장까지이며, 대표(첫) 사진은 `photo_path`, 나머지 4장은 `extra_photo_paths`에 둡니다(`20261125000000_item_photos.sql`). 도감·사진 모아 보기의 대표 사진은 `photo_path`를 그대로 씁니다. 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올립니다(`forEachLimit`). 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
 - 사진 여러 장은 브라우저 기본 가로 스크롤(scroll-snap)로 넘깁니다. 슬라이드 라이브러리(Embla)는 일부 휴대폰에서 밀어도 넘어가지 않아 걷어 냈습니다. 슬라이드 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
 - 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답(DB는 요청 토큰의 사용자별로 따로 저장)을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받고, 저장은 `always`라 오프라인이면 바로 실패를 알립니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
