@@ -140,6 +140,25 @@ test('기록 검색: 어종·장소 이름으로 찾는다', async ({ page }) =>
   await expectAccessible(page);
 });
 
+test('기록: 크기·시각이 같은 사진 두 장도 서로 덮어쓰지 않고 모두 저장한다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  await page.goto('./places/p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByLabel('사진 추가').setInputFiles([
+    { name: '연속-1.png', mimeType: 'image/png', buffer: png },
+    { name: '연속-2.png', mimeType: 'image/png', buffer: png },
+  ]);
+  await expect(dialog.getByRole('img', { name: '올릴 사진 2 미리보기' })).toBeVisible();
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  const recordId = db.records!.at(-1)!.id;
+  const paths = db.record_photos!.filter((photo) => photo.record_id === recordId).map((photo) => photo.storage_path);
+  expect(paths).toHaveLength(2);
+  expect(new Set(paths).size).toBe(2);
+});
+
 test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인원·동행을 보이지 않는다', async ({ page }) => {
   const base = seed();
   base.records![0] = { ...base.records![0]!, people: 2, companions: '국환, 창선' };

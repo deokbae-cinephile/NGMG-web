@@ -1,9 +1,8 @@
 /** 기록 저장·삭제와 연결이 없을 때의 저장 대기열 */
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { forEachLimit } from '@/shared/lib';
 import { removePhotos, supabase, uploadPhoto, type AnglerRatings, type FishCatch, type MenuItem, type PlaceRecord, type RecordDetails, type RecordGearSet, type RecordPhoto } from '@/shared/api';
-import { OUTBOX_EVENT, outboxList, outboxPut, outboxRemove, type OutboxItem } from '@/shared/lib';
+import { forEachLimit, OUTBOX_EVENT, outboxList, outboxPut, outboxRemove, photoFileKey, type OutboxItem } from '@/shared/lib';
 import { SAVE_KEY } from '@/shared/ui';
 import { itemPhotoPaths, ITEM_PHOTO_LIMIT, UPLOAD_LIMIT } from './shared';
 
@@ -51,9 +50,6 @@ const photosOf = (item: ItemPhotos & { photo_path: string | null; extra_photo_pa
   files: item.files ?? (item.file ? [item.file] : []),
 });
 
-/** 파일 이름을 경로에 쓸 수 있는 짧은 글자로 바꿉니다(한글·공백을 경로에 넣지 않음). */
-const nameHash = (name: string) => [...name].reduce((hash, char) => (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36);
-
 /** 폼에서만 쓰는 사진 값을 뺀 DB 행 */
 const rowOf = (input: object) => Object.fromEntries(Object.entries(input).filter(([key]) => !['file', 'removePhoto', 'keptPhotos', 'files'].includes(key)));
 
@@ -63,7 +59,7 @@ const placeItemPhotos = async (recordId: string, prefix: 'fish' | 'menu', item: 
   const uploaded: string[] = [];
   for (const [index, file] of files.entries()) {
     // 같은 저장 내용이면 같은 경로가 되어 다시 저장해도 중복되지 않습니다. 순서와 이름을 넣어, 크기·시각이 같은 사진끼리도 겹치지 않습니다.
-    const path = `${recordId}/${prefix}-${item.id}-${file.lastModified}-${file.size}-${nameHash(file.name)}-${index}.jpg`;
+    const path = `${recordId}/${prefix}-${item.id}-${photoFileKey(file, index)}.jpg`;
     const upload = await uploadPhoto(path, file);
     if (upload.error) throw new Error(`${label} 사진을 올리지 못했습니다: ${file.name}`);
     uploaded.push(path);
@@ -127,9 +123,10 @@ const saveRecord = async ({ files, removedPhotos, nextPosition, fish, removedFis
     await removePhotos(removedPhotos.map((photo) => photo.storage_path));
   }
 
-  // 사진은 3장씩 함께 올립니다. 같은 파일은 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
+  // 사진은 3장씩 함께 올립니다. 같은 파일·같은 순서는 같은 경로가 되어, 일부만 올라간 뒤 다시 저장해도 사진이 중복되지 않습니다.
+  // 크기·시각이 같은 사진(연속 촬영 등)끼리 덮어쓰지 않도록 이름과 순서도 경로에 넣습니다.
   await forEachLimit(files, UPLOAD_LIMIT, async (file, index) => {
-    const path = `${values.id}/${file.lastModified}-${file.size}.jpg`;
+    const path = `${values.id}/${photoFileKey(file, nextPosition + index)}.jpg`;
     const upload = await uploadPhoto(path, file);
     if (upload.error) throw new Error(`사진을 올리지 못했습니다: ${file.name}`);
     const row = await supabase

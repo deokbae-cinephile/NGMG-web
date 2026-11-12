@@ -1,3 +1,4 @@
+import { photoFileKey } from '@/shared/lib';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { removePhotos, signPhotos, supabase, uploadPhoto, type Place, type PlaceDraft } from '@/shared/api';
 import { SAVE_KEY } from '@/shared/ui';
@@ -34,7 +35,7 @@ export const savePlace = async ({ id, isNew, photo, removePhoto, ...values }: Sa
   if (photo || removePhoto) {
     let path: string | null = null;
     if (photo) {
-      path = `places/${saved.id}/${photo.lastModified}-${photo.size}.jpg`;
+      path = `places/${saved.id}/${photoFileKey(photo)}.jpg`; // 크기·시각이 같은 사진으로 바꿔도 예전 파일을 덮어쓰지 않습니다.
       const upload = await uploadPhoto(path, photo);
       if (upload.error) throw new Error('장소 사진을 올리지 못했습니다.');
     }
