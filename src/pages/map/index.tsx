@@ -59,8 +59,7 @@ export const MapPage = () => {
     const before = previous.current;
     previous.current = expanded;
     if (!before || expanded) return;
-    // 지도 단추를 접어 둔 채 키웠다 줄이면 지도 확대 단추가 감춰지므로, 그때는 펼치기 단추로 초점을 옮깁니다.
-    const target = before === 'map' ? (mapToggle.current?.offsetParent ? mapToggle.current : document.querySelector<HTMLElement>('.map-tools-toggle')) : listToggle.current;
+    const target = before === 'map' ? mapToggle.current : listToggle.current;
     if (refocus.current) target?.focus({ preventScroll: true });
     refocus.current = true;
     afterCollapse.current?.();
@@ -182,19 +181,9 @@ export const MapPage = () => {
           onPick={onPick}
           focusKey={focusKey}
           // 현재 위치 단추 바로 앞에 그려, 키보드 이동 순서가 화면 위아래 순서와 같습니다.
+          // 왼쪽 위 여닫는 지도 단추(위치 지정·무악재역, 그 아래 현재 위치는 PlaceMap이 붙임)와 오른쪽 아래 지도 확대·작게 단추
           tools={
-            // 지도 위 단추(오른쪽 아래): 위에서부터 지도 확대·작게(토글), 위치 지정, 무악재역. 그 아래 현재 위치와 접기 단추는 PlaceMap이 붙입니다.
             <>
-              <button
-                ref={mapToggle}
-                type="button"
-                className="map-tool"
-                aria-label={expanded === 'map' ? '지도 작게' : '지도 확대'}
-                title={expanded === 'map' ? '지도 작게' : '지도 확대'}
-                onClick={() => (expanded === 'map' ? collapse() : expand('map'))}
-              >
-                <Icon name={expanded === 'map' ? 'minimize' : 'maximize'} size={20} />
-              </button>
               <Writable>
                 <button type="button" className="map-tool" aria-label="위치 지정" title={picking ? '위치 지정 취소' : '위치 지정'} aria-pressed={picking} onClick={togglePicking}>
                   <Icon name="mapPinPlus" size={20} />
@@ -211,6 +200,18 @@ export const MapPage = () => {
                 <Icon name="train" size={20} />
               </button>
             </>
+          }
+          corner={
+            <button
+              ref={mapToggle}
+              type="button"
+              className="map-tool"
+              aria-label={expanded === 'map' ? '지도 작게' : '지도 확대'}
+              title={expanded === 'map' ? '지도 작게' : '지도 확대'}
+              onClick={() => (expanded === 'map' ? collapse() : expand('map'))}
+            >
+              <Icon name={expanded === 'map' ? 'minimize' : 'maximize'} size={20} />
+            </button>
           }
         />
       </div>
@@ -282,9 +283,12 @@ export const MapPage = () => {
                       <DefaultImage icon={KIND_ICON[place.kind]} />
                     )}
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span className="flex max-w-full flex-wrap items-center gap-2">
-                        {/* 긴 이름은 한 줄로 줄입니다. 전체 이름은 자세히 보기에서 봅니다. */}
-                        <span className="min-w-0 max-w-full truncate" title={place.name}>{place.name}</span> <KindBadge kind={place.kind} /> <ClosedToday place={place} /> <RatingChip rating={ratings?.get(place.id)} />
+                      {/* 이름 줄은 늘 한 줄: 분류·휴무·평점 태그는 줄지 않고, 남는 폭만큼만 이름을 보여 주며 넘치면 말줄임합니다(이름 + 주소 두 줄). */}
+                      <span className="flex w-full min-w-0 items-center gap-2 [&>*:not(:first-child)]:shrink-0">
+                        <span className="min-w-0 truncate" title={place.name}>{place.name}</span>
+                        <KindBadge kind={place.kind} />
+                        <ClosedToday place={place} />
+                        <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                     </span>

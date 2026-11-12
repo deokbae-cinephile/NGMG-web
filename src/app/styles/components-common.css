@@ -276,6 +276,11 @@
     -webkit-text-stroke: 0.035em currentColor;
   }
 
+  /* 고를 수 없는 결과(예: 일정 날짜가 휴무일인 맛집): 흐리게 두고 이유를 함께 씁니다. */
+  .result:disabled {
+    cursor: not-allowed;
+    color: var(--color-muted);
+  }
   .result {
     display: flex;
     min-height: 2.75rem;
@@ -286,7 +291,7 @@
     cursor: pointer;
   }
   @media (hover: hover) {
-    .result:hover {
+    .result:not(:disabled):hover {
       background: var(--color-surface);
     }
   }

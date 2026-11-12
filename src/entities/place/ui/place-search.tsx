@@ -4,7 +4,8 @@ import { searchKakaoPlaces, type KakaoPlace } from '@/shared/lib';
 import { ErrorText, IconButton } from '@/shared/ui';
 import { KindBadge } from './kind-badge';
 
-type Props = { saved?: Place[]; onPick: (place: PlaceDraft) => void };
+/** unavailable: 저장한 장소를 고를 수 없는 이유(예: 일정 날짜가 휴무일). 있으면 그 장소는 누를 수 없고 이유를 보여 줍니다. */
+type Props = { saved?: Place[]; onPick: (place: PlaceDraft) => void; unavailable?: (place: Place) => string | undefined };
 
 const toDraft = ({ isRestaurant, ...place }: KakaoPlace): PlaceDraft => ({
   ...place,
@@ -12,7 +13,7 @@ const toDraft = ({ isRestaurant, ...place }: KakaoPlace): PlaceDraft => ({
 });
 
 /** 다른 폼 안에 들어가므로 form을 쓰지 않고 Enter를 직접 처리합니다. */
-export const PlaceSearch = ({ saved = [], onPick }: Props) => {
+export const PlaceSearch = ({ saved = [], onPick, unavailable }: Props) => {
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
   const [results, setResults] = useState<KakaoPlace[]>([]);
@@ -41,8 +42,14 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
     void search();
   };
 
-  const savedMatches = searched ? saved.filter((place) => place.name.toLowerCase().includes(searched.toLowerCase())) : [];
-  const count = savedMatches.length + results.length;
+  // 이미 저장한 장소(같은 이름, 약 50m 안)는 Kakao 결과에서 빼고 저장한 장소로만 고르게 합니다. 중복 저장과 휴무 제한 우회를 막습니다.
+  const savedFor = (place: KakaoPlace) =>
+    saved.find((item) => item.name === place.name && Math.abs(item.latitude - place.latitude) < 0.0005 && Math.abs(item.longitude - place.longitude) < 0.0005);
+  const newResults = results.filter((place) => !savedFor(place));
+  // 이름으로 찾은 저장 장소에, 주소 검색 등으로 Kakao 결과에서 빠진 저장 장소도 더해 보여 줍니다(빠진 결과를 고를 수 있게).
+  const byName = searched ? saved.filter((place) => place.name.toLowerCase().includes(searched.toLowerCase())) : [];
+  const savedMatches = [...new Map([...byName, ...results.flatMap((place) => savedFor(place) ?? [])].map((place) => [place.id, place])).values()];
+  const count = savedMatches.length + newResults.length;
 
   const clear = () => {
     setSearched('');
@@ -72,15 +79,18 @@ export const PlaceSearch = ({ saved = [], onPick }: Props) => {
         <ul className="max-h-60 divide-y divide-line overflow-y-auto border border-line">
           {savedMatches.map((place) => (
             <li key={place.id}>
-              <button type="button" className="result" onClick={() => { onPick(place); clear(); }}>
+              <button type="button" className="result" disabled={Boolean(unavailable?.(place))} aria-describedby={unavailable?.(place) ? `closed-${place.id}` : undefined} onClick={() => { onPick(place); clear(); }}>
                 <span className="flex items-center gap-2 font-semibold">
                   {place.name} <KindBadge kind={place.kind} />
                 </span>
                 <span className="text-sm text-muted">저장한 장소 · {place.address}</span>
+                {unavailable?.(place) && (
+                  <span id={`closed-${place.id}`} className="text-sm text-danger">{`${unavailable(place)}라 이 일정에는 고를 수 없습니다.`}</span>
+                )}
               </button>
             </li>
           ))}
-          {results.map((place) => (
+          {newResults.map((place) => (
             <li key={`${place.name}-${place.latitude}-${place.longitude}`}>
               <button type="button" className="result" onClick={() => { onPick(toDraft(place)); clear(); }}>
                 <span className="font-semibold">{place.name}</span>

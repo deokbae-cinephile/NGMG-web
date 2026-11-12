@@ -1,4 +1,5 @@
 import type { Place } from '@/shared/api';
+import { addDays, parseDateKey, toDateKey } from '@/shared/lib';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -15,4 +16,21 @@ export const formatHours = (place: Pick<Place, 'open_time' | 'close_time' | 'clo
   const time = open && close ? `${open}–${close}` : open ? `${open}부터` : '';
   const days = [...(place.closed_days ?? [])].sort().map((day) => WEEKDAYS[day]).filter(Boolean);
   return [time, days.length ? `${days.join('·')} 휴무` : ''].filter(Boolean).join(' · ');
+};
+
+/**
+ * 일정 날짜(시작~끝) 가운데 그 장소의 휴무 요일이 있으면 안내 글('11월 12일(수) 휴무')을, 없으면 undefined를 돌려줍니다.
+ * 휴무 요일이 없는 장소(낚시 포인트 등)와 아직 저장하지 않은 장소는 늘 undefined입니다.
+ */
+export const closedReason = (place: Partial<Pick<Place, 'closed_days'>>, start: string, end: string) => {
+  const closed = place.closed_days ?? [];
+  if (!closed.length || !start) return undefined;
+  const last = end && end >= start ? end : start;
+  // 7일이면 모든 요일을 지나므로 그 안에서 찾고, 찾는 즉시 멈춥니다(먼 종료 날짜를 넣어도 가볍게).
+  let date = parseDateKey(start);
+  if (Number.isNaN(date.getTime())) return undefined;
+  for (let step = 0; step < 7 && toDateKey(date) <= last; step += 1, date = addDays(date, 1)) {
+    if (closed.includes(date.getDay())) return `${date.getMonth() + 1}월 ${date.getDate()}일(${WEEKDAYS[date.getDay()]}) 휴무`;
+  }
+  return undefined;
 };

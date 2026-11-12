@@ -397,3 +397,35 @@ test('음식 가격 칸: 초점이 있을 때 마우스 휠을 굴려도 값이 
     await expect(dialog.getByText('0 이상의 정수로 입력해 주세요.')).toBeVisible();
   }
 });
+
+test('큰 사진(가로 5000px 이상)도 줄여 읽어 1600px 사진으로 올린다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./places/p1');
+  const big = Buffer.from(
+    (
+      await page.evaluate(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 5200;
+        canvas.height = 3900;
+        const context = canvas.getContext('2d')!;
+        context.fillStyle = '#3a7';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.6);
+      })
+    ).split(',')[1]!,
+    'base64',
+  );
+  const sizes: number[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/storage/v1/object/') && !request.url().includes('.thumb.')) sizes.push(request.postDataBuffer()?.length ?? 0);
+  });
+  const before = db.record_photos!.length;
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByLabel('사진 추가').setInputFiles({ name: '큰사진.jpg', mimeType: 'image/jpeg', buffer: big });
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+  expect(db.record_photos!.length).toBe(before + 1); // 새 사진 행이 저장됐습니다.
+  expect(sizes.length).toBeGreaterThan(0);
+  expect(Math.max(...sizes)).toBeLessThan(big.length); // 줄여서 올렸습니다.
+});

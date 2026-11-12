@@ -41,8 +41,9 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
 
   return (
     <article className="panel panel-roomy flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-1.5">
+      {/* 수정 단추(actions)는 늘 오른쪽 위에 둡니다. 내용이 길어도 다음 줄로 밀리지 않습니다. */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <p className="mono-label">
             {formatDateRange(record.visited_on, record.end_date)}
             {record.weather && (
@@ -55,7 +56,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           </p>
           {heading}
         </div>
-        {actions}
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
       <Rating record={record} />
       {record.catches && record.fish.length === 0 && (

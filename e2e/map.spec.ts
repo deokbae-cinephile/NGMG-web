@@ -8,7 +8,7 @@ test('지도: 검색으로 장소를 추가하고, 분류 필터는 다른 메�
   const db = await fakeBackend(page, seed());
   await page.goto('./');
   await expect(page.getByRole('button', { name: '거문도 방파제 (낚시) 선택' })).toBeVisible();
-  await expect(page.getByRole('img', { name: '기준 위치: 무악재역' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '무악재역 (기준 위치) 선택' })).toBeVisible();
   await expectFits(page);
   await expectAccessible(page);
 
@@ -92,7 +92,7 @@ test('지도: 장소를 빠르게 두 번 저장해도 하나만 생기고, 핀 
   // 지도를 눌러 위치를 지정하면 위도·경도가 채워진 새 장소 창이 열립니다.
   await page.getByRole('button', { name: '위치 지정', exact: true }).click();
   const box = (await page.getByTestId('map').boundingBox())!;
-  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } }); // 평점 안내·핀이 없는 자리
+  await page.getByTestId('map').click({ position: { x: box.width * 0.75, y: box.height * 0.45 } }); // 지도 단추·핀이 없는 자리
   dialog = page.getByRole('dialog', { name: '새 장소' });
   await dialog.getByLabel('이름').fill('새 포인트');
   await dialog.getByRole('button', { name: '저장' }).dblclick();
@@ -120,21 +120,25 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
   expect(db.removedFiles).toContain('r00/fish.jpg');
 });
 
-test('지도 단추: 오른쪽에 위에서부터 지도 확대·위치 지정·무악재역·현재 위치가 틈 없이 붙고, 목록 위는 장소 추가(왼쪽 끝)·목록 확대(오른쪽 끝)다. 무악재역은 길찾기 출발지다', async ({ page }) => {
+test('지도 단추: 왼쪽 위에 여닫기·위치 지정·무악재역·현재 위치가 위에서 아래로 틈 없이 붙고, 오른쪽 아래에는 지도 확대만 있다. 목록 위는 장소 추가(왼쪽 끝)·목록 확대(오른쪽 끝)다. 무악재역은 길찾기 출발지다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
   const tools = page.getByRole('group', { name: '지도 단추' });
   const base = tools.getByRole('button', { name: '무악재역', exact: true });
   await expect(base).toHaveAttribute('aria-pressed', 'false');
   const column = await Promise.all(
-    [tools.getByRole('button', { name: '지도 확대' }), tools.getByRole('button', { name: '위치 지정', exact: true }), base, page.getByRole('button', { name: '현재 위치로 이동' })].map((button) => button.boundingBox()),
+    [tools.getByRole('button', { name: '지도 단추 접기' }), tools.getByRole('button', { name: '위치 지정', exact: true }), base, tools.getByRole('button', { name: '현재 위치로 이동' })].map((button) => button.boundingBox()),
   );
+  const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
+  expect([Math.round(column[0]!.x - map.x), Math.round(column[0]!.y - map.y)]).toEqual([20, 20]); // 왼쪽 위
   for (let i = 1; i < column.length; i += 1) {
     expect(Math.round(column[i]!.x)).toBe(Math.round(column[0]!.x)); // 같은 세로줄
     expect(Math.round(column[i]!.y)).toBe(Math.round(column[i - 1]!.y + column[i - 1]!.height) - 1); // 틈 없이(선 1px 겹침) 아래로
   }
+  const expand = (await page.getByRole('button', { name: '지도 확대' }).boundingBox())!;
+  expect([Math.round(map.x + map.width - expand.x - expand.width), Math.round(map.y + map.height - expand.y - expand.height)]).toEqual([20, 20]); // 오른쪽 아래
   // 키보드 이동 순서도 화면 위아래 순서와 같습니다.
-  await tools.getByRole('button', { name: '지도 확대' }).focus();
+  await tools.getByRole('button', { name: '지도 단추 접기' }).focus();
   for (const name of ['위치 지정', '무악재역', '현재 위치로 이동']) {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name, exact: true }).first()).toBeFocused();
@@ -199,7 +203,6 @@ test('지도: 평균 5점 장소에도 색이 있다', async ({ page }) => {
   await fakeBackend(page, { ...seed(), records: [{ id: 'a', place_id: 'p1', visited_on: '2026-10-01', rating: 5 }] });
   await page.goto('./');
   await expect(page.getByRole('button', { name: /거문도 방파제 \(낚시\) 선택, 평점 5\.0$/ })).toHaveClass(/rate-5/);
-  await expect(page.getByRole('group', { name: /1점대부터 5점까지/ }).getByText('5', { exact: true })).toBeVisible();
 });
 
 test('사진 지도: 장소 상세에서 잡은 물고기 사진을 모아 보고, 지도 말풍선에는 사진을 넣지 않는다', async ({ page }) => {
@@ -278,10 +281,10 @@ test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없�
   await expect(page.getByRole('alert')).toContainText('위치 권한이 꺼져 있습니다');
   await page.waitForTimeout(5500);
   await expect(page.getByRole('alert')).toBeVisible(); // 저절로 사라지지 않습니다.
-  // 안내는 오른쪽 지도 단추 줄과 겹치지 않습니다(닫기 단추가 지도 확대 단추에 가리지 않게).
+  // 안내는 오른쪽 아래 지도 확대 단추와 겹치지 않습니다(닫기 단추가 가리지 않게).
   const alertBox = (await page.getByRole('alert').boundingBox())!;
-  const toolBox = (await page.getByRole('group', { name: '지도 단추' }).boundingBox())!;
-  expect(alertBox.x + alertBox.width).toBeLessThanOrEqual(toolBox.x);
+  const cornerBox = (await page.getByRole('button', { name: '지도 확대' }).boundingBox())!;
+  expect(alertBox.x + alertBox.width).toBeLessThanOrEqual(cornerBox.x);
   await page.getByRole('button', { name: '위치 안내 닫기' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('alert')).toHaveCount(0);
@@ -296,11 +299,11 @@ test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 �
   await expect(badge).toBeVisible();
   await expect(badge.locator('svg')).toHaveCount(1);
   await expect(badge).not.toContainText('°');
-  // 높이는 평점 안내와 같고, 좌우 여백도 평점 안내와 같습니다(너비는 내용만큼).
-  const [legend, box] = [await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(), await badge.boundingBox()];
-  expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
+  // 높이는 지도 단추와 같은 44px, 좌우 여백은 0.5rem이고 너비는 내용만큼입니다.
+  const box = await badge.boundingBox();
+  expect(Math.round(box!.height)).toBe(44);
   const pad = (node: Element) => `${getComputedStyle(node).paddingLeft} ${getComputedStyle(node).paddingRight}`;
-  expect(await badge.evaluate(pad)).toBe(await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).evaluate(pad));
+  expect(await badge.evaluate(pad)).toBe('8px 8px');
   expect(box!.width).toBeLessThan(box!.height * 2); // 예전처럼 넓게 고정하지 않습니다.
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('14°');
@@ -476,17 +479,17 @@ test('지도: 지도 확대는 지도를 화면 전체로, 목록 확대는 목�
   await expect(page.locator('[inert]')).toHaveCount(0);
 
   // 지도 확대 단추는 확대한 뒤에도 같은 자리에서 '지도 작게'로 바뀝니다(토글).
-  const toggle = page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 확대' });
+  const toggle = page.getByRole('button', { name: '지도 확대' });
   const before = (await toggle.boundingBox())!;
   await toggle.click();
-  const shrink = page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 작게' });
+  const shrink = page.getByRole('button', { name: '지도 작게' });
   const after = (await shrink.boundingBox())!;
   const mapBox = (await map.boundingBox())!;
   // 지도 칸 안에서 오른쪽·아래로부터 같은 거리에 있습니다.
   expect(Math.round(mapBox.x + mapBox.width - (after.x + after.width))).toBe(20); // 목록 위 단추처럼 가장자리에서 20px
   expect(Math.round(before.width)).toBe(Math.round(after.width));
   await shrink.click();
-  await expect(page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '지도 확대' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeVisible();
 });
 
 test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴무 요일을 저장해 보여 준다', async ({ page }) => {
@@ -581,53 +584,55 @@ test('지도를 불러오지 못해도 지도 단추(지도 작게 등)는 남�
   await page.route('https://dapi.kakao.com/**', (route) => route.abort());
   await page.goto('./');
   await expect(page.getByRole('alert').filter({ hasText: '지도를 불러오지 못했습니다' })).toBeVisible();
-  const tools = page.getByRole('group', { name: '지도 단추' });
-  await tools.getByRole('button', { name: '지도 확대' }).click();
-  await expect(tools.getByRole('button', { name: '지도 작게' })).toBeVisible();
-  await tools.getByRole('button', { name: '지도 작게' }).click();
-  await expect(tools.getByRole('button', { name: '지도 확대' })).toBeVisible();
+  await expect(page.getByRole('group', { name: '지도 단추' })).toBeVisible();
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toBeVisible();
+  await page.getByRole('button', { name: '지도 작게' }).click();
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeVisible();
 });
 
-test('지도 단추: 맨 아래 단추로 접고 펼치며(상태 기억), 지도를 키우면 모두 보인다. 지도 위 안내·단추는 가장자리에서 20px', async ({ page }) => {
+test('지도 단추: 왼쪽 위 여닫기 단추로 아래쪽 단추들을 접고 펼치며(상태 기억), 지도를 키워도 된다. 지도 확대는 늘 보인다. 지도 위 안내·단추는 가장자리에서 20px', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
+  await expect(page.getByRole('group', { name: /핀 색상/ })).toHaveCount(0); // 평점 안내는 없앴습니다.
   const tools = page.getByRole('group', { name: '지도 단추' });
   const toggle = tools.getByRole('button', { name: '지도 단추 접기' });
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  // 가장자리 간격: 평점 안내(왼쪽 위), 날씨(오른쪽 위), 지도 단추(오른쪽 아래)
+  // 가장자리 간격: 지도 단추(왼쪽 위), 날씨(오른쪽 위), 지도 확대(오른쪽 아래)
   const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
-  const legend = (await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox())!;
   const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
   const group = (await tools.boundingBox())!;
-  expect([Math.round(legend.x - map.x), Math.round(legend.y - map.y)]).toEqual([20, 20]);
+  expect([Math.round(group.x - map.x), Math.round(group.y - map.y)]).toEqual([20, 20]);
   expect([Math.round(map.x + map.width - weather.x - weather.width), Math.round(weather.y - map.y)]).toEqual([20, 20]);
-  expect([Math.round(map.x + map.width - group.x - group.width), Math.round(map.y + map.height - group.y - group.height)]).toEqual([20, 20]);
 
   await toggle.click();
   const open = tools.getByRole('button', { name: '지도 단추 펼치기' });
   await expect(open).toHaveAttribute('aria-expanded', 'false');
-  for (const name of ['지도 확대', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
+  for (const name of ['위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeVisible(); // 지도 확대는 오른쪽 아래에 늘 있습니다.
   await page.reload(); // 접은 상태를 기억합니다.
   await expect(tools.getByRole('button', { name: '지도 단추 펼치기' })).toBeVisible();
-  // 키운 지도에서도 접고 펼칩니다(사용자 요청).
+  // 키운 지도에서도 접고 펼칩니다.
+  await page.getByRole('button', { name: '지도 확대' }).click();
+  await expect(page.getByRole('button', { name: '지도 작게' })).toBeVisible();
   await tools.getByRole('button', { name: '지도 단추 펼치기' }).click();
-  await tools.getByRole('button', { name: '지도 확대' }).click();
-  await expect(tools.getByRole('button', { name: '지도 작게' })).toBeVisible();
+  for (const name of ['위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   await tools.getByRole('button', { name: '지도 단추 접기' }).click();
-  for (const name of ['지도 작게', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
-  await tools.getByRole('button', { name: '지도 단추 펼치기' }).click();
-  for (const name of ['지도 작게', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
-  await page.keyboard.press('Escape'); // 접어 둔 채로도 Esc·뒤로 가기로 줄일 수 있습니다.
-  await expect(tools.getByRole('button', { name: '지도 확대' })).toBeVisible();
+  for (const name of ['위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
+  await page.getByRole('button', { name: '지도 작게' }).click();
+  await expect(page.getByRole('button', { name: '지도 확대' })).toBeVisible();
 });
 
-test('지도가 가장 낮아도(가로 휴대폰) 오른쪽 아래 지도 단추가 위쪽 날씨 상자와 겹치지 않는다', async ({ page }) => {
+test('지도가 가장 낮아도(가로 휴대폰) 왼쪽 위 지도 단추와 오른쪽 아래 지도 확대 단추가 겹치지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 740, height: 360 });
   await fakeBackend(page, seed());
   await page.goto('./');
-  const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
   const tools = (await page.getByRole('group', { name: '지도 단추' }).boundingBox())!;
-  expect(tools.y).toBeGreaterThanOrEqual(weather.y + weather.height);
+  const corner = (await page.getByRole('button', { name: '지도 확대' }).boundingBox())!;
+  const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
+  const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
+  expect(tools.y + tools.height).toBeLessThanOrEqual(map.y + map.height); // 펼친 단추 묶음이 지도 안에 들어갑니다.
+  expect(corner.y).toBeGreaterThanOrEqual(weather.y + weather.height);
 });
 
 test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소는 분류별 기본 이미지를 넣는다', async ({ page }) => {
@@ -647,18 +652,45 @@ test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소�
   await expect(noPhoto.locator('.default-image svg')).toHaveCount(1); // 분류(낚시) 아이콘
 });
 
-test('지도 위 단추·평점 안내·날씨 상자는 목록 위 단추(장소 추가)와 같은 높이(44px)다', async ({ page }) => {
+test('지도 위 단추와 날씨 상자는 목록 위 단추(장소 추가)와 같은 높이(44px)다', async ({ page }) => {
   await fakeBackend(page, seed());
   await page.goto('./');
   const add = (await page.getByRole('button', { name: '장소 추가' }).boundingBox())!;
   const tools = page.getByRole('group', { name: '지도 단추' });
   const boxes = await Promise.all([
-    tools.getByRole('button', { name: '지도 확대' }).boundingBox(),
-    tools.getByRole('button', { name: '현재 위치로 이동' }).boundingBox(),
     tools.getByRole('button', { name: '지도 단추 접기' }).boundingBox(),
-    page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(),
+    tools.getByRole('button', { name: '현재 위치로 이동' }).boundingBox(),
+    page.getByRole('button', { name: '지도 확대' }).boundingBox(),
     page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox(),
   ]);
   for (const box of boxes) expect(Math.round(box!.height)).toBe(Math.round(add.height));
   for (const box of boxes.slice(0, 3)) expect(Math.round(box!.width)).toBe(Math.round(add.width));
+});
+
+test('장소 목록: 이름이 길어도 분류·평점 태그와 같은 줄에 두고 이름만 말줄임해, 모든 장소가 이름 + 주소 두 줄이다', async ({ page }) => {
+  await fakeBackend(page, { ...seed(), records: [{ id: 'r1', place_id: 'p3', visited_on: '2026-10-01', rating: 4 }] });
+  await page.goto('./');
+  const list = page.getByRole('list', { name: '장소 목록' });
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+  for (const item of await list.getByRole('listitem').all()) {
+    const lines = await item.getByRole('button').first().evaluate((button) => {
+      const title = button.querySelector('[title]')!;
+      const row = title.parentElement!;
+      const tops = [...row.children].map((child) => Math.round(child.getBoundingClientRect().top + child.getBoundingClientRect().height / 2));
+      return { sameLine: Math.max(...tops) - Math.min(...tops) <= 2, rows: button.querySelectorAll(':scope > span:last-child > span').length };
+    });
+    expect(lines.sameLine).toBe(true); // 태그가 다음 줄로 내려가지 않습니다.
+    expect(lines.rows).toBe(2); // 이름 줄 + 주소 줄
+  }
+});
+
+test('무악재역 핀도 다른 핀처럼 누르면(터치 포함) 고르고 말풍선이 뜬다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const pin = page.getByRole('button', { name: '무악재역 (기준 위치) 선택' });
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await pin.click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('group', { name: '무악재역 정보' })).toBeVisible();
+  await expect(page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '무악재역', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });

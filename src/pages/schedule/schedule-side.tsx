@@ -49,7 +49,7 @@ export const ScheduleSide = ({ selected, onPick }: { selected: string; onPick: (
           </div>
           <ul className="flex flex-col divide-y divide-soft border-b border-line">
             {waiting.map((event) => (
-              <li key={event.id} className="flex items-center justify-between gap-3 px-5 py-4">
+              <li key={event.id} className="flex items-start justify-between gap-3 px-5 py-4">
                 <span className="flex min-w-0 flex-col">
                   <span className="mono-label">{formatDate(event.date)}</span>
                   <span>{event.title}</span>

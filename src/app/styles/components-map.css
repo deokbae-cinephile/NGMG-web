@@ -1,4 +1,4 @@
-/* 지도: 지도 바탕, 핀, 평점 안내, 현재 위치, 날씨, 말풍선, 사진 모음 */
+/* 지도: 지도 바탕, 핀, 지도 단추, 현재 위치, 날씨, 말풍선, 사진 모음 */
 @layer components {
   /* 지도 위 안내·단추(평점·날씨·지도 단추)와 지도 가장자리 사이. 목록 위 장소 추가·목록 확대 단추가 칸 가장자리에서 떨어진 만큼(1.25rem)입니다. */
   :root {
@@ -127,45 +127,6 @@
     font-size: 0.8125rem;
     white-space: nowrap;
   }
-  .map-legend {
-    position: absolute;
-    top: var(--map-inset);
-    left: var(--map-inset);
-    z-index: 10;
-    display: flex;
-    height: 2.75rem; /* 목록 위 단추와 같은 44px, 오른쪽 날씨 상자와 같은 높이 */
-    align-items: center;
-    gap: 0.3125rem;
-    border: 1px solid var(--color-ink);
-    background: var(--color-paper);
-    padding: 0 0.5rem;
-    font-size: 0.9375rem;
-  }
-  .map-legend-toggle,
-  .map-legend-scale > span {
-    display: inline-flex;
-    height: 1.625rem;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-  /* 여닫기 단추는 상자 높이 전체를 누를 수 있게 늘립니다. */
-  .map-legend-toggle {
-    height: 100%;
-    gap: 0.125rem;
-    cursor: pointer;
-  }
-  .map-legend-scale {
-    display: flex;
-    gap: 0.3125rem;
-  }
-  .map-legend-scale[hidden] {
-    display: none;
-  }
-  .map-legend-scale > span {
-    width: 1.625rem;
-  }
-
   /* 현재 위치 단추: 지도 단추 묶음(.map-tools) 맨 아래 칸. 모양은 .map-tool과 같습니다. */
   .map-locate:disabled {
     cursor: progress;
@@ -194,7 +155,7 @@
     color: var(--color-ink);
     font-size: 0.875rem;
   }
-  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.75rem), 좌우 여백도 같습니다. */
+  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 지도 단추와 같은 2.75rem이고 너비는 내용만큼입니다. */
   .weather-badge {
     position: absolute;
     top: var(--map-inset);
@@ -206,22 +167,13 @@
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
-    padding: 0 0.5rem; /* 평점 안내와 같은 좌우 여백. 너비는 내용(아이콘·기온)만큼입니다. */
+    padding: 0 0.5rem;
     border: 1px solid var(--color-ink);
     background: var(--color-paper);
     color: var(--color-ink);
-    font-size: 0.9375rem; /* 평점 안내와 같은 글자 크기와 줄 높이 */
+    font-size: 0.9375rem;
     line-height: 1;
     pointer-events: none; /* 보기만 하는 상자라, 위치 지정 중에도 아래 지도를 누를 수 있게 합니다. */
-  }
-  /* 지도 폭이 좁아(평점 안내를 펼친 너비 + 날씨 상자) 둘이 겹치면 날씨 상자를 평점 안내 아래로 내립니다. */
-  .map-frame {
-    container-type: inline-size;
-  }
-  @container (width < 22.25rem) { /* 평점 안내(펼친 너비 약 13.7rem) + 날씨(5.5rem) + 양쪽 간격(2.5rem) + 틈(0.5rem) */
-    .weather-badge {
-      top: calc(var(--map-inset) + 2.75rem + 0.5rem);
-    }
   }
   /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
   .my-location {
@@ -232,12 +184,7 @@
     background: #1f6feb;
     box-shadow: 0 0 0 6px rgb(31 111 235 / 0.25), 0 1px 3px rgb(0 0 0 / 0.4);
   }
-  /* 기준 위치(무악재역). 누르는 핀이 아니라 지도를 눌러 위치를 지정할 때 방해하지 않습니다. */
-  /* 무악재역: 흰 바탕에 검정 윤곽선. 기차 아이콘과 이름표로 구분합니다. */
-  .pin-base {
-    cursor: default;
-    pointer-events: none;
-  }
+  /* 무악재역(기준 위치): 다른 핀과 같은 물방울 모양에 기차 아이콘. 다른 핀처럼 누르면 고릅니다. */
   /* 지도 화면 맨 위 버튼 세 개. 좁은 화면에서도 한 줄에 들어가도록 안쪽 여백을 줄입니다. */
   /* 장소 추가는 왼쪽 끝, 목록 확대는 오른쪽 끝(게스트는 장소 추가가 없어도 오른쪽 끝) */
   .map-actions {
@@ -290,11 +237,11 @@
     background: var(--color-paper);
   }
   /* 지도 위 단추 묶음: 오른쪽 아래에 틈 없이 세로로 쌓습니다(겹치는 선은 1px 하나로). 맨 아래는 접기·펼치기 단추입니다. */
-  /* 지도 칸의 최소 높이(22rem)는 위 날씨 상자(가장자리 1.25rem + 2.75rem)와 이 묶음(최대 5칸 + 접기, 44px씩)이 겹치지 않는 높이입니다. */
+  /* 왼쪽 위 지도 단추 묶음: 맨 위 여닫기 단추 아래로 단추들이 펼쳐집니다(틈 없이, 겹치는 선은 1px 하나로). */
   .map-tools {
     position: absolute;
-    right: var(--map-inset);
-    bottom: var(--map-inset);
+    top: var(--map-inset);
+    left: var(--map-inset);
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -302,10 +249,17 @@
   .map-tools-items {
     display: flex;
     flex-direction: column;
-  }
-  .map-tools-items > * + *,
-  .map-tools-items:not([hidden]) + .map-tools-toggle {
     margin-top: -1px;
+  }
+  .map-tools-items > * + * {
+    margin-top: -1px;
+  }
+  /* 오른쪽 아래 구석: 지도 확대·작게 단추 */
+  .map-corner {
+    position: absolute;
+    right: var(--map-inset);
+    bottom: var(--map-inset);
+    z-index: 10;
   }
   /* 지도 위 단추는 목록 위 단추(장소 추가 등)와 같은 44px입니다. */
   .map-tool {
@@ -388,16 +342,14 @@
     transform: translateX(-50%) rotate(45deg);
   }
   /* 고른 핀은 조금 키웁니다. */
-  .pin[aria-pressed='true'],
-  .pin-base[data-selected='true'] {
+  .pin[aria-pressed='true'] {
     scale: 1.2;
   }
   .pin[aria-pressed='true'] .pin-score {
     display: none; /* 위에 뜨는 말풍선의 상호와 겹치지 않게 합니다. */
   }
   /* 고른 핀은 윤곽을 거의 그대로(1.1 → 1.25) 두고 크기로 강조합니다. 윤곽을 크게 굵히면(2) 뾰족한 끝이 뭉툭하게 눌려 아래가 잘린 것처럼 보입니다. */
-  .pin[aria-pressed='true'] .pin-shape,
-  .pin-base[data-selected='true'] .pin-shape {
+  .pin[aria-pressed='true'] .pin-shape {
     stroke-width: 1.25;
   }
 }

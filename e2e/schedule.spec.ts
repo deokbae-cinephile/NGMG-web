@@ -1,6 +1,6 @@
 // E2E: 일정·달력
-import { expect, test } from '@playwright/test';
-import { acceptDialogs, expectAccessible, expectFits, fakeBackend, seed } from './support';
+import { expect, test, type Locator } from '@playwright/test';
+import { acceptDialogs, expectAccessible, expectFits, fakeBackend, place, seed } from './support';
 
 acceptDialogs();
 
@@ -159,7 +159,7 @@ test('맛집 기록은 종료 날짜가 없고, 일정에는 시작 시간이 �
   await expect(page.getByRole('dialog', { name: '일정 수정' }).getByLabel('시작 시간')).toHaveCount(0);
 });
 
-test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창이 올라오고, 머리의 일정 추가는 감춘다. 지도 평점 안내는 여닫는다', async ({ page }, testInfo) => {
+test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창이 올라오고, 머리의 일정 추가는 감춘다', async ({ page }, testInfo) => {
   await fakeBackend(page, seed());
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
@@ -206,15 +206,6 @@ test('휴대폰 일정: 날짜를 누르면 아래에서 일정 추가 알림창
     await expect(sheet).toContainText('성탄절');
   }
 
-  await page.goto('./');
-  const toggle = page.getByRole('button', { name: '평점', exact: true });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.locator('#map-legend-scale')).toBeVisible();
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('#map-legend-scale')).toBeHidden();
-  await page.reload();
-  await expect(page.getByRole('button', { name: '평점', exact: true })).toHaveAttribute('aria-expanded', 'false'); // 고른 상태를 기억합니다.
 });
 
 test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 일정 추가 단추는 없다', async ({ page }, testInfo) => {
@@ -227,4 +218,105 @@ test('휴대폰 게스트: 날짜 알림창에 날짜·공휴일은 보이고 �
   await expect(sheet).toContainText('성탄절');
   await expect(page.getByText(/게스트로 보는 중/)).toBeVisible(); // 역할을 확인한 뒤에 단추가 없는지 봅니다(확인 중에도 단추는 감춰져 있으므로).
   await expect(sheet.getByRole('button', { name: '일정 추가', exact: true })).toHaveCount(0);
+});
+
+test('휴대폰 일정: 들어오면 오늘(고른 날) 알림창이 처음부터 열려 있다', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop');
+  await fakeBackend(page, seed());
+  await page.goto('./schedule');
+  const sheet = page.getByRole('region', { name: '고른 날 일정 추가' });
+  await expect(sheet).toBeVisible();
+  const today = new Date();
+  await expect(sheet).toContainText(`${today.getMonth() + 1}월 ${today.getDate()}일`);
+});
+
+test('일정·기록 목록: 수정 단추는 휴대폰에서도 각 항목의 오른쪽 위에 있다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-11-07');
+  const check = async (button: Locator, item: Locator) => {
+    const [b, box] = [(await button.boundingBox())!, (await item.boundingBox())!];
+    expect(Math.round(box.x + box.width - (b.x + b.width))).toBeLessThanOrEqual(1); // 오른쪽 끝
+    expect(b.y - box.y).toBeLessThan(40); // 위쪽(내용 아래로 내려가지 않음)
+  };
+  const event = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '새벽 출조' }) });
+  await check(event.getByRole('button', { name: '새벽 출조 일정 삭제' }), event);
+  const pencil = (await event.getByRole('button', { name: '새벽 출조 일정 수정' }).boundingBox())!;
+  const title = (await event.getByRole('heading', { name: '새벽 출조' }).boundingBox())!;
+  expect(Math.abs(pencil.y - title.y)).toBeLessThan(30); // 제목과 같은 줄(위쪽)
+});
+
+test('새 일정: 일정 날짜가 맛집 휴무 요일이면 그 맛집은 고를 수 없고, 고른 뒤 휴무일로 바꾸면 저장을 막는다', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, closed_days: [3] } : item)); // 바다횟집: 수요일 휴무
+  const db = await fakeBackend(page, { ...base, angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
+  await page.goto('./schedule?date=2026-11-11'); // 수요일
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^11 일 \(수\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  await dialog.getByLabel('할 일').fill('저녁');
+  const search = dialog.getByRole('searchbox', { name: '장소 검색' });
+  await search.fill('바다');
+  await search.press('Enter');
+  const saved = dialog.getByRole('button', { name: /바다횟집.*저장한 장소/ });
+  await expect(saved).toBeDisabled();
+  await expect(saved).toContainText('11월 11일(수) 휴무라 이 일정에는 고를 수 없습니다.');
+
+  // 목요일에 고른 뒤 날짜를 수요일로 바꾸면 안내하고 저장하지 않습니다.
+  await dialog.getByLabel('시작 날짜').fill('2026-11-12');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-12');
+  await search.press('Enter');
+  await expect(saved).toBeEnabled();
+  await saved.click();
+  await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
+  await dialog.getByLabel('시작 날짜').fill('2026-11-11');
+  await dialog.getByLabel('종료 날짜').fill('2026-11-11');
+  // 날짜를 바꾸는 순간 상태 영역(role=status)으로 알립니다.
+  await expect(dialog.getByRole('status').filter({ hasText: '11월 11일(수) 휴무라 이 날짜에는 고를 수 없습니다.' })).toBeVisible();
+  const before = db.events!.length;
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeVisible();
+  expect(db.events!.length).toBe(before);
+  await expect(dialog.getByRole('button', { name: '장소 빼기' })).toBeFocused();
+});
+
+test('장소 찾기: 이미 저장한 맛집과 같은 Kakao 결과는 빼서 저장한 장소로만 고른다(휴무 제한을 피해 가지 못함)', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = [...base.places!, { ...place('p9', '바다 횟집', 'restaurant'), latitude: 34.1, longitude: 127.4, closed_days: [3] }];
+  await fakeBackend(page, base);
+  await page.goto('./schedule?date=2026-11-11'); // 수요일
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^11 일 \(수\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('바다');
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  // Kakao 검색이 끝난 뒤(결과 수 안내가 뜬 뒤)에 셉니다: 저장한 장소 2곳(바다횟집, 바다 횟집) + Kakao 새 결과 1곳(바다 방파제)
+  await expect(dialog.getByRole('status').filter({ hasText: '검색 결과 3건' })).toBeAttached();
+  const results = dialog.getByRole('button', { name: /^바다 횟집/ });
+  await expect(results).toHaveCount(1); // Kakao의 같은 맛집은 빠지고 저장한 장소 하나만
+  await expect(results).toBeDisabled();
+  await expect(dialog.getByRole('status').filter({ hasText: '휴무' })).toHaveCount(0);
+});
+
+test('장소 찾기: 주소로 찾아 이름이 맞지 않아도, Kakao 결과와 같은 저장 장소는 저장한 장소로 보여 준다', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = [...base.places!, { ...place('p9', '바다 횟집', 'restaurant'), latitude: 34.1, longitude: 127.4 }];
+  await fakeBackend(page, base);
+  await page.goto('./schedule?date=2026-11-12');
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^12 일 \(목\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  // 지도 SDK는 처음 찾을 때 받으므로 한 번 찾아 둔 뒤, 주소로 찾으면 Kakao가 '바다 횟집'(저장한 장소와 같은 곳)을 돌려준다고 둡니다.
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('먼저');
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  await expect(dialog.getByRole('status').filter({ hasText: /검색 결과 \d+건/ })).toBeAttached();
+  await page.evaluate(() => {
+    const w = window as unknown as { kakao: { maps: { services: { Places: { prototype: { keywordSearch: (q: string, cb: (r: unknown[], s: string) => void) => void } }; Status: { OK: string } } } } };
+    const { services } = w.kakao.maps;
+    services.Places.prototype.keywordSearch = (_q, cb) => cb([{ place_name: '바다 횟집', road_address_name: '전남 여수시 횟집로 1', address_name: '', x: '127.4', y: '34.1', category_group_code: 'FD6' }], services.Status.OK);
+  });
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('여수'); // 이름에는 없는 말(주소)
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  await expect(dialog.getByRole('status').filter({ hasText: /검색 결과 \d+건/ })).toBeAttached();
+  await expect(dialog.getByRole('button', { name: /^바다 횟집.*저장한 장소/ })).toBeEnabled();
+  await expect(dialog.getByRole('button', { name: /^바다 횟집/ })).toHaveCount(1);
 });

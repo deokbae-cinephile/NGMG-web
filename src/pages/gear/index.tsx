@@ -21,18 +21,21 @@ export const GearPage = () => {
     <div>
       <title>물품 | 낚고먹고</title>
       <h1 className="sr-only">물품</h1>
-      <div role="group" aria-label="조사 고르기" className="sticky top-0 z-20 grid grid-cols-2 border-b border-line bg-paper">
-        {ANGLERS.map((name) => (
-          <button key={name} type="button" className="tab-button" aria-pressed={angler === name} onClick={() => setAngler(name)}>
-            {name}
-          </button>
-        ))}
-      </div>
-      <div className="cell-head">
-        <h2 className="title text-xl">{`${angler} 물품`}</h2>
-        <Writable>
-          <IconButton icon="plus" label="물품 추가" primary onClick={() => setForm({})} />
-        </Writable>
+      {/* 조사 탭과 그 아래 물품 추가 칸을 함께 위에 고정합니다. '김 조사 물품' 같은 제목은 화면에서 빼고 화면 읽기 프로그램에만 남깁니다. */}
+      <div className="sticky top-0 z-20 bg-paper">
+        <div role="group" aria-label="조사 고르기" className="grid grid-cols-2 border-b border-line">
+          {ANGLERS.map((name) => (
+            <button key={name} type="button" className="tab-button" aria-pressed={angler === name} onClick={() => setAngler(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <div className="cell-head justify-end">
+          <h2 className="sr-only">{`${angler} 물품`}</h2>
+          <Writable>
+            <IconButton icon="plus" label="물품 추가" primary onClick={() => setForm({})} />
+          </Writable>
+        </div>
       </div>
       <div className="cell-body flex flex-col gap-6">
         <ErrorText error={error ?? remove.error} />
@@ -46,8 +49,8 @@ export const GearPage = () => {
               <h3 className="mono-label">{kind}</h3>
               <ul className="flex flex-col">
                 {items.map((item) => (
-                  <li key={item.id} className="panel flex items-center justify-between gap-3">
-                    {/* 수정·삭제는 늘 오른쪽에 두고, 물품 이름이 길면 이름만 줄을 바꿉니다. */}
+                  <li key={item.id} className="panel flex items-start justify-between gap-3">
+                    {/* 수정·삭제는 늘 오른쪽 위에 두고, 물품 이름이 길면 이름만 줄을 바꿉니다. */}
                     <span className="flex min-w-0 flex-1 flex-col gap-1">
                       <GearTag gear={item} />
                       {item.memo && <span className="text-sm text-muted break-words">{item.memo}</span>}
