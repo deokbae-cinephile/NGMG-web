@@ -133,7 +133,7 @@
     left: var(--map-inset);
     z-index: 10;
     display: flex;
-    height: 2.5rem; /* 오른쪽 날씨 상자와 같은 높이 */
+    height: 2.75rem; /* 목록 위 단추와 같은 44px, 오른쪽 날씨 상자와 같은 높이 */
     align-items: center;
     gap: 0.3125rem;
     border: 1px solid var(--color-ink);
@@ -184,7 +184,7 @@
     align-items: flex-start;
     gap: 0.5rem;
     position: absolute;
-    right: calc(var(--map-inset) + 2.5rem + 0.5rem); /* 오른쪽 지도 단추 줄을 비워 겹치지 않게 합니다. */
+    right: calc(var(--map-inset) + 2.75rem + 0.5rem); /* 오른쪽 지도 단추 줄을 비워 겹치지 않게 합니다. */
     bottom: var(--map-inset);
     left: var(--map-inset);
     z-index: 11;
@@ -194,15 +194,15 @@
     color: var(--color-ink);
     font-size: 0.875rem;
   }
-  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.5rem) 가로는 두 배입니다. */
+  /* 고른 핀 자리의 날씨: 지도 오른쪽 위. 높이는 왼쪽 평점 안내와 같고(2.75rem) 가로는 두 배입니다. */
   .weather-badge {
     position: absolute;
     top: var(--map-inset);
     right: var(--map-inset);
     z-index: 10;
     display: flex;
-    width: 5rem;
-    height: 2.5rem;
+    width: 5.5rem;
+    height: 2.75rem;
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
@@ -217,9 +217,9 @@
   .map-frame {
     container-type: inline-size;
   }
-  @container (width < 21.5rem) {
+  @container (width < 22.25rem) { /* 평점 안내(펼친 너비 약 13.7rem) + 날씨(5.5rem) + 양쪽 간격(2.5rem) + 틈(0.5rem) */
     .weather-badge {
-      top: 3.75rem;
+      top: calc(var(--map-inset) + 2.75rem + 0.5rem);
     }
   }
   /* 내 위치 점: 흰 테두리의 파란 점과 옅은 둘레 */
@@ -289,7 +289,7 @@
     background: var(--color-paper);
   }
   /* 지도 위 단추 묶음: 오른쪽 아래에 틈 없이 세로로 쌓습니다(겹치는 선은 1px 하나로). 맨 아래는 접기·펼치기 단추입니다. */
-  /* 지도 칸의 최소 높이(18rem)는 위 날씨 상자(가장자리 1.25rem + 2.5rem)와 이 묶음(최대 5칸 + 접기)이 겹치지 않는 높이입니다. */
+  /* 지도 칸의 최소 높이(22rem)는 위 날씨 상자(가장자리 1.25rem + 2.75rem)와 이 묶음(최대 5칸 + 접기, 44px씩)이 겹치지 않는 높이입니다. */
   .map-tools {
     position: absolute;
     right: var(--map-inset);
@@ -306,10 +306,11 @@
   .map-tools-items:not([hidden]) + .map-tools-toggle {
     margin-top: -1px;
   }
+  /* 지도 위 단추는 목록 위 단추(장소 추가 등)와 같은 44px입니다. */
   .map-tool {
     display: flex;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-ink);

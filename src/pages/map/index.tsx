@@ -172,7 +172,7 @@ export const MapPage = () => {
       <title>지도 | 낚고먹고</title>
       <h1 className="sr-only">내 장소 지도</h1>
       {/* 휴대폰에서는 지도를 위에 붙여 두고 목록만 스크롤합니다. */}
-      <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-72 border-b border-line bg-paper lg:relative lg:top-auto lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
+      <div ref={expanded === 'map' ? setExpandedPane : undefined} className={`pane sticky top-topbar z-20 h-[calc(42dvh+4rem)] min-h-88 border-b border-line bg-paper lg:relative lg:top-auto lg:h-auto lg:border-b-0 ${expanded === 'map' ? 'map-expanded' : ''}`}>
         <PlaceMap
           places={visible}
           selectedId={selectedId}

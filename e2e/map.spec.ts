@@ -297,7 +297,7 @@ test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 �
   await expect(badge.locator('svg')).toHaveCount(1);
   await expect(badge).not.toContainText('°');
   // 높이는 평점 안내와 같고 가로는 두 배입니다.
-  const [legend, box] = [await page.locator('.map-legend').boundingBox(), await badge.boundingBox()];
+  const [legend, box] = [await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(), await badge.boundingBox()];
   expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
   expect(Math.round(box!.width)).toBe(Math.round(box!.height * 2));
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
@@ -594,7 +594,7 @@ test('지도 단추: 맨 아래 단추로 접고 펼치며(상태 기억), 지�
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   // 가장자리 간격: 평점 안내(왼쪽 위), 날씨(오른쪽 위), 지도 단추(오른쪽 아래)
   const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
-  const legend = (await page.locator('.map-legend').boundingBox())!;
+  const legend = (await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox())!;
   const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
   const group = (await tools.boundingBox())!;
   expect([Math.round(legend.x - map.x), Math.round(legend.y - map.y)]).toEqual([20, 20]);
@@ -641,4 +641,20 @@ test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소�
   expect([Math.round(fallback.width), Math.round(fallback.height)]).toEqual([Math.round(photo.width), Math.round(photo.height)]); // 같은 크기 자리
   await expect(noPhoto.locator('.default-image')).toHaveAttribute('aria-hidden', 'true');
   await expect(noPhoto.locator('.default-image svg')).toHaveCount(1); // 분류(낚시) 아이콘
+});
+
+test('지도 위 단추·평점 안내·날씨 상자는 목록 위 단추(장소 추가)와 같은 높이(44px)다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const add = (await page.getByRole('button', { name: '장소 추가' }).boundingBox())!;
+  const tools = page.getByRole('group', { name: '지도 단추' });
+  const boxes = await Promise.all([
+    tools.getByRole('button', { name: '지도 확대' }).boundingBox(),
+    tools.getByRole('button', { name: '현재 위치로 이동' }).boundingBox(),
+    tools.getByRole('button', { name: '지도 단추 접기' }).boundingBox(),
+    page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(),
+    page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox(),
+  ]);
+  for (const box of boxes) expect(Math.round(box!.height)).toBe(Math.round(add.height));
+  for (const box of boxes.slice(0, 3)) expect(Math.round(box!.width)).toBe(Math.round(add.width));
 });
