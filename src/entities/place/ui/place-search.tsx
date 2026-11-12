@@ -42,11 +42,13 @@ export const PlaceSearch = ({ saved = [], onPick, unavailable }: Props) => {
     void search();
   };
 
-  const savedMatches = searched ? saved.filter((place) => place.name.toLowerCase().includes(searched.toLowerCase())) : [];
   // 이미 저장한 장소(같은 이름, 약 50m 안)는 Kakao 결과에서 빼고 저장한 장소로만 고르게 합니다. 중복 저장과 휴무 제한 우회를 막습니다.
-  const isSaved = (place: KakaoPlace) =>
-    saved.some((item) => item.name === place.name && Math.abs(item.latitude - place.latitude) < 0.0005 && Math.abs(item.longitude - place.longitude) < 0.0005);
-  const newResults = results.filter((place) => !isSaved(place));
+  const savedFor = (place: KakaoPlace) =>
+    saved.find((item) => item.name === place.name && Math.abs(item.latitude - place.latitude) < 0.0005 && Math.abs(item.longitude - place.longitude) < 0.0005);
+  const newResults = results.filter((place) => !savedFor(place));
+  // 이름으로 찾은 저장 장소에, 주소 검색 등으로 Kakao 결과에서 빠진 저장 장소도 더해 보여 줍니다(빠진 결과를 고를 수 있게).
+  const byName = searched ? saved.filter((place) => place.name.toLowerCase().includes(searched.toLowerCase())) : [];
+  const savedMatches = [...new Map([...byName, ...results.flatMap((place) => savedFor(place) ?? [])].map((place) => [place.id, place])).values()];
   const count = savedMatches.length + newResults.length;
 
   const clear = () => {

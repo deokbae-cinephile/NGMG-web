@@ -289,8 +289,34 @@ test('장소 찾기: 이미 저장한 맛집과 같은 Kakao 결과는 빼서 �
   const dialog = page.getByRole('dialog', { name: '새 일정' });
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('바다');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  // Kakao 검색이 끝난 뒤(결과 수 안내가 뜬 뒤)에 셉니다: 저장한 장소 2곳(바다횟집, 바다 횟집) + Kakao 새 결과 1곳(바다 방파제)
+  await expect(dialog.getByRole('status').filter({ hasText: '검색 결과 3건' })).toBeAttached();
   const results = dialog.getByRole('button', { name: /^바다 횟집/ });
   await expect(results).toHaveCount(1); // Kakao의 같은 맛집은 빠지고 저장한 장소 하나만
   await expect(results).toBeDisabled();
   await expect(dialog.getByRole('status').filter({ hasText: '휴무' })).toHaveCount(0);
+});
+
+test('장소 찾기: 주소로 찾아 이름이 맞지 않아도, Kakao 결과와 같은 저장 장소는 저장한 장소로 보여 준다', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = [...base.places!, { ...place('p9', '바다 횟집', 'restaurant'), latitude: 34.1, longitude: 127.4 }];
+  await fakeBackend(page, base);
+  await page.goto('./schedule?date=2026-11-12');
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^12 일 \(목\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  // 지도 SDK는 처음 찾을 때 받으므로 한 번 찾아 둔 뒤, 주소로 찾으면 Kakao가 '바다 횟집'(저장한 장소와 같은 곳)을 돌려준다고 둡니다.
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('먼저');
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  await expect(dialog.getByRole('status').filter({ hasText: /검색 결과 \d+건/ })).toBeAttached();
+  await page.evaluate(() => {
+    const w = window as unknown as { kakao: { maps: { services: { Places: { prototype: { keywordSearch: (q: string, cb: (r: unknown[], s: string) => void) => void } }; Status: { OK: string } } } } };
+    const { services } = w.kakao.maps;
+    services.Places.prototype.keywordSearch = (_q, cb) => cb([{ place_name: '바다 횟집', road_address_name: '전남 여수시 횟집로 1', address_name: '', x: '127.4', y: '34.1', category_group_code: 'FD6' }], services.Status.OK);
+  });
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('여수'); // 이름에는 없는 말(주소)
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  await expect(dialog.getByRole('status').filter({ hasText: /검색 결과 \d+건/ })).toBeAttached();
+  await expect(dialog.getByRole('button', { name: /^바다 횟집.*저장한 장소/ })).toBeEnabled();
+  await expect(dialog.getByRole('button', { name: /^바다 횟집/ })).toHaveCount(1);
 });
