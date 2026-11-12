@@ -299,8 +299,8 @@ test('지도: 오른쪽 위 날씨 상자는 고른 핀의 날씨 아이콘과 �
   // 높이는 평점 안내와 같고, 좌우 여백도 평점 안내와 같습니다(너비는 내용만큼).
   const [legend, box] = [await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).boundingBox(), await badge.boundingBox()];
   expect(Math.round(box!.height)).toBe(Math.round(legend!.height));
-  const pad = async (name: string) => page.evaluate((selector) => getComputedStyle(document.querySelector(selector)!).paddingLeft + ' ' + getComputedStyle(document.querySelector(selector)!).paddingRight, name);
-  expect(await pad('.weather-badge')).toBe(await pad('.map-legend'));
+  const pad = (node: Element) => `${getComputedStyle(node).paddingLeft} ${getComputedStyle(node).paddingRight}`;
+  expect(await badge.evaluate(pad)).toBe(await page.getByRole('group', { name: '핀 색상: 평점 1점대부터 5점까지' }).evaluate(pad));
   expect(box!.width).toBeLessThan(box!.height * 2); // 예전처럼 넓게 고정하지 않습니다.
   await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
   await expect(badge).toContainText('14°');
