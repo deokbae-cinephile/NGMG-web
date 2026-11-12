@@ -626,7 +626,7 @@ test('지도가 가장 낮아도(가로 휴대폰) 오른쪽 아래 지도 단�
   expect(tools.y).toBeGreaterThanOrEqual(weather.y + weather.height);
 });
 
-test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소는 기본 이미지를 넣는다', async ({ page }) => {
+test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소는 분류별 기본 이미지를 넣는다', async ({ page }) => {
   const base = seed();
   base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, photo_path: 'p2/photo.jpg' } : item));
   await fakeBackend(page, base);
@@ -640,4 +640,5 @@ test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소�
   const fallback = (await noPhoto.locator('.default-image').boundingBox())!;
   expect([Math.round(fallback.width), Math.round(fallback.height)]).toEqual([Math.round(photo.width), Math.round(photo.height)]); // 같은 크기 자리
   await expect(noPhoto.locator('.default-image')).toHaveAttribute('aria-hidden', 'true');
+  await expect(noPhoto.locator('.default-image svg')).toHaveCount(1); // 분류(낚시) 아이콘
 });

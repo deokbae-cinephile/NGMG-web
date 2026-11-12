@@ -1,6 +1,6 @@
 import { Writable } from '@/entities/session';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BASE_PLACE, ClosedToday, KindBadge, KindFilter, type KindFilterValue, PlaceActions, usePlaces } from '@/entities/place';
+import { BASE_PLACE, ClosedToday, KIND_ICON, KindBadge, KindFilter, type KindFilterValue, PlaceActions, usePlaces } from '@/entities/place';
 import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft } from '@/shared/api';
@@ -276,11 +276,11 @@ export const MapPage = () => {
                       if (expanded === 'list') collapse(false); // 목록 확대에서 고르면 목록을 줄여 지도에서 그 장소를 보여 줍니다.
                     }}
                   >
-                    {/* 왼쪽 사진(썸네일). 사진이 없는 장소는 기본 이미지를 넣어 이름 줄이 나란히 맞습니다. */}
+                    {/* 왼쪽 사진(썸네일). 사진이 없는 장소는 분류별 기본 이미지(도감과 같은 모양)를 넣어 이름 줄이 나란히 맞습니다. */}
                     {place.photo_url ? (
                       <img src={place.photo_thumb_url ?? place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />
                     ) : (
-                      <DefaultImage />
+                      <DefaultImage icon={KIND_ICON[place.kind]} />
                     )}
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                       <span className="flex max-w-full flex-wrap items-center gap-2">

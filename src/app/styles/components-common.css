@@ -364,10 +364,10 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-line);
-    background: var(--color-surface);
-    color: var(--color-field);
+    background: var(--color-surface); /* 도감 칸의 기본 이미지와 같은 바탕과 아이콘 색 */
+    color: var(--color-muted);
   }
-  .default-image > svg {
+  .default-image > svg:not([width]) {
     width: 62%;
     height: auto;
   }
