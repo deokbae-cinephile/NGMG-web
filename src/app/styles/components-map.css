@@ -289,6 +289,7 @@
     background: var(--color-paper);
   }
   /* 지도 위 단추 묶음: 오른쪽 아래에 틈 없이 세로로 쌓습니다(겹치는 선은 1px 하나로). 맨 아래는 접기·펼치기 단추입니다. */
+  /* 지도 칸의 최소 높이(18rem)는 위 날씨 상자(가장자리 1.25rem + 2.5rem)와 이 묶음(최대 5칸 + 접기)이 겹치지 않는 높이입니다. */
   .map-tools {
     position: absolute;
     right: var(--map-inset);

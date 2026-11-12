@@ -23,10 +23,18 @@ export const GearChecklist = ({ event, reveal = false }: { event: Pick<CalendarE
   const shown = (gear.data ?? []).some((item) => gearIds.includes(item.id));
   useEffect(() => {
     if (!reveal || !shown) return;
-    const frame = requestAnimationFrame(() => {
-      box.current?.scrollIntoView({ block: 'center' });
-      box.current?.focus({ preventScroll: true });
-    });
+    // 앱을 처음 열면 첫 화면(스플래시)이 덮는 동안 뒤 화면이 inert라 초점을 받지 않으므로, 그동안만(최대 5초) 다시 시도합니다.
+    // 첫 화면이 걷힌 뒤에는 한 번만 옮겨, 사용자가 다른 곳을 눌러도 초점을 빼앗지 않습니다.
+    let frame = 0;
+    const started = performance.now();
+    const tryReveal = () => {
+      const node = box.current;
+      if (!node) return;
+      node.scrollIntoView({ block: 'center' });
+      node.focus({ preventScroll: true });
+      if (node.closest('[inert]') && performance.now() - started < 5000) frame = requestAnimationFrame(tryReveal);
+    };
+    frame = requestAnimationFrame(tryReveal);
     return () => cancelAnimationFrame(frame);
   }, [reveal, shown]);
   if (!gearIds.length) return null;

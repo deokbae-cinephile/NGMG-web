@@ -51,7 +51,7 @@
   /* 지도 장소 목록: 장소 사이를 조금 더 띄웁니다. */
   .place-item {
     padding-block: 1.25rem;
-    scroll-margin-top: calc(var(--spacing-topbar) + max(42dvh + 4rem, 16rem) + 0.5rem);
+    scroll-margin-top: calc(var(--spacing-topbar) + max(42dvh + 4rem, 18rem) + 0.5rem);
   }
   @media (width >= 64rem) {
     .place-item {

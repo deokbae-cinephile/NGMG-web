@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ITEM_PHOTO_LIMIT } from '@/entities/record';
 import { RemovablePhoto } from '@/shared/ui';
 
@@ -22,6 +22,18 @@ export const ItemPhotosField = ({ id, label, photos, files, onChange }: Props) =
   const [notice, setNotice] = useState('');
   const count = photos.length + files.length;
   const left = ITEM_PHOTO_LIMIT - count;
+  // 5장에서 하나를 지우면 사진 칸이 다시 켜지는 렌더 뒤에 초점을 옮깁니다(지운 단추가 사라져 초점을 잃지 않게).
+  const input = useRef<HTMLInputElement>(null);
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    input.current?.focus({ preventScroll: true });
+  }, [count]);
+  const removed = () => {
+    setNotice('');
+    refocus.current = true;
+  };
   return (
     <div className="flex flex-col gap-2">
       {count > 0 && (
@@ -34,7 +46,7 @@ export const ItemPhotosField = ({ id, label, photos, files, onChange }: Props) =
                 removeLabel={`${label} 사진 ${index + 1} 삭제`}
                 className="size-20 shrink-0"
                 onRemove={() => {
-                  setNotice('');
+                  removed();
                   onChange({ photos: photos.filter((item) => item.path !== photo.path), files });
                 }}
               />
@@ -48,7 +60,7 @@ export const ItemPhotosField = ({ id, label, photos, files, onChange }: Props) =
                 removeLabel={`${label} 새 사진 ${index + 1} 빼기`}
                 className="size-20 shrink-0"
                 onRemove={() => {
-                  setNotice('');
+                  removed();
                   onChange({ photos, files: files.filter((_, at) => at !== index) });
                 }}
               />
@@ -59,6 +71,7 @@ export const ItemPhotosField = ({ id, label, photos, files, onChange }: Props) =
       <div className="flex min-w-0 flex-col gap-1.5">
         <label htmlFor={id} className="mono-label">{`${label} 사진`}</label>
         <input
+          ref={input}
           id={id}
           type="file"
           accept="image/*"

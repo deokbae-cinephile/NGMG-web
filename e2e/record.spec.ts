@@ -65,6 +65,7 @@ test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 �
   await expect(dialog.getByRole('group', { name: '물고기 2' })).toHaveCount(0); // 줄은 늘리지 않습니다.
   await fish.getByRole('button', { name: '물고기 1 새 사진 5 빼기' }).click();
   await expect(fish.getByLabel('물고기 1 사진', { exact: true })).toBeEnabled();
+  await expect(fish.getByLabel('물고기 1 사진', { exact: true })).toBeFocused(); // 지운 단추가 사라져도 초점이 사진 칸으로 옵니다.
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
   const saved = db.fish_catches!.at(-1)!;
@@ -91,7 +92,7 @@ test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 �
   dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByLabel('음식 1 사진').setInputFiles(files.slice(0, 2));
   await expect(dialog.getByRole('list', { name: '음식 1 사진 2장' }).getByRole('img')).toHaveCount(2);
-  await expect(dialog.getByRole('group', { name: '음식 2' })).toHaveCount(0);
+  await expect(dialog.getByLabel('음식 2', { exact: true })).toHaveCount(0); // 음식 줄은 늘지 않습니다.
 });
 
 test('기록: 입력 항목을 줄여도 예전 값은 지워지지 않고, 연박 날짜를 저장한다', async ({ page }) => {

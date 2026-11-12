@@ -264,8 +264,9 @@ test('지도: 현재 위치 단추로 내 위치를 표시하고, 권한이 없�
   await expect(page.getByRole('img', { name: '내 위치' })).toBeAttached();
   await expect(page.getByRole('status').filter({ hasText: '지도를 현재 위치로 옮겼습니다.' })).toBeAttached();
   // 다른 장소처럼 현재 위치의 날씨를 오른쪽 위에 보여 줍니다.
-  await expect(page.locator('.weather-badge')).toContainText('°');
-  await expect(page.locator('.weather-badge')).toContainText(/현재 위치 지금 날씨 .+, 기온 -?\d/);
+  const weatherBox = page.getByRole('status').filter({ hasText: /날씨/ });
+  await expect(weatherBox).toContainText('°');
+  await expect(weatherBox).toContainText(/현재 위치 지금 날씨 .+, 기온 -?\d/);
   await expectAccessible(page);
 
   // 권한을 거두면 이유와 해결 방법을 알립니다.
@@ -594,7 +595,7 @@ test('지도 단추: 맨 아래 단추로 접고 펼치며(상태 기억), 지�
   // 가장자리 간격: 평점 안내(왼쪽 위), 날씨(오른쪽 위), 지도 단추(오른쪽 아래)
   const map = (await page.getByRole('region', { name: '장소 지도' }).boundingBox())!;
   const legend = (await page.locator('.map-legend').boundingBox())!;
-  const weather = (await page.locator('.weather-badge').boundingBox())!;
+  const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
   const group = (await tools.boundingBox())!;
   expect([Math.round(legend.x - map.x), Math.round(legend.y - map.y)]).toEqual([20, 20]);
   expect([Math.round(map.x + map.width - weather.x - weather.width), Math.round(weather.y - map.y)]).toEqual([20, 20]);
@@ -614,4 +615,13 @@ test('지도 단추: 맨 아래 단추로 접고 펼치며(상태 기억), 지�
   for (const name of ['지도 작게', '위치 지정', '무악재역', '현재 위치로 이동']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   await tools.getByRole('button', { name: '지도 작게' }).click();
   await expect(tools.getByRole('button', { name: '지도 단추 접기' })).toBeVisible();
+});
+
+test('지도가 가장 낮아도(가로 휴대폰) 오른쪽 아래 지도 단추가 위쪽 날씨 상자와 겹치지 않는다', async ({ page }) => {
+  await page.setViewportSize({ width: 740, height: 360 });
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  const weather = (await page.getByRole('status').filter({ hasText: /날씨/ }).boundingBox())!;
+  const tools = (await page.getByRole('group', { name: '지도 단추' }).boundingBox())!;
+  expect(tools.y).toBeGreaterThanOrEqual(weather.y + weather.height);
 });
