@@ -65,12 +65,14 @@
   .panel-roomy:first-child {
     padding-top: 0;
   }
-  /* 일정 및 기록 화면의 기록 카드는 내용이 길어 더 띄웁니다. */
-  .panes-schedule article.panel-roomy {
-    padding-block: 3rem;
+  /* 기록 카드 목록(고른 날의 기록, 전체 기록, 장소 상세): 카드 사이를 같은 간격으로 띄우고, 목록 맨 위에는 여백을 두지 않습니다. */
+  .record-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
   }
-  .panes-schedule article.panel-roomy:first-child {
-    padding-top: 0;
+  .record-list > .panel-roomy {
+    padding-block: 0;
   }
   .panel-active {
     background: var(--color-surface);
@@ -97,7 +99,8 @@
       color: var(--color-on-accent);
     }
   }
-  .button:disabled {
+  .button:disabled,
+  .button[aria-disabled='true'] {
     cursor: not-allowed;
     opacity: 0.45;
   }

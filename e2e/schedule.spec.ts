@@ -320,3 +320,42 @@ test('장소 찾기: 주소로 찾아 이름이 맞지 않아도, Kakao 결과�
   await expect(dialog.getByRole('button', { name: /^바다 횟집.*저장한 장소/ })).toBeEnabled();
   await expect(dialog.getByRole('button', { name: /^바다 횟집/ })).toHaveCount(1);
 });
+
+test('하루에 기록·일정이 여럿이면 위·아래 단추로 순서를 바꾸고, 맨 위·맨 아래에서는 더 옮기지 않는다', async ({ page }) => {
+  const base = seed();
+  base.places = [...base.places!, place('p8', '곱분이곱창', 'restaurant')];
+  base.records = [
+    ...base.records!,
+    { id: 'ra', place_id: 'p2', visited_on: '2026-11-11', end_date: '2026-11-11', created_at: '2026-11-11T01:00:00Z' },
+    { id: 'rb', place_id: 'p8', visited_on: '2026-11-11', end_date: '2026-11-11', created_at: '2026-11-11T02:00:00Z' },
+  ];
+  base.events = [...base.events!, { id: 'e2', date: '2026-11-07', start_time: '12:00:00', title: '점심 먹기', place_id: null, memo: '' }];
+  const db = await fakeBackend(page, base);
+  await page.goto('./schedule?date=2026-11-11');
+  const records = page.getByRole('region', { name: '기록', exact: true }).getByRole('article');
+  await expect(records).toHaveCount(2);
+  await expect(records.first()).toContainText('바다횟집'); // 처음엔 만든 순서
+  const up = page.getByRole('button', { name: '곱분이곱창 기록 위로' });
+  await expect(page.getByRole('button', { name: '바다횟집 기록 위로' })).toHaveAttribute('aria-disabled', 'true');
+  await up.click();
+  await expect(records.first()).toContainText('곱분이곱창');
+  expect(db.records!.find((row) => row.id === 'rb')!.day_order).toBe(0);
+  expect(db.records!.find((row) => row.id === 'ra')!.day_order).toBe(1);
+  await expect(up).toBeFocused(); // 옮긴 뒤에도 초점이 그 단추에 남습니다.
+  await expect(up).toHaveAttribute('aria-disabled', 'true');
+  await up.click({ force: true }); // 맨 위에서는 눌러도 더 옮기지 않습니다(누를 수 없음을 aria-disabled로 알림).
+  await expect(records.first()).toContainText('곱분이곱창');
+
+  // 일정도 같은 방식입니다.
+  await page.goto('./schedule?date=2026-11-07');
+  const events = page.getByRole('region', { name: /2026년 11월 7일/ }).getByRole('heading', { level: 4 });
+  await expect(events).toHaveText(['새벽 출조', '점심 먹기']);
+  await page.getByRole('button', { name: '새벽 출조 일정 아래로' }).click();
+  await expect(events).toHaveText(['점심 먹기', '새벽 출조']);
+
+  // 저장에 실패하면 순서를 바꾸지 않고 안내합니다.
+  await page.route('**/rest/v1/rpc/reorder_events', (route) => route.fulfill({ status: 500, json: { message: 'down' } }));
+  await page.getByRole('button', { name: '점심 먹기 일정 아래로' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '일정 순서를 바꾸지 못했습니다.' })).toBeVisible();
+  await expect(events).toHaveText(['점심 먹기', '새벽 출조']);
+});

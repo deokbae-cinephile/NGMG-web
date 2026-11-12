@@ -101,7 +101,7 @@ export const PlacePage = ({ id }: { id: string }) => {
               ))}
             </dl>
           )}
-          <div className="flex flex-col">
+          <div className="record-list">
             {records.data?.map((record) => (
               <RecordCard
                 key={record.id}

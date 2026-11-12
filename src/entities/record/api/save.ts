@@ -241,3 +241,16 @@ export const useDeleteRecord = () => {
     onSuccess: () => client.invalidateQueries({ queryKey: ['records'] }),
   });
 };
+
+/** 하루의 기록 순서를 바꿉니다. ids는 바뀐 순서(먼저 할 것부터)이고, 차례대로 0, 1, 2…를 day_order로 저장합니다. */
+export const useReorderRecords = () => {
+  const client = useQueryClient();
+  return useMutation({
+    // 한 번의 요청(한 트랜잭션)으로 저장해, 실패하면 하나도 바뀌지 않습니다.
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.rpc('reorder_records', { ids });
+      if (error) throw new Error('기록 순서를 바꾸지 못했습니다. 다시 눌러 주세요.');
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: ['records'] }),
+  });
+};

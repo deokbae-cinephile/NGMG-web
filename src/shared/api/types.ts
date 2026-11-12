@@ -88,6 +88,8 @@ export type RecordDetails = {
 
 export type PlaceRecord = RecordDetails & {
   id: string;
+  /** 그날 안의 순서(작을수록 먼저). 같으면 만든 순서 */
+  day_order?: number;
   place_id: string;
   visited_on: string;
   /** 연박이면 마지막 날, 당일이면 visited_on과 같습니다. */
@@ -108,6 +110,8 @@ export type PlaceRecord = RecordDetails & {
 
 export type CalendarEvent = {
   id: string;
+  /** 그날 안의 순서(작을수록 먼저). 같으면 시작 시간 순서 */
+  day_order?: number;
   date: string;
   /** 연박이면 마지막 날, 당일이면 date와 같습니다. */
   end_date: string;

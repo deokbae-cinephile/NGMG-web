@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Writable } from '@/entities/session';
-import { useDeleteEvent, useMonthEvents } from '@/entities/event';
+import { useDeleteEvent, useMonthEvents, useReorderEvents } from '@/entities/event';
 import { KindBadge } from '@/entities/place';
-import { RecordCard, useDayRecords, useRecordedEventIds } from '@/entities/record';
+import { RecordCard, useDayRecords, useRecordedEventIds, useReorderRecords } from '@/entities/record';
 import { EventForm } from '@/features/event-form';
 import { useGear } from '@/entities/gear';
 import { GearChecklist } from '@/features/gear-checklist';
@@ -22,6 +22,18 @@ const PaneHead = ({ id, title, children }: { id: string; title: string; children
     {children}
   </div>
 );
+
+/**
+ * 하루에 둘 이상일 때 순서를 바꾸는 위·아래 단추. 맨 위·맨 아래에서는 누를 수 없음을 aria-disabled로 알립니다
+ * (disabled로 하면 옮긴 직후 초점을 잃으므로 초점은 그대로 둡니다).
+ */
+const OrderButtons = ({ label, index, count, onMove }: { label: string; index: number; count: number; onMove: (step: -1 | 1) => void }) =>
+  count < 2 ? null : (
+    <>
+      <IconButton icon="chevronUp" label={`${label} 위로`} aria-disabled={index === 0} onClick={() => index > 0 && onMove(-1)} />
+      <IconButton icon="chevronDown" label={`${label} 아래로`} aria-disabled={index === count - 1} onClick={() => index < count - 1 && onMove(1)} />
+    </>
+  );
 
 export const SchedulePage = () => {
   const [params, setParams] = useSearchParams();
@@ -61,7 +73,28 @@ export const SchedulePage = () => {
       marks.set(key, { left: mark.left || key > event.date, right: mark.right || key < event.end_date, stay: mark.stay || event.end_date !== event.date });
     }),
   );
-  const events = dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? [];
+  // 그날 안의 순서: 정해 둔 순서(day_order), 같으면 시작 시간
+  const events = (dayEvents.data?.filter((event) => event.date <= date && date <= event.end_date) ?? []).sort(
+    (a, b) => (a.day_order ?? 0) - (b.day_order ?? 0) || a.start_time.localeCompare(b.start_time),
+  );
+  const reorderEvents = useReorderEvents();
+  const reorderRecords = useReorderRecords();
+  // 순서를 저장하는 동안 다시 누르면 무시합니다(isPending은 다음 렌더에야 바뀜).
+  const moving = useRef(false);
+  /** 목록에서 index번째를 위(-1)나 아래(+1)로 옮긴 순서로 저장합니다. */
+  const move = (ids: string[], index: number, step: -1 | 1, save: typeof reorderEvents) => {
+    const target = index + step;
+    if (moving.current || target < 0 || target >= ids.length) return;
+    moving.current = true;
+    const next = [...ids];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item!);
+    save.mutate(next, {
+      onSettled: () => {
+        moving.current = false;
+      },
+    });
+  };
   // 출조 알림을 누르면 ?focus=gear로 들어옵니다. 그날 첫 일정의 챙길 물품 체크리스트를 바로 보여 줍니다.
   // 지운 물품 id만 남은 일정은 체크리스트가 없으므로, 실제 물품이 하나라도 있는 첫 일정을 고릅니다.
   const gearList = useGear().data;
@@ -148,12 +181,12 @@ export const SchedulePage = () => {
         <div className="cell-body flex flex-col gap-5 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-5">
           <section aria-labelledby="events-title" className="flex flex-col gap-2">
             <h3 id="events-title" className="sr-only">이날 일정</h3>
-            <ErrorText error={dayEvents.error ?? remove.error} />
+            <ErrorText error={dayEvents.error ?? remove.error ?? reorderEvents.error} />
             {dayEvents.isPending && <SkeletonRows count={2} variant="event" />}
             {!dayEvents.isPending && events.length === 0 && <p className="text-muted">일정이 없습니다.</p>}
             {events.length > 0 && (
             <ol className="flex flex-col">
-              {events.map((event) => (
+              {events.map((event, index) => (
                 // 수정·삭제는 휴대폰에서도 늘 오른쪽 위에 둡니다.
                 <li key={event.id} className="panel panel-roomy flex items-start gap-3">
                   <div className="min-w-0 flex-1">
@@ -171,6 +204,7 @@ export const SchedulePage = () => {
                   </div>
                   <Writable>
                     <div className="flex shrink-0 items-center gap-2">
+                      <OrderButtons label={`${event.title} 일정`} index={index} count={events.length} onMove={(step) => move(events.map((item) => item.id), index, step, reorderEvents)} />
                       <IconButton icon="pencil" label={`${event.title} 일정 수정`} onClick={() => setForm({ event })} />
                       <IconButton icon="trash" label={`${event.title} 일정 삭제`} className="button-accent" disabled={remove.isPending} onClick={() => onDelete(event)} />
                     </div>
@@ -200,13 +234,13 @@ export const SchedulePage = () => {
             </section>
           )}
 
-          <section aria-labelledby="records-of-day" className="flex flex-col gap-2">
+          <section aria-labelledby="records-of-day" className="flex flex-col gap-4">
             <h3 id="records-of-day" className="title text-lg">기록</h3>
-            <ErrorText error={dayRecords.error ?? recorded.error} />
+            <ErrorText error={dayRecords.error ?? recorded.error ?? reorderRecords.error} />
             {dayRecords.isPending && <SkeletonRows count={1} variant="record" />}
             {dayRecords.data?.length === 0 && <p className="text-muted">이날 남긴 기록이 없습니다.</p>}
-            <div className="flex flex-col">
-              {dayRecords.data?.map((record) => (
+            <div className="record-list">
+              {dayRecords.data?.map((record, index, list) => (
                 <RecordCard
                   key={record.id}
                   record={record}
@@ -220,6 +254,7 @@ export const SchedulePage = () => {
                   }
                   actions={
                     <Writable>
+                      <OrderButtons label={`${record.place.name} 기록`} index={index} count={list.length} onMove={(step) => move(list.map((item) => item.id), index, step, reorderRecords)} />
                       <IconButton icon="pencil" label={`${record.place.name} 기록 수정`} onClick={() => setRecordForm({ record })} />
                     </Writable>
                   }

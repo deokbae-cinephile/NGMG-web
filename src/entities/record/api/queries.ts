@@ -76,7 +76,7 @@ export const useDayRecords = (date: string) =>
   useQuery({
     queryKey: ['records', 'day', date],
     queryFn: async () => {
-      const { data, error } = await supabase.from('records').select(SELECT).lte('visited_on', date).gte('end_date', date).order('id');
+      const { data, error } = await supabase.from('records').select(SELECT).lte('visited_on', date).gte('end_date', date).order('day_order').order('created_at');
       if (error) throw new Error('기록을 불러오지 못했습니다.');
       return withPhotoUrls(data as unknown as Row[]);
     },
