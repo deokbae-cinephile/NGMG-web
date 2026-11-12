@@ -1,5 +1,5 @@
 import type { Place } from '@/shared/api';
-import { eachDay, parseDateKey } from '@/shared/lib';
+import { addDays, parseDateKey, toDateKey } from '@/shared/lib';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -25,8 +25,12 @@ export const formatHours = (place: Pick<Place, 'open_time' | 'close_time' | 'clo
 export const closedReason = (place: Partial<Pick<Place, 'closed_days'>>, start: string, end: string) => {
   const closed = place.closed_days ?? [];
   if (!closed.length || !start) return undefined;
-  const day = eachDay(start, end && end >= start ? end : start).find((key) => closed.includes(parseDateKey(key).getDay()));
-  if (!day) return undefined;
-  const date = parseDateKey(day);
-  return `${date.getMonth() + 1}월 ${date.getDate()}일(${WEEKDAYS[date.getDay()]}) 휴무`;
+  const last = end && end >= start ? end : start;
+  // 7일이면 모든 요일을 지나므로 그 안에서 찾고, 찾는 즉시 멈춥니다(먼 종료 날짜를 넣어도 가볍게).
+  let date = parseDateKey(start);
+  if (Number.isNaN(date.getTime())) return undefined;
+  for (let step = 0; step < 7 && toDateKey(date) <= last; step += 1, date = addDays(date, 1)) {
+    if (closed.includes(date.getDay())) return `${date.getMonth() + 1}월 ${date.getDate()}일(${WEEKDAYS[date.getDay()]}) 휴무`;
+  }
+  return undefined;
 };

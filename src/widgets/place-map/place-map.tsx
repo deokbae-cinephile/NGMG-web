@@ -64,6 +64,10 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   });
   const { map, error, tilesReady } = useKakaoMap(container, latest);
   const [toolsOpen, setToolsOpen] = useState(() => getPreference('map-tools-open', true));
+  // 지도 단추 묶음을 펼치거나 접으면 말풍선이 그 밑에 가리지 않게 위치를 다시 맞춥니다.
+  useEffect(() => {
+    fitPopup.current?.();
+  }, [toolsOpen]);
   const locateControl = useLocateControl({ map, onMove: onClose, onLocated: (latitude, longitude) => setHere({ latitude, longitude }) });
 
   useEffect(() => {

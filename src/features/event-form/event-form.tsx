@@ -127,11 +127,10 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         ) : (
           <PlaceSearch saved={places.data} onPick={setPlace} unavailable={(item) => closedReason(item, start, end)} />
         )}
-        {placeClosed && (
-          <p id="event-place-closed" className={`text-sm ${closedShown ? 'text-danger' : 'text-muted'}`}>
-            {`${placeClosed}라 이 날짜에는 고를 수 없습니다. 날짜를 바꾸거나 장소를 빼 주세요.`}
-          </p>
-        )}
+        {/* 날짜를 바꾸다 휴무일이 되면 바로 알리도록 늘 있는 상태 영역에 안내를 씁니다. */}
+        <p id="event-place-closed" role="status" className={`text-sm empty:hidden ${closedShown ? 'text-danger' : 'text-muted'}`}>
+          {placeClosed ? `${placeClosed}라 이 날짜에는 고를 수 없습니다. 날짜를 바꾸거나 장소를 빼 주세요.` : ''}
+        </p>
         {place && !place.id && (
           <label className="flex min-h-11 items-center gap-2">
             <span className="mono-label">새 장소 분류</span>

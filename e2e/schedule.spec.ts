@@ -1,6 +1,6 @@
 // E2E: 일정·달력
 import { expect, test, type Locator } from '@playwright/test';
-import { acceptDialogs, expectAccessible, expectFits, fakeBackend, seed } from './support';
+import { acceptDialogs, expectAccessible, expectFits, fakeBackend, place, seed } from './support';
 
 acceptDialogs();
 
@@ -270,10 +270,27 @@ test('새 일정: 일정 날짜가 맛집 휴무 요일이면 그 맛집은 고�
   await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
   await dialog.getByLabel('시작 날짜').fill('2026-11-11');
   await dialog.getByLabel('종료 날짜').fill('2026-11-11');
-  await expect(dialog.getByText('11월 11일(수) 휴무라 이 날짜에는 고를 수 없습니다.', { exact: false })).toBeVisible();
+  // 날짜를 바꾸는 순간 상태 영역(role=status)으로 알립니다.
+  await expect(dialog.getByRole('status').filter({ hasText: '11월 11일(수) 휴무라 이 날짜에는 고를 수 없습니다.' })).toBeVisible();
   const before = db.events!.length;
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeVisible();
   expect(db.events!.length).toBe(before);
   await expect(dialog.getByRole('button', { name: '장소 빼기' })).toBeFocused();
+});
+
+test('장소 찾기: 이미 저장한 맛집과 같은 Kakao 결과는 빼서 저장한 장소로만 고른다(휴무 제한을 피해 가지 못함)', async ({ page }, testInfo) => {
+  const base = seed();
+  base.places = [...base.places!, { ...place('p9', '바다 횟집', 'restaurant'), latitude: 34.1, longitude: 127.4, closed_days: [3] }];
+  await fakeBackend(page, base);
+  await page.goto('./schedule?date=2026-11-11'); // 수요일
+  if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^11 일 \(수\)/ }).click();
+  await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('바다');
+  await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
+  const results = dialog.getByRole('button', { name: /^바다 횟집/ });
+  await expect(results).toHaveCount(1); // Kakao의 같은 맛집은 빠지고 저장한 장소 하나만
+  await expect(results).toBeDisabled();
+  await expect(dialog.getByRole('status').filter({ hasText: '휴무' })).toHaveCount(0);
 });

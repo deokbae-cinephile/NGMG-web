@@ -419,12 +419,13 @@ test('큰 사진(가로 5000px 이상)도 줄여 읽어 1600px 사진으로 올�
   page.on('request', (request) => {
     if (request.method() === 'POST' && request.url().includes('/storage/v1/object/') && !request.url().includes('.thumb.')) sizes.push(request.postDataBuffer()?.length ?? 0);
   });
+  const before = db.record_photos!.length;
   await page.getByRole('button', { name: '기록 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '새 기록' });
   await dialog.getByLabel('사진 추가').setInputFiles({ name: '큰사진.jpg', mimeType: 'image/jpeg', buffer: big });
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(dialog).toBeHidden();
-  expect(db.record_photos!.at(-1)).toBeTruthy();
+  expect(db.record_photos!.length).toBe(before + 1); // 새 사진 행이 저장됐습니다.
   expect(sizes.length).toBeGreaterThan(0);
   expect(Math.max(...sizes)).toBeLessThan(big.length); // 줄여서 올렸습니다.
 });
