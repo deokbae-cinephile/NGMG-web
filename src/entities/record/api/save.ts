@@ -248,6 +248,7 @@ export const useReorderRecords = () => {
       const { error } = await supabase.rpc('reorder_records', { ids });
       if (error) throw new Error('기록 순서를 바꾸지 못했습니다. 다시 눌러 주세요.');
     },
-    onSettled: () => client.invalidateQueries({ queryKey: ['records'] }),
+    // 순서는 하루 목록에서만 씁니다. 통계·도감·평점은 다시 읽지 않습니다.
+    onSettled: () => client.invalidateQueries({ queryKey: ['records', 'day'] }),
   });
 };

@@ -1,5 +1,5 @@
 import { photoFileKey } from '@/shared/lib';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { removePhotos, signPhotos, supabase, uploadPhoto, type Place, type PlaceDraft } from '@/shared/api';
 import { SAVE_KEY } from '@/shared/ui';
 
@@ -18,6 +18,15 @@ const fetchPlaces = async () => {
 };
 
 export const usePlaces = () => useQuery({ queryKey: ['places'], queryFn: fetchPlaces });
+
+/**
+ * 장소가 바뀌면 다시 읽을 목록: 장소, 장소를 함께 받는 일정, 장소에 딸린 기록(평점·도감 등).
+ * 사진 서명 주소·날씨·물품·로그인 정보는 그대로 둡니다.
+ */
+const PLACE_DEPENDENT_KEYS = [['places'], ['events'], ['records']] as const;
+
+const invalidatePlaceData = (client: QueryClient) =>
+  Promise.all(PLACE_DEPENDENT_KEYS.map((queryKey) => client.invalidateQueries({ queryKey })));
 
 type SaveInput = PlaceDraft & { photo?: File | null; removePhoto?: boolean; isNew?: boolean };
 
@@ -52,7 +61,7 @@ export const useSavePlace = () => {
   return useMutation({
     mutationKey: SAVE_KEY,
     mutationFn: savePlace,
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: () => invalidatePlaceData(client),
   });
 };
 
@@ -87,6 +96,6 @@ export const useDeletePlace = () => {
   const client = useQueryClient();
   return useMutation({
     mutationFn: deletePlace,
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: () => invalidatePlaceData(client),
   });
 };

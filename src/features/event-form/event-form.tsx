@@ -54,7 +54,8 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         gear_ids: gearIds, // 챙김 표시는 보내지 않습니다(창을 연 뒤 다른 사람이 체크한 것을 지우지 않게). 뺀 장비의 챙김은 DB가 지웁니다.
       });
     },
-    onSuccess: () => client.invalidateQueries(),
+    // 일정과, 새 장소를 함께 저장했다면 장소 목록만 다시 읽습니다(기록·사진 주소·날씨는 그대로).
+    onSuccess: () => Promise.all([client.invalidateQueries({ queryKey: ['events'] }), client.invalidateQueries({ queryKey: ['places'] })]),
   });
 
   const onValid = (values: Values) => {
