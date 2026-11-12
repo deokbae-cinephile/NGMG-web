@@ -220,8 +220,10 @@ export const createFakeServer = (seed: Seed = {}) => {
 
     // 집계 함수(place_ratings·year_stats·fish_dex 등): fake-aggregates.ts가 같은 규칙으로 셉니다.
     const rpc = /\/rest\/v1\/rpc\/(\w+)$/.exec(path);
-    if (method === 'POST' && rpc) {
-      const result = aggregate(db, rpc[1]!, request.body ?? {});
+    if (rpc && (method === 'GET' || method === 'POST')) {
+      // 읽기 함수는 GET(?target_year=2026)으로 부릅니다.
+      const args = method === 'GET' ? Object.fromEntries(url.searchParams) : (request.body ?? {});
+      const result = aggregate(db, rpc[1]!, args);
       if (result !== undefined) return json(result);
     }
 

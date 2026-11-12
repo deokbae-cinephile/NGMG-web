@@ -16,7 +16,7 @@ export const useStatYears = () =>
   useQuery({
     queryKey: ['records', 'stat-years'],
     queryFn: async (): Promise<number[]> => {
-      const { data, error } = await supabase.rpc('stat_years', {});
+      const { data, error } = await supabase.read('stat_years');
       if (error) throw new Error('통계를 불러오지 못했습니다.');
       return data as number[];
     },
@@ -27,7 +27,7 @@ export const useYearStats = (year: number) =>
   useQuery({
     queryKey: ['records', 'year-stats', year],
     queryFn: async (): Promise<YearStats> => {
-      const { data, error } = await supabase.rpc('year_stats', { target_year: year });
+      const { data, error } = await supabase.read('year_stats', { target_year: year });
       if (error) throw new Error('통계를 불러오지 못했습니다.');
       const stats = data as Omit<YearStats, 'spots' | 'restaurants'> & { spots: RankRow[]; restaurants: RankRow[] };
       const ranks = (rows: RankRow[]) => rows.map(({ rating, ...row }) => ({ ...row, rating: rating ?? undefined }));
@@ -86,7 +86,7 @@ export const useFishDex = () =>
   useQuery({
     queryKey: ['records', 'dex'],
     queryFn: async (): Promise<DexEntry[]> => {
-      const { data, error } = await supabase.rpc('fish_dex', {});
+      const { data, error } = await supabase.read('fish_dex');
       if (error) throw new Error('도감을 불러오지 못했습니다.');
       return (data as FishDexRow[]).map(({ number, species, count, visited_on, place_name, length_cm, ...big }) => ({
         number,
@@ -117,7 +117,7 @@ export const useMenuDex = () =>
   useQuery({
     queryKey: ['records', 'menu-dex'],
     queryFn: async (): Promise<DexMenu[]> => {
-      const { data, error } = await supabase.rpc('menu_dex', {});
+      const { data, error } = await supabase.read('menu_dex');
       if (error) throw new Error('도감을 불러오지 못했습니다.');
       return data as DexMenu[];
     },
@@ -128,7 +128,7 @@ export const useSpeciesOptions = () =>
   useQuery({
     queryKey: ['records', 'species'],
     queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase.rpc('species_options', {});
+      const { data, error } = await supabase.read('species_options');
       if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
       return data as string[];
     },

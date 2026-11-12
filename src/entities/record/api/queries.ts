@@ -88,7 +88,7 @@ export const usePlaceRatings = () =>
     queryKey: ['records', 'place-ratings'],
     queryFn: async () => {
       // 평균은 DB(place_ratings)가 냅니다.
-      const { data, error } = await supabase.rpc('place_ratings', {});
+      const { data, error } = await supabase.read('place_ratings');
       if (error) throw new Error('평점을 불러오지 못했습니다.');
       return new Map((data as { place_id: string; rating: number }[]).map((row) => [row.place_id, Number(row.rating)]));
     },

@@ -66,6 +66,8 @@ export const supabase = {
   auth,
   from: (table: string) => rest.from(table),
   rpc: (fn: string, args: Record<string, unknown>) => rest.rpc(fn, args),
+  /** 읽기만 하는 DB 함수(집계)는 GET으로 불러, 서비스 워커가 다른 조회처럼 마지막 응답을 오프라인용으로 저장합니다. */
+  read: (fn: string, args: Record<string, unknown> = {}) => rest.rpc(fn, args, { get: true }),
   storage: { from: bucket },
   /** Edge Function 호출. 로그인 토큰과 공개 키를 붙입니다. */
   functions: { fetch: (name: string, init?: RequestInit) => authedFetch(`${url}/functions/v1/${name}`, init) },
