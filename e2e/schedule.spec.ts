@@ -352,4 +352,10 @@ test('하루에 기록·일정이 여럿이면 위·아래 단추로 순서를 �
   await expect(events).toHaveText(['새벽 출조', '점심 먹기']);
   await page.getByRole('button', { name: '새벽 출조 일정 아래로' }).click();
   await expect(events).toHaveText(['점심 먹기', '새벽 출조']);
+
+  // 저장에 실패하면 순서를 바꾸지 않고 안내합니다.
+  await page.route('**/rest/v1/rpc/reorder_events', (route) => route.fulfill({ status: 500, json: { message: 'down' } }));
+  await page.getByRole('button', { name: '점심 먹기 일정 아래로' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '일정 순서를 바꾸지 못했습니다.' })).toBeVisible();
+  await expect(events).toHaveText(['점심 먹기', '새벽 출조']);
 });

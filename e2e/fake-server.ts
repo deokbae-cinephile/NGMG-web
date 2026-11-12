@@ -217,6 +217,17 @@ export const createFakeServer = (seed: Seed = {}) => {
     }
     if (path.startsWith('/storage/v1/object')) return json({ Key: path, Id: 'x', path });
 
+    // 하루 순서 함수(reorder_records·reorder_events): ids 순서대로 day_order를 0, 1, 2…로 바꿉니다.
+    const reorder = /\/rest\/v1\/rpc\/reorder_(records|events)$/.exec(path);
+    if (method === 'POST' && reorder) {
+      const { ids } = request.body as { ids: string[] };
+      ids.forEach((id, index) => {
+        const row = db[reorder[1]!]!.find((item) => item.id === id);
+        if (row) row.day_order = index;
+      });
+      return json(null);
+    }
+
     // 챙김 표시 함수(set_packed_gear): 장비 하나만 넣거나 뺍니다.
     if (method === 'POST' && path.endsWith('/rest/v1/rpc/set_packed_gear')) {
       const { event_id, gear_id, packed } = request.body as { event_id: string; gear_id: string; packed: boolean };

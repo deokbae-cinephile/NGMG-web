@@ -121,11 +121,10 @@ export const useSetPacked = () => {
 export const useReorderEvents = () => {
   const client = useQueryClient();
   return useMutation({
+    // 한 번의 요청(한 트랜잭션)으로 저장해, 실패하면 하나도 바뀌지 않습니다.
     mutationFn: async (ids: string[]) => {
-      for (const [index, id] of ids.entries()) {
-        const { error } = await supabase.from('events').update({ day_order: index }).eq('id', id);
-        if (error) throw new Error('일정 순서를 바꾸지 못했습니다.');
-      }
+      const { error } = await supabase.rpc('reorder_events', { ids });
+      if (error) throw new Error('일정 순서를 바꾸지 못했습니다. 다시 눌러 주세요.');
     },
     onSettled: () => client.invalidateQueries({ queryKey: ['events'] }),
   });
