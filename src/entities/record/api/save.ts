@@ -35,9 +35,8 @@ export type RecordInput = RecordDetails & {
 /**
  * 한 칸(물고기·음식)의 사진: 남길 기존 사진 경로(keptPhotos, 순서대로)와 새로 올릴 파일(files). 합쳐서 5장까지이고 첫 장이 대표 사진입니다.
  * photo_path·extra_photo_paths는 폼을 열 때의 값으로, 빠진 사진 파일을 지우는 데 씁니다.
- * (예전 저장 대기열 항목은 file·removePhoto 모양이라 photosOf가 함께 읽습니다.)
  */
-type ItemPhotos = { keptPhotos?: string[]; files?: File[]; file?: File | null; removePhoto?: boolean };
+type ItemPhotos = { keptPhotos: string[]; files: File[] };
 
 /** 저장할 물고기 */
 export type FishInput = Omit<FishCatch, 'photo_url' | 'photo_thumb_url' | 'extra_photos'> & ItemPhotos;
@@ -45,17 +44,12 @@ export type FishInput = Omit<FishCatch, 'photo_url' | 'photo_thumb_url' | 'extra
 /** 저장할 메뉴 */
 export type MenuInput = Omit<MenuItem, 'photo_url' | 'photo_thumb_url' | 'extra_photos'> & ItemPhotos;
 
-const photosOf = (item: ItemPhotos & { photo_path: string | null; extra_photo_paths?: string[] }) => ({
-  kept: item.keptPhotos ?? (item.removePhoto || item.file ? [] : itemPhotoPaths(item)),
-  files: item.files ?? (item.file ? [item.file] : []),
-});
-
 /** 폼에서만 쓰는 사진 값을 뺀 DB 행 */
-const rowOf = (input: object) => Object.fromEntries(Object.entries(input).filter(([key]) => !['file', 'removePhoto', 'keptPhotos', 'files'].includes(key)));
+const rowOf = (input: object) => Object.fromEntries(Object.entries(input).filter(([key]) => !['keptPhotos', 'files'].includes(key)));
 
 /** 새 사진을 올리고, 남길 사진과 합쳐 대표(photo_path)와 나머지(extra_photo_paths)로 나눕니다. 빠진 옛 사진 경로도 돌려줍니다. */
 const placeItemPhotos = async (recordId: string, prefix: 'fish' | 'menu', item: ItemPhotos & { id: string; photo_path: string | null; extra_photo_paths?: string[] }, label: string) => {
-  const { kept, files } = photosOf(item);
+  const { keptPhotos: kept, files } = item;
   const uploaded: string[] = [];
   for (const [index, file] of files.entries()) {
     // 같은 저장 내용이면 같은 경로가 되어 다시 저장해도 중복되지 않습니다. 순서와 이름을 넣어, 크기·시각이 같은 사진끼리도 겹치지 않습니다.
