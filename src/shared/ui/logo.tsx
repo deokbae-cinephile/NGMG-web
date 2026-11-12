@@ -7,3 +7,12 @@ export const Logo = ({ size = 'md' }: { size?: 'md' | 'lg' }) => (
     <path d={BONES} />
   </svg>
 );
+
+/** 사진이 없는 자리에 넣는 기본 이미지: 옅은 바탕 위 로고. 장식이라 화면 읽기 프로그램은 건너뜁니다. */
+export const DefaultImage = ({ className = 'size-16' }: { className?: string }) => (
+  <span aria-hidden="true" className={`default-image ${className}`}>
+    <svg viewBox="-2 97.5 516.66 317.66" fill="currentColor">
+      <path d={BONES} />
+    </svg>
+  </span>
+);

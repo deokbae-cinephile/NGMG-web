@@ -5,7 +5,7 @@ import { PlaceForm } from '@/features/place-form';
 import { RatingChip, usePlaceRatings } from '@/entities/record';
 import type { Place, PlaceDraft } from '@/shared/api';
 import { findAddress } from '@/shared/lib';
-import { ErrorText, Icon, IconLink, Modal, SearchField, SkeletonRows } from '@/shared/ui';
+import { DefaultImage, ErrorText, Icon, IconLink, Modal, SearchField, SkeletonRows } from '@/shared/ui';
 import { PlaceMap } from '@/widgets/place-map';
 
 type Filter = KindFilterValue;
@@ -268,7 +268,7 @@ export const MapPage = () => {
                 >
                   <button
                     type="button"
-                    className="flex min-h-11 w-full cursor-pointer items-center gap-3 text-left" // 오른쪽 사진은 위아래 가운데
+                    className="flex min-h-11 w-full cursor-pointer items-center gap-3 text-left" // 사진 + 이름 순서, 위아래 가운데
                     aria-pressed={selected}
                     onClick={() => {
                       setSelectedId(place.id);
@@ -276,14 +276,19 @@ export const MapPage = () => {
                       if (expanded === 'list') collapse(false); // 목록 확대에서 고르면 목록을 줄여 지도에서 그 장소를 보여 줍니다.
                     }}
                   >
+                    {/* 왼쪽 사진(썸네일). 사진이 없는 장소는 기본 이미지를 넣어 이름 줄이 나란히 맞습니다. */}
+                    {place.photo_url ? (
+                      <img src={place.photo_thumb_url ?? place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />
+                    ) : (
+                      <DefaultImage />
+                    )}
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                       <span className="flex max-w-full flex-wrap items-center gap-2">
-                        {/* 긴 이름은 한 줄로 줄여 오른쪽 사진과 겹치지 않게 합니다. 전체 이름은 자세히 보기에서 봅니다. */}
+                        {/* 긴 이름은 한 줄로 줄입니다. 전체 이름은 자세히 보기에서 봅니다. */}
                         <span className="min-w-0 max-w-full truncate" title={place.name}>{place.name}</span> <KindBadge kind={place.kind} /> <ClosedToday place={place} /> <RatingChip rating={ratings?.get(place.id)} />
                       </span>
                       <span className="text-sm text-muted">{place.address || '주소 없음'}</span>
                     </span>
-                    {place.photo_url && <img src={place.photo_thumb_url ?? place.photo_url} alt="" loading="lazy" className="size-16 shrink-0 border border-line bg-surface object-cover" />}
                   </button>
                   {selected && (
                     <div className="mt-3 flex flex-col gap-2">

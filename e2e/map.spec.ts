@@ -625,3 +625,19 @@ test('지도가 가장 낮아도(가로 휴대폰) 오른쪽 아래 지도 단�
   const tools = (await page.getByRole('group', { name: '지도 단추' }).boundingBox())!;
   expect(tools.y).toBeGreaterThanOrEqual(weather.y + weather.height);
 });
+
+test('장소 목록: 사진은 이름 왼쪽에 있고, 사진이 없는 장소는 기본 이미지를 넣는다', async ({ page }) => {
+  const base = seed();
+  base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, photo_path: 'p2/photo.jpg' } : item));
+  await fakeBackend(page, base);
+  await page.goto('./');
+  const list = page.getByRole('list', { name: '장소 목록' });
+  const withPhoto = list.getByRole('listitem').filter({ hasText: '바다횟집' });
+  const noPhoto = list.getByRole('listitem').filter({ hasText: '거문도 방파제' });
+  const photo = (await withPhoto.locator('img').boundingBox())!;
+  const title = (await withPhoto.getByText('바다횟집', { exact: true }).boundingBox())!;
+  expect(photo.x + photo.width).toBeLessThanOrEqual(title.x); // 사진 + 이름 순서
+  const fallback = (await noPhoto.locator('.default-image').boundingBox())!;
+  expect([Math.round(fallback.width), Math.round(fallback.height)]).toEqual([Math.round(photo.width), Math.round(photo.height)]); // 같은 크기 자리
+  await expect(noPhoto.locator('.default-image')).toHaveAttribute('aria-hidden', 'true');
+});
