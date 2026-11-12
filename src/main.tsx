@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app/styles.css';
 import { App } from './app/app';
-import { listenInstallPrompt } from './features/install-app';
+import { listenInstallPrompt } from './shared/lib';
 
 listenInstallPrompt();
 

@@ -9,3 +9,4 @@ export * from './share';
 export * from './submit-lock';
 export * from './router';
 export * from './theme';
+export * from './install-prompt';
