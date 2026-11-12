@@ -43,3 +43,12 @@ export const compressImageWithThumb = async (file: File, thumbSize: number): Pro
     bitmap.close();
   }
 };
+
+/**
+ * 사진 파일의 저장 경로용 이름: 수정 시각·크기·이름 해시·순서. 같은 저장(같은 파일·같은 순서)이면 같은 이름이라 다시 올려도 중복되지 않고,
+ * 연속 촬영처럼 크기·시각이 같은 사진끼리도 겹치지 않습니다. 한글·공백은 경로에 넣지 않습니다.
+ */
+export const photoFileKey = (file: File, index = 0) => {
+  const hash = [...file.name].reduce((value, char) => (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0, 7).toString(36);
+  return `${file.lastModified}-${file.size}-${hash}-${index}`;
+};

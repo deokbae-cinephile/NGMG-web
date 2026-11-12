@@ -95,7 +95,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 3개가 모두 없으면 `deploy.yml`이 웹 데모(`build:demo`)를 배포하고, 일부만 있으면 실패합니다.
 3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://ngmg.kr`입니다.
 
-사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `scripts/spa-pages.mjs`가 `index.html`을 `404.html`과 화면 주소별 파일(`schedule.html`, `stats.html` 등)로 복사합니다. GitHub Pages는 `/schedule` 요청에 `schedule.html`을 200으로 돌려주므로 브라우저 콘솔에 404가 남지 않습니다. 장소 상세(`/places/<id>`)처럼 정해지지 않은 주소는 `404.html`이 맡아 앱은 뜨지만 404 상태로 받습니다. 화면 주소를 새로 만들면 이 스크립트의 목록에도 넣습니다.
+사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `scripts/spa-pages.mjs`가 `index.html`을 `404.html`과 화면 주소별 파일(`schedule.html`, `stats.html` 등)로 복사합니다. GitHub Pages는 `/schedule` 요청에 `schedule.html`을 200으로 돌려주므로 브라우저 콘솔에 404가 남지 않습니다. 장소 상세는 `/place?id=<id>`라 `place.html`이 200으로 받습니다. 예전 주소(`/places/<id>`)처럼 정해지지 않은 주소만 `404.html`이 맡고, 앱이 뜬 뒤 새 주소로 넘깁니다. 화면 주소를 새로 만들면 이 스크립트의 목록에도 넣습니다.
 
 ## PR 리뷰
 
@@ -120,7 +120,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 69개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
+| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 83개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-server.ts`가 흉내 냅니다(`fakeBackend`). 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
@@ -160,6 +160,9 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 - 지도는 마지막으로 보던 곳에서 시작합니다(`map-view`). 저장된 위치가 없으면 무악재역에서 시작합니다.
 
 ## 경량화 원칙
+
+- 구조는 FSD(Feature-Sliced Design)를 따르고 Steiger(`steiger.config.ts`)로 검사합니다. 한 화면에서만 쓰는 코드는 그 화면 슬라이스에 두고, 두 곳 이상에서 쓰게 되면 features·widgets로 올립니다. 폼 슬라이스 이름이 모두 `-form`이라 `fsd/repetitive-naming`만 끕니다.
+- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감)은 DB 함수(`20261128000000_aggregates.sql`, `security invoker`라 RLS 그대로)가 셉니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
 - Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.

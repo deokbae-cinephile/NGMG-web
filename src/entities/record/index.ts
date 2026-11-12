@@ -11,7 +11,8 @@ export {
   useReorderRecords,
   useRecordOutbox,
   RecordConflictError,
-  useStatRecords,
+  useStatYears,
+  useYearStats,
   useFishDex,
   useSpeciesOptions,
   useMenuDex,
@@ -21,10 +22,12 @@ export {
   type DexFish,
   type FishInput,
   type RecordInput,
-  type StatRecord,
+  type PlaceRank,
+  type YearStats,
+  type DexEntry,
   type DexMenu,
 } from './api';
 export { ANGLERS, combinedRating, formatMenu, isPartialRating, missingRaters, ratingDetail, RECORD_FIELDS, summarizeRecords, WEATHER_STATES } from './model';
-export { RatingChip, ratingClass } from './rating-chip';
-export { RecordCard } from './record-card';
-export { FishPhotoGrid } from './fish-photo-grid';
+export { RatingChip, ratingClass } from './ui/rating-chip';
+export { RecordCard } from './ui/record-card';
+export { FishPhotoGrid } from './ui/fish-photo-grid';

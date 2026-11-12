@@ -1,36 +1,39 @@
 /** 통계·도감·사진 모음처럼 여러 기록을 모아 보는 조회 */
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase, type FishCatch, type MenuItem, type PlaceRecord } from '@/shared/api';
+import { supabase, type AnglerRatings, type FishCatch } from '@/shared/api';
 
-export type StatRecord = Pick<PlaceRecord, 'id' | 'visited_on' | 'catches' | 'rating'> & {
-  place: Pick<PlaceRecord['place'], 'id' | 'name' | 'kind'>;
-  fish: Pick<FishCatch, 'id'>[];
-};
+/** 자주 간 장소 한 줄. rank는 횟수가 같으면 같은 순위입니다(1, 1, 1, 4). rating은 평점을 준 기록의 평균입니다. */
+export type PlaceRank = { id: string; name: string; count: number; rating?: number; rank: number };
 
-/** 통계용으로 모든 기록의 일부 항목만 받습니다. */
-export const useStatRecords = () =>
+/** 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳) */
+export type YearStats = { trips: number; fish: number; months: number[]; spots: PlaceRank[]; restaurants: PlaceRank[] };
+
+type RankRow = Omit<PlaceRank, 'rating'> & { rating: number | null };
+
+/** 기록이 있는 해(최근 순). DB에서 셉니다. */
+export const useStatYears = () =>
   useQuery({
-    queryKey: ['records', 'stats'],
-    queryFn: async () => {
-      const rows: StatRecord[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase
-          .from('records')
-          .select(
-            'id, visited_on, catches, rating, place:places!inner(id, name, kind), fish:fish_catches(id)',
-          )
-          .order('visited_on')
-          .order('id')
-          .range(from, from + 999);
-        if (error) throw new Error('통계를 불러오지 못했습니다.');
-        rows.push(...(data as unknown as StatRecord[]).map((row) => ({ ...row, fish: row.fish ?? [], rating: row.rating === null ? null : Number(row.rating) })));
-        if (data.length < 1000) return rows;
-      }
+    queryKey: ['records', 'stat-years'],
+    queryFn: async (): Promise<number[]> => {
+      const { data, error } = await supabase.read('stat_years');
+      if (error) throw new Error('통계를 불러오지 못했습니다.');
+      return data as number[];
     },
   });
 
-export type RecentFish = FishCatch & { record: { visited_on: string; place: { name: string } } };
+/** 고른 해의 통계. DB에서 셉니다(기록을 모두 받지 않음). */
+export const useYearStats = (year: number) =>
+  useQuery({
+    queryKey: ['records', 'year-stats', year],
+    queryFn: async (): Promise<YearStats> => {
+      const { data, error } = await supabase.read('year_stats', { target_year: year });
+      if (error) throw new Error('통계를 불러오지 못했습니다.');
+      const stats = data as Omit<YearStats, 'spots' | 'restaurants'> & { spots: RankRow[]; restaurants: RankRow[] };
+      const ranks = (rows: RankRow[]) => rows.map(({ rating, ...row }) => ({ ...row, rating: rating ?? undefined }));
+      return { ...stats, spots: ranks(stats.spots), restaurants: ranks(stats.restaurants) };
+    },
+  });
 
 export type PlaceFishPhoto = Pick<FishCatch, 'id' | 'angler' | 'species' | 'length_cm'> & { photo_path: string; visited_on: string };
 
@@ -69,68 +72,64 @@ export const usePlaceFishPhotos = (placeId?: string) =>
     },
   });
 
-export type DexFish = RecentFish; // 잡은 물고기와 그 기록의 날짜·장소
+/** 도감에 보이는 물고기(빅원)와 그 기록의 날짜·장소 */
+export type DexFish = Pick<FishCatch, 'id' | 'angler' | 'species' | 'length_cm' | 'photo_path' | 'position'> & { record: { visited_on: string; place: { name: string } } };
 
-/** 도감용으로 잡은 물고기를 모두 받습니다. */
-/** 지금까지 저장한 어종 이름(많이 잡은 순). 기록 폼에서 같은 이름을 골라 마릿수·빅원 집계가 나뉘지 않게 합니다. */
-export const useSpeciesOptions = () =>
-  useQuery({
-    queryKey: ['records', 'species'],
-    queryFn: async (): Promise<string[]> => {
-      // 서버는 한 번에 1,000행까지 주므로 도감처럼 나눠 받아 모두 센 뒤 순서를 정합니다.
-      const counts = new Map<string, number>();
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase.from('fish_catches').select('species').neq('species', '').order('id').range(from, from + 999);
-        if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
-        (data as { species: string }[]).forEach(({ species }) => {
-          const name = species.trim();
-          if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-        });
-        if (data.length < 1000) break;
-      }
-      return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([name]) => name);
-    },
-    staleTime: 300_000,
-  });
+/** 어종 한 칸: 번호(처음 잡은 순서), 어종, 마릿수, 빅원 */
+export type DexEntry = { number: number; species: string; count: number; big: DexFish };
 
+type FishDexRow = { number: number; species: string; count: number; id: string; angler: string; length_cm: number | string; photo_path: string | null; position: number; visited_on: string; place_name: string };
+
+/** 어종 도감. 어종별로 묶고 번호·빅원을 정하는 일은 DB(fish_dex)가 합니다. */
 export const useFishDex = () =>
   useQuery({
     queryKey: ['records', 'dex'],
-    queryFn: async (): Promise<DexFish[]> => {
-      const rows: DexFish[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase
-          .from('fish_catches')
-          .select('id, angler, species, length_cm, photo_path, position, record:records!inner(visited_on, place:places!inner(name))')
-          .order('id')
-          .range(from, from + 999);
-        if (error) throw new Error('도감을 불러오지 못했습니다.');
-        rows.push(...(data as unknown as DexFish[]));
-        if (data.length < 1000) break;
-      }
-      // 사진 주소는 화면에 보이는 대표 사진만 받습니다(useSignedPhotos).
-      return rows.map((fish) => ({ ...fish, length_cm: Number(fish.length_cm) }));
+    queryFn: async (): Promise<DexEntry[]> => {
+      const { data, error } = await supabase.read('fish_dex');
+      if (error) throw new Error('도감을 불러오지 못했습니다.');
+      return (data as FishDexRow[]).map(({ number, species, count, visited_on, place_name, length_cm, ...big }) => ({
+        number,
+        species,
+        count,
+        big: { ...big, species, length_cm: Number(length_cm), record: { visited_on, place: { name: place_name } } },
+      }));
     },
   });
 
-export type DexMenu = MenuItem & { record: { visited_on: string; created_at?: string; place: { name: string } } };
+/** 음식 한 칸(DB의 menu_dex 한 줄). 평점 대기 문구는 화면에서 angler_ratings_newest로 만듭니다. */
+export type DexMenu = {
+  name: string;
+  count: number;
+  price: number | null;
+  price_change: number | null;
+  rating: number | null;
+  photo_path: string | null;
+  /** 조사별 평점이 있는 메뉴의 평점들(최근 순) */
+  angler_ratings_newest: AnglerRatings[];
+  latest_id: string;
+  latest_visited_on: string;
+  place_name: string;
+};
 
-/** 도감용으로 맛집 메뉴를 모두 받습니다. */
+/** 음식 도감. 이름별로 묶고 최근 가격·평균 평점을 정하는 일은 DB(menu_dex)가 합니다. */
 export const useMenuDex = () =>
   useQuery({
     queryKey: ['records', 'menu-dex'],
     queryFn: async (): Promise<DexMenu[]> => {
-      const rows: DexMenu[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase
-          .from('menu_items')
-          .select('id, name, price, rating, angler_ratings, photo_path, position, record:records!inner(visited_on, created_at, place:places!inner(name))')
-          .order('id')
-          .range(from, from + 999);
-        if (error) throw new Error('도감을 불러오지 못했습니다.');
-        rows.push(...(data as unknown as DexMenu[]));
-        if (data.length < 1000) break;
-      }
-      return rows;
+      const { data, error } = await supabase.read('menu_dex');
+      if (error) throw new Error('도감을 불러오지 못했습니다.');
+      return data as DexMenu[];
     },
+  });
+
+/** 지금까지 저장한 어종 이름(많이 잡은 순). 기록 폼에서 같은 이름을 골라 마릿수·빅원 집계가 나뉘지 않게 합니다. 세는 일은 DB(species_options)가 합니다. */
+export const useSpeciesOptions = () =>
+  useQuery({
+    queryKey: ['records', 'species'],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.read('species_options');
+      if (error) throw new Error('어종 목록을 불러오지 못했습니다.');
+      return data as string[];
+    },
+    staleTime: 300_000,
   });

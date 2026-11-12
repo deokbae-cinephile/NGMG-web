@@ -44,7 +44,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   ).toBeVisible();
 
   // 기록에도 보이고, 수정 폼을 열면 준 평점이 그대로 골라져 있습니다(다시 저장해도 지워지지 않음).
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   // 음식 줄: 화면 읽기 프로그램에도 노출되는지(접근성 트리) 확인합니다.
   const menuLine = page.getByRole('listitem').filter({ hasText: '매운탕' }).first();
   expect(await menuLine.ariaSnapshot()).toContain('김 조사 평점을 기다리는 중 (류 조사 3.5점)');
@@ -59,12 +59,13 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
   await fakeBackend(page, {
-    places: [place('p1', '거문도 방파제'), place('p4', '가거도 갯바위'), place('p2', '바다횟집', 'restaurant')],
+    places: [place('p1', '거문도 방파제'), place('p4', '가거도 갯바위'), place('p2', '바다횟집', 'restaurant'), place('p3', '나루식당', 'restaurant')],
     records: [
       { id: 'a', place_id: 'p1', visited_on: `${year}-01-05`, catches: '', rating: 4 },
       { id: 'b', place_id: 'p1', visited_on: `${year}-01-20`, catches: '', rating: 5 },
       { id: 'c', place_id: 'p4', visited_on: `${year}-02-03`, catches: '' },
       { id: 'old', place_id: 'p1', visited_on: `${year - 1}-01-10`, catches: '' },
+      { id: 'n', place_id: 'p3', visited_on: `${year}-03-01`, catches: '' },
       {
         id: 'm', place_id: 'p2', visited_on: `${year}-01-06`, catches: '', rating: 4, angler_ratings: { '김 조사': 5, '류 조사': 3 },
       },
@@ -87,11 +88,13 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
   for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
   // 자주 간 장소는 낚시 포인트(왼쪽)와 맛집(오른쪽)으로 나누고, 둘 다 평균 평점을 보여 줍니다(평점이 없으면 생략).
   const spots = page.getByRole('region', { name: '자주 간 낚시 포인트' });
-  await expect(spots.getByRole('listitem')).toHaveText([/거문도 방파제\s*평점\s*4\.5\s*2번$/, /가거도 갯바위\s*1번$/]);
+  // 순위, 이름, 평점, 다녀간 횟수('n회')
+  await expect(spots.getByRole('listitem')).toHaveText([/^1위거문도 방파제\s*평점\s*4\.5\s*2회$/, /^2위가거도 갯바위\s*1회$/]);
   await expect(spots).not.toContainText(/마리/);
   await expect(spots.locator('.bar')).toHaveCount(0); // 횟수 숫자와 겹치던 가로 막대는 뺐습니다. // 마릿수는 사용자 요청으로 뺐습니다.
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
-  await expect(restaurants.getByRole('listitem')).toHaveText([/바다횟집\s*평점\s*4\.0\s*1번/]);
+  // 다녀간 횟수가 같으면 같은 순위입니다(같으면 이름순으로 놓음).
+  await expect(restaurants.getByRole('listitem')).toHaveText([/^1위나루식당\s*1회$/, /^1위바다횟집\s*평점\s*4\.0\s*1회$/]);
   await expectFits(page);
   await expectAccessible(page);
 });
@@ -128,7 +131,7 @@ test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 
   await fakeBackend(page, seed());
   await page.goto('./stats');
   await page.getByRole('region', { name: '자주 간 낚시 포인트' }).getByRole('link', { name: /거문도 방파제/ }).click();
-  await expect(page).toHaveURL(/\/places\/p1$/);
+  await expect(page).toHaveURL(/\/place\?id=p1$/);
   // 평점 대기 조회가 끝난 뒤에도 칸이 없는지 봅니다(조회 중에도 칸을 그리지 않으므로).
   const pending = page.waitForResponse((response) => /\/rest\/v1\/records\?select=id%2C\+?visited_on%2C\+?angler_ratings/.test(response.url()));
   await page.goto('./settings');

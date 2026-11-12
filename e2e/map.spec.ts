@@ -43,7 +43,7 @@ test('지도: 검색으로 장소를 추가하고, 분류 필터는 다른 메�
 
 test('장소: 수정하고 삭제한다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await expect(page.getByRole('heading', { name: '바다횟집', exact: true })).toBeVisible();
   await expect(page.getByText(/\d+\.\d{5}, \d+\.\d{5}/)).toHaveCount(0); // 상세에도 좌표를 쓰지 않습니다.
   await expectFits(page);
@@ -72,7 +72,7 @@ test('장소: 긴 이름도 화면을 넘치지 않는다', async ({ page }) => 
   // 목록의 긴 이름은 한 줄로 줄입니다(오른쪽 사진과 겹치지 않게).
   const title = page.getByRole('list', { name: '장소 목록' }).locator(`[title="${LONG_NAME}"]`);
   expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth && getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
-  await page.goto('./places/p3');
+  await page.goto('./place?id=p3');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expectFits(page);
 });
@@ -114,7 +114,7 @@ test('장소를 지우면 잡은 물고기 사진 파일도 지운다', async ({
     ...seed(),
     fish_catches: [{ id: 'f1', record_id: 'r00', angler: '김 조사', species: '감성돔', length_cm: 30, photo_path: 'r00/fish.jpg', position: 0 }],
   });
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '장소 삭제' }).click();
   await expect(page.getByRole('button', { name: '장소 추가' })).toBeVisible();
   expect(db.removedFiles).toContain('r00/fish.jpg');
@@ -167,7 +167,7 @@ test('지도 단추: 왼쪽 위에 여닫기·위치 지정·무악재역·현�
   await base.click();
   await expect(popup).toBeHidden();
 
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await expect(page.getByRole('link', { name: '길찾기 (새 창)' })).toHaveAttribute('href', /link\/by\/car\/%EB%AC%B4%EC%95%85%EC%9E%AC%EC%97%AD,37\.5825632,126\.950231\//);
 });
 
@@ -220,7 +220,7 @@ test('사진 지도: 장소 상세에서 잡은 물고기 사진을 모아 보�
       { id: 'f5', record_id: 'r08', angler: '김 조사', species: '볼락', length_cm: 19, position: 0, photo_path: 'r08/fish-5.jpg' },
     ],
   });
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   const section = page.getByRole('region', { name: '잡은 물고기 사진' });
   await expect(section.getByRole('img')).toHaveCount(4); // 사진이 없는 우럭은 빠집니다.
   await expect(section.getByRole('img').first()).toHaveAccessibleName(/감성돔 38cm 김 조사 2026년 10월 30일/); // 최근 순
@@ -236,7 +236,7 @@ test('사진 지도: 장소 상세에서 잡은 물고기 사진을 모아 보�
 
 test('지도: 평점 응답이 늦어도 3초 뒤에는 이름순 목록을 보여 준다', async ({ page }) => {
   await fakeBackend(page, seed());
-  await page.route(/\/rest\/v1\/records\?select=place_id%2C\+?rating/, () => undefined); // 평점 응답이 오지 않음
+  await page.route(/\/rest\/v1\/rpc\/place_ratings/, () => undefined); // 평점 응답이 오지 않음
   await page.goto('./');
   await expect(page.getByText('평점을 불러오는 중이라 이름순으로 보여 줍니다.')).toBeVisible({ timeout: 6000 });
   await expect(page.getByRole('list', { name: '장소 목록' }).getByRole('listitem')).toHaveCount(3);
@@ -413,7 +413,7 @@ test('맛집: 오늘이 휴무 요일이면 목록·말풍선·상세에 오늘 
   await expect(list.getByRole('listitem').filter({ hasText: '거문도 방파제' }).getByText('오늘 휴무')).toHaveCount(0);
   await list.getByRole('button', { name: /^바다횟집/ }).click();
   await expect(page.getByRole('group', { name: '바다횟집 정보' }).getByText('오늘 휴무')).toBeVisible();
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await expect(page.getByText('오늘 휴무')).toBeVisible();
   await expectAccessible(page);
 });
@@ -497,7 +497,7 @@ test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴�
   await page.goto('./');
   await expect(page.getByRole('group', { name: '분류' }).getByRole('button')).toHaveCount(5);
   expect(await page.getByRole('group', { name: '분류' }).getByRole('button').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label')))).toEqual(['전체', '낚시', '맛집', '숙박', '기타']);
-  await page.goto('./places/p2');
+  await page.goto('./place?id=p2');
   await page.getByRole('button', { name: '장소 수정' }).click();
   const dialog = page.getByRole('dialog', { name: '장소 수정' });
   await expect(dialog.getByRole('radio', { name: '숙박' })).toBeVisible();
@@ -510,7 +510,7 @@ test('장소: 분류에 숙박·기타가 있고, 맛집은 영업시간과 휴�
   expect(db.places!.find((item) => item.id === 'p2')).toMatchObject({ open_time: '11:00', close_time: '21:30', closed_days: [1, 2] });
   await expect(page.getByText('11:00–21:30 · 월·화 휴무')).toBeVisible();
   // 낚시 장소에는 영업 정보 칸이 없습니다.
-  await page.goto('./places/p1');
+  await page.goto('./place?id=p1');
   await page.getByRole('button', { name: '장소 수정' }).click();
   await expect(page.getByRole('dialog', { name: '장소 수정' }).getByLabel('여는 시각')).toHaveCount(0);
 });

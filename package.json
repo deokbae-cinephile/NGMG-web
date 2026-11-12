@@ -1,6 +1,6 @@
 {
   "name": "ngmg-web",
-  "version": "1.7.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "sideEffects": [
@@ -13,7 +13,7 @@
     "build": "tsc --noEmit && vite build && node scripts/spa-pages.mjs",
     "build:demo": "tsc --noEmit && vite build --mode demo && node scripts/spa-pages.mjs",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint . && steiger ./src",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "shots": "SHOTS=1 playwright test install-shots --workers=1",
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
+    "@feature-sliced/steiger-plugin": "^0.8.2",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^26.6.6",
@@ -40,6 +41,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "steiger": "^0.10.0",
     "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",

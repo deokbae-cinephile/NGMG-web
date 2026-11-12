@@ -1,4 +1,5 @@
 // Supabase와 Kakao SDK 응답을 흉내 내는 가짜 서버입니다. Playwright(fake-backend.ts)와 배포용 데모(demo-entry.ts)가 함께 씁니다.
+import { aggregate } from './fake-aggregates.ts';
 export type Row = Record<string, unknown> & { id: string };
 export type Seed = Partial<Record<'places' | 'records' | 'record_photos' | 'fish_catches' | 'menu_items' | 'gear_sets' | 'gear_set_items' | 'angler_gear' | 'events' | 'checklist_items' | 'members', Row[]>>;
 
@@ -216,6 +217,15 @@ export const createFakeServer = (seed: Seed = {}) => {
       return json([]);
     }
     if (path.startsWith('/storage/v1/object')) return json({ Key: path, Id: 'x', path });
+
+    // 집계 함수(place_ratings·year_stats·fish_dex 등): fake-aggregates.ts가 같은 규칙으로 셉니다.
+    const rpc = /\/rest\/v1\/rpc\/(\w+)$/.exec(path);
+    if (rpc && (method === 'GET' || method === 'POST')) {
+      // 읽기 함수는 GET(?target_year=2026)으로 부릅니다.
+      const args = method === 'GET' ? Object.fromEntries(url.searchParams) : (request.body ?? {});
+      const result = aggregate(db, rpc[1]!, args);
+      if (result !== undefined) return json(result);
+    }
 
     // 하루 순서 함수(reorder_records·reorder_events): ids 순서대로 day_order를 0, 1, 2…로 바꿉니다.
     const reorder = /\/rest\/v1\/rpc\/reorder_(records|events)$/.exec(path);

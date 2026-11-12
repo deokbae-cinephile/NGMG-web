@@ -10,6 +10,7 @@ import { Navigate, useLocation } from '@/shared/lib';
 import { ErrorBoundary } from '@/shared/ui';
 import { AppShell } from '@/widgets/app-shell';
 import { Splash } from './splash';
+import { placePath } from '@/shared/config';
 
 const pages = {
   map: () => import('@/pages/map').then((page) => ({ default: page.MapPage })),
@@ -57,8 +58,12 @@ const Page = () => {
   if (pathname === '/items') return <GearPage />;
   if (pathname === '/gear') return <Navigate to="/items" />; // 예전 주소
   if (pathname === '/dex') return <DexPage />;
-  const place = /^\/places\/([^/]+)$/.exec(pathname);
-  if (place) return <PlacePage id={decodeURIComponent(place[1]!)} />;
+  if (pathname === '/place') {
+    const id = new URLSearchParams(search).get('id');
+    return id ? <PlacePage id={id} /> : <NotFound />;
+  }
+  const legacyPlace = /^\/places\/([^/]+)$/.exec(pathname); // 예전 주소
+  if (legacyPlace) return <Navigate to={placePath(decodeURIComponent(legacyPlace[1]!))} />;
   return <NotFound />;
 };
 
