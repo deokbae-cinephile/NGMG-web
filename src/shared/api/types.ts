@@ -36,6 +36,10 @@ export type FishCatch = {
   photo_url?: string;
   /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
   photo_thumb_url?: string;
+  /** 대표 사진 다음의 사진들(최대 4장, 대표까지 5장) */
+  extra_photo_paths?: string[];
+  /** 대표 사진 다음 사진들의 원본·썸네일 주소 */
+  extra_photos?: { path: string; url?: string; thumb?: string }[];
 };
 
 /** 조사별 평점 (0.5점 단위, 0.5~5점). 준 사람만 들어 있습니다. */
@@ -54,6 +58,10 @@ export type MenuItem = {
   photo_url?: string;
   /** 작게 보이는 곳에 쓰는 썸네일 주소. 썸네일이 없는 예전 사진은 원본 주소입니다. */
   photo_thumb_url?: string;
+  /** 대표 사진 다음의 사진들(최대 4장, 대표까지 5장) */
+  extra_photo_paths?: string[];
+  /** 대표 사진 다음 사진들의 원본·썸네일 주소 */
+  extra_photos?: { path: string; url?: string; thumb?: string }[];
 };
 
 /** 기록에 남긴 장비 세트. 그때의 장비 이름을 그대로 담아 장비를 고치거나 지워도 기록은 그대로입니다. */

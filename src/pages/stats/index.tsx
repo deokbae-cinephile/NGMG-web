@@ -6,7 +6,6 @@ import { summarize, yearsOf, type PlaceRank } from './model';
 
 /** 자주 간 장소 순위. 낚시 포인트는 잡은 마릿수, 맛집은 평균 평점을 이름 옆에 함께 보여 줍니다. */
 const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows: PlaceRank[]; detail: (row: PlaceRank) => ReactNode }) => {
-  const max = Math.max(1, ...rows.map(({ count }) => count));
   return (
     <section aria-labelledby={id} className="pane">
       <div className="cell-head">
@@ -29,7 +28,6 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
                     {detail(row)}
                   </span>
                   <span className="mono-label">{`${row.count}번`}</span>
-                  <span aria-hidden="true" className={`bar col-start-2 col-end-4 ${index === 0 ? 'bar-top' : ''}`} style={{ width: `${(row.count / max) * 100}%` }} />
                 </Link>
               </li>
             ))}
@@ -115,7 +113,7 @@ export const StatsPage = () => {
             id="top-spots"
             title="자주 간 낚시 포인트"
             rows={stats.spots}
-            detail={({ rating }) => <RatingChip rating={rating} />} // 자주 간 맛집처럼 평균 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
+            detail={({ rating }) => <RatingChip rating={rating} />} // 자주 간 맛집처럼 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
           />
         </div>
         <div className="bg-paper">

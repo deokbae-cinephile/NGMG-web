@@ -6,7 +6,7 @@ import { Icon } from '@/shared/ui';
 export const MapLegend = () => {
   const [legendOpen, setLegendOpen] = useState(() => getPreference('map-legend-open', true));
   return (
-      <div className="map-legend" role="group" aria-label="핀 색상: 평균 평점 1점대부터 5점까지">
+      <div className="map-legend" role="group" aria-label="핀 색상: 평점 1점대부터 5점까지">
         <button
           type="button"
           className="map-legend-toggle"

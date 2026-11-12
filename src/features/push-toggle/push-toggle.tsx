@@ -50,15 +50,22 @@ export const PushToggle = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p>
-          {on ? '이 기기에서 받는 중' : '받지 않음'}
-          <span className="block text-sm text-muted">내일 일정이 있으면 전날 오후 6시, 평점 대기가 있으면 토요일 오후 6시에 알려 드립니다.</span>
-        </p>
-        <button type="button" className="button" disabled={busy || on === undefined} onClick={() => void toggle()}>
-          {on ? '알림 끄기' : '알림 켜기'}
-        </button>
-      </div>
+      {/* 화면 테마의 '다크 모드'처럼 켜고 끄는 스위치입니다(사용자 요청). 켜짐은 aria-checked와 손잡이 위치로 알립니다. */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={Boolean(on)}
+        aria-describedby="push-help"
+        className="switch self-start"
+        disabled={busy || on === undefined}
+        onClick={() => void toggle()}
+      >
+        <span className="switch-track" aria-hidden="true">
+          <span className="switch-thumb" />
+        </span>
+        이 기기에서 알림 받기
+      </button>
+      <p id="push-help" className="text-sm text-muted">내일 일정이 있으면 전날 오후 6시, 평점 대기가 있으면 토요일 오후 6시에 알려 드립니다.</p>
       <p role="status" className="text-sm text-muted empty:hidden">{message}</p>
     </div>
   );

@@ -57,7 +57,10 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   await settings.first().click();
   await expect(page).toHaveTitle('설정 | 낚고먹고');
   await expect(page.getByRole('region', { name: '평점 대기' }).getByRole('link', { name: /거문도 방파제.*류 조사 평점 필요/ })).toBeVisible(); // 평점을 줘야 하는 사람을 밝힙니다.
-  await expect(page.getByRole('region', { name: '알림', exact: true }).getByRole('button', { name: '알림 켜기' })).toBeEnabled();
+  // 알림도 다크 모드처럼 스위치입니다.
+  const pushSwitch = page.getByRole('region', { name: '알림', exact: true }).getByRole('switch', { name: '이 기기에서 알림 받기' });
+  await expect(pushSwitch).toBeEnabled();
+  await expect(pushSwitch).toHaveAttribute('aria-checked', 'false');
 
   // 화면 테마: '다크 모드' 스위치(role=switch)로 켜고 끕니다.
   const theme = page.getByRole('region', { name: '화면 테마' });

@@ -91,7 +91,7 @@ export const PlacePage = ({ id }: { id: string }) => {
             <dl className="grid grid-cols-3 border-y border-line">
               {[
                 ['방문', `${summary.count}건`],
-                ['평균 평점', summary.averageRating === null ? '없음' : `${summary.averageRating.toFixed(1)}점`],
+                ['평점', summary.averageRating === null ? '없음' : `${summary.averageRating.toFixed(1)}점`],
                 ['마지막 방문', summary.lastVisited ? formatDate(summary.lastVisited) : ''],
               ].map(([label, value], index) => (
                 <div key={label} className={`flex flex-col gap-1 p-3 ${index ? 'border-l border-line' : ''}`}>

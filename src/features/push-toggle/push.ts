@@ -44,7 +44,7 @@ export const enablePush = async (): Promise<{ tested: boolean }> => {
     if (result.expired) {
       // 푸시 서비스가 이 구독을 없앴다고 알려 왔습니다. 서버 행은 함수가 지웠으니 브라우저 구독도 정리합니다.
       await subscription.unsubscribe().catch(() => undefined);
-      throw new Error('이 기기의 알림 구독이 만료되었습니다. 알림 켜기를 다시 눌러 주세요.');
+      throw new Error('이 기기의 알림 구독이 만료되었습니다. 알림 받기 스위치를 다시 켜 주세요.');
     }
     return { tested: response.ok && Boolean(result.sent) };
   } catch (error) {

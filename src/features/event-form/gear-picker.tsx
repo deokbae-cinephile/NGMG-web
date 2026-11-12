@@ -32,7 +32,7 @@ export const GearPicker = ({ value, onChange, open, onOpenChange, error }: Props
           {error}
         </p>
       )}
-      <fieldset id={`${id}-body`} hidden={!open} aria-describedby={error ? `${id}-error` : undefined} className="flex flex-col gap-3">
+      <fieldset id={`${id}-body`} hidden={!open} aria-describedby={error ? `${id}-error` : undefined} className="flex flex-col gap-6"> {/* 김 조사·류 조사 묶음 사이를 넉넉히 띄웁니다. */}
         <legend className="sr-only">챙길 물품</legend>
         {isPending && <p className="text-sm text-muted">물품을 불러오는 중입니다.</p>}
         {loadError && <p className="text-sm text-danger">물품을 불러오지 못했습니다.</p>}

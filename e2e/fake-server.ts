@@ -79,8 +79,8 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
   events: { memo: '', end_time: null, place_id: null, gear_set_ids: [], gear_ids: [], packed_gear_ids: [] },
   checklist_items: { checked: false },
   angler_gear: { category: '기타', subcategory: '', brand: '', memo: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
-  fish_catches: { species: '', photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
-  menu_items: { price: null, rating: null, angler_ratings: {}, photo_path: null, position: 0, created_at: '2026-01-01T00:00:00Z' },
+  fish_catches: { species: '', photo_path: null, extra_photo_paths: [], position: 0, created_at: '2026-01-01T00:00:00Z' },
+  menu_items: { price: null, rating: null, angler_ratings: {}, photo_path: null, extra_photo_paths: [], position: 0, created_at: '2026-01-01T00:00:00Z' },
   gear_sets: { position: 0, created_at: '2026-01-01T00:00:00Z' },
   gear_set_items: { position: 0 },
 };

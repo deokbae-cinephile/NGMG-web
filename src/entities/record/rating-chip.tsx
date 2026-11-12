@@ -5,7 +5,7 @@ export const ratingClass = (rating?: number) => (rating === undefined ? '' : `ra
 export const RatingChip = ({ rating }: { rating?: number }) =>
   rating === undefined ? null : (
     <span className={`rating-chip ${ratingClass(rating)}`}>
-      <span className="sr-only">평균 평점</span>
+      <span className="sr-only">평점</span>
       <span className="relative top-px">{rating.toFixed(1)}</span>
     </span>
   );

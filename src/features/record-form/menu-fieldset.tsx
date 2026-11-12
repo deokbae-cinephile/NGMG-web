@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { MenuItem } from '@/shared/api';
-import { Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
+import { Field, IconButton, TextareaField } from '@/shared/ui';
+import { ItemPhotosField, type SavedPhoto } from './item-photos-field';
 import { AnglerRatingFields, toDraft, type RatingDraft } from './angler-rating-fields';
 
 export type MenuRow = {
@@ -10,10 +11,12 @@ export type MenuRow = {
   ratings: RatingDraft;
   /** 조사별 평점이 생기기 전에 남긴 평점. 조사별 평점을 주면 그쪽을 씁니다. */
   legacyRating: number | null;
+  /** 폼을 열 때의 사진(빠진 사진을 지우는 데 씀) */
   photo_path: string | null;
-  photo_url?: string;
-  file: File | null;
-  removePhoto: boolean;
+  extra_photo_paths: string[];
+  /** 남길 사진과 새로 올릴 사진(합쳐 5장까지) */
+  photos: SavedPhoto[];
+  files: File[];
 };
 
 export const newMenuRow = (item?: MenuItem): MenuRow => ({
@@ -23,12 +26,17 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
   ratings: toDraft(item?.angler_ratings),
   legacyRating: item && !Object.keys(item.angler_ratings ?? {}).length ? item.rating : null,
   photo_path: item?.photo_path ?? null,
-  photo_url: item?.photo_url,
-  file: null,
-  removePhoto: false,
+  extra_photo_paths: item?.extra_photo_paths ?? [],
+  photos: item
+    ? [
+        ...(item.photo_path ? [{ path: item.photo_path, url: item.photo_thumb_url ?? item.photo_url }] : []),
+        ...(item.extra_photos ?? []).map((photo) => ({ path: photo.path, url: photo.thumb ?? photo.url })),
+      ]
+    : [],
+  files: [],
 });
 
-const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.file) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
+const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.files.length) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
 // 비었거나 0~9로만 된 십진수만 받습니다(Number()는 '0x10'·'1e3'도 숫자로 바꾸므로 쓰지 않음).
 const priceError = (row: MenuRow) => (row.price !== '' && !/^\d+$/.test(row.price) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
@@ -43,7 +51,7 @@ const fitHeight = (input: HTMLTextAreaElement) => {
   input.style.height = `${input.scrollHeight + 2}px`; // 위아래 테두리 1px씩
 };
 
-/** 맛집 기록의 음식(화면 표기는 '음식', 코드와 DB는 menu). 음식마다 가격, 평점, 사진 한 장을 적고, 버튼으로 줄을 늘립니다. */
+/** 맛집 기록의 음식(화면 표기는 '음식', 코드와 DB는 menu). 음식마다 가격, 평점, 사진(5장까지)을 적고, 버튼으로 줄을 늘립니다. */
 export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
   const add = useRef<HTMLButtonElement>(null);
   const focusId = useRef<string>(undefined);
@@ -96,35 +104,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                 />
               </div>
               <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />
-              <div className="flex flex-wrap items-end gap-3">
-                {row.file ? (
-                  <RemovablePhoto file={row.file} alt={`${label} 새 사진 미리보기`} removeLabel={`${label} 새 사진 빼기`} onRemove={() => set(row.id, { file: null })} />
-                ) : (
-                  row.photo_path &&
-                  !row.removePhoto && <RemovablePhoto src={row.photo_url} alt={`${label} 사진`} removeLabel={`${label} 사진 삭제`} onRemove={() => set(row.id, { removePhoto: true })} />
-                )}
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <label htmlFor={`${row.id}-photo`} className="mono-label">{`${label} 사진`}</label>
-                  <input
-                    id={`${row.id}-photo`}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    aria-describedby={`${row.id}-photo-hint`}
-                    className="min-h-11 w-full border border-field bg-surface px-3 py-2"
-                    onChange={(event) => {
-                      // 여러 장을 고르면 첫 장은 이 음식에, 나머지는 음식 줄을 늘려 한 장씩 넣습니다.
-                      const [first = null, ...rest] = [...(event.target.files ?? [])];
-                      onChange([
-                        ...value.map((item) => (item.id === row.id ? { ...item, file: first } : item)),
-                        ...rest.map((file) => ({ ...newMenuRow(), file })),
-                      ]);
-                      event.target.value = '';
-                    }}
-                  />
-                  <p id={`${row.id}-photo-hint`} className="text-sm text-muted">여러 장을 고르면 음식이 그만큼 늘어납니다.</p>
-                </div>
-              </div>
+              <ItemPhotosField id={`${row.id}-photo`} label={label} photos={row.photos} files={row.files} onChange={(next) => set(row.id, next)} />
               {value.length > 1 && (
                 <div className="flex justify-end">
                   <IconButton
