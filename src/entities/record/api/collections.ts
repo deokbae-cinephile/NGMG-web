@@ -33,7 +33,6 @@ export const useYearStats = (year: number) =>
       const ranks = (rows: RankRow[]) => rows.map(({ rating, ...row }) => ({ ...row, rating: rating ?? undefined }));
       return { ...stats, spots: ranks(stats.spots), restaurants: ranks(stats.restaurants) };
     },
-    placeholderData: (previous) => previous, // 해를 바꾸는 동안 이전 숫자를 두어 화면이 비지 않게 합니다.
   });
 
 export type PlaceFishPhoto = Pick<FishCatch, 'id' | 'angler' | 'species' | 'length_cm'> & { photo_path: string; visited_on: string };

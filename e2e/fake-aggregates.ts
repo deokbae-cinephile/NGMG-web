@@ -13,7 +13,9 @@ const average = (values: number[]) => (values.length ? values.reduce((sum, value
 const joined = (db: Db) => {
   const places = new Map((db.places ?? []).map((place) => [place.id, place]));
   const records = new Map((db.records ?? []).map((record) => [record.id, { ...record, place: places.get(record.place_id as string)! } as Joined]));
-  return { records, recordOf: (row: Row) => records.get(row.record_id as string)! };
+  // 기록을 지워도 가짜 서버는 물고기·메뉴를 남기므로, 기록이 있는 행만 씁니다(실제 SQL의 inner join과 같음).
+  const linked = (rows: Row[] = []) => rows.filter((row) => records.has(row.record_id as string));
+  return { records, linked, recordOf: (row: Row) => records.get(row.record_id as string)! };
 };
 
 const placeRatings = (db: Db) => {
@@ -60,8 +62,8 @@ const yearStats = (db: Db, year: number) => {
 };
 
 const fishDex = (db: Db) => {
-  const { recordOf } = joined(db);
-  const fish = [...(db.fish_catches ?? [])].sort(byId).map((row) => ({ ...row, name: tidy(row.species), record: recordOf(row) }) as Item).filter((row) => row.name);
+  const { recordOf, linked } = joined(db);
+  const fish = [...linked(db.fish_catches)].sort(byId).map((row) => ({ ...row, name: tidy(row.species), record: recordOf(row) }) as Item).filter((row) => row.name);
   const order = (a: (typeof fish)[number], b: (typeof fish)[number]) => String(a.record.visited_on).localeCompare(String(b.record.visited_on)) || byId(a, b);
   const groups = new Map<string, typeof fish>();
   [...fish].sort(order).forEach((row) => groups.set(row.name, [...(groups.get(row.name) ?? []), row]));
@@ -72,8 +74,8 @@ const fishDex = (db: Db) => {
 };
 
 const menuDex = (db: Db) => {
-  const { recordOf } = joined(db);
-  const items = [...(db.menu_items ?? [])].map((row) => ({ ...row, name: tidy(row.name), record: recordOf(row) }) as Item).filter((row) => row.name);
+  const { recordOf, linked } = joined(db);
+  const items = [...linked(db.menu_items)].map((row) => ({ ...row, name: tidy(row.name), record: recordOf(row) }) as Item).filter((row) => row.name);
   // 최근 순: 방문일, 기록을 남긴 때, 줄 순서, id
   items.sort(
     (a, b) =>

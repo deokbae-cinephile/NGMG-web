@@ -109,6 +109,8 @@ export const useFollowSelected = ({ map, container, popup, selected, offsets, fo
     const observer = new ResizeObserver(fit);
     observer.observe(node);
     observer.observe(area); // 지도 칸이 줄어도 다시 확인합니다.
+    // 날씨가 늦게 와 날씨 상자가 넓어져도 다시 확인합니다.
+    area.parentElement?.querySelectorAll('.weather-badge').forEach((badge) => observer.observe(badge));
     return () => {
       observer.disconnect();
       if (fitPopup.current === fit) fitPopup.current = undefined;

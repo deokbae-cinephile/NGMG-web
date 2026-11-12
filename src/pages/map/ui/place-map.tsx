@@ -49,9 +49,15 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const offsets = useMemo(() => pinOffsets(places), [places]);
   const { data: ratings } = usePlaceRatings();
   const pins = useRef(new Map<string, HTMLButtonElement>());
+  const selectedRef = useRef(selectedId);
+  useEffect(() => {
+    selectedRef.current = selectedId;
+  });
   const selectFromPin = useCallback(
     (id: string) => {
-      focusPopup.current = true;
+      // 이미 고른 핀을 다시 누르면 말풍선이 그대로라 바로 초점을 옮깁니다. 표시만 남겨 두면 나중에 목록에서 고를 때 초점이 말풍선으로 튑니다.
+      if (id === selectedRef.current) popup.current?.querySelector('a')?.focus({ preventScroll: true });
+      else focusPopup.current = true;
       onSelect(id);
     },
     [onSelect],
