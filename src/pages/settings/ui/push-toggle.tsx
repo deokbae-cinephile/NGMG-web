@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '../model/push';
+import { useSubmitLock } from '@/shared/lib';
 
 /** 이 기기에서 출조 알림을 켜고 끕니다. 켜면 테스트 알림이 바로 옵니다. */
 export const PushToggle = () => {
@@ -8,7 +9,7 @@ export const PushToggle = () => {
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const lock = useRef(false);
+  const lock = useSubmitLock();
 
   useEffect(() => {
     let alive = true;
@@ -21,12 +22,11 @@ export const PushToggle = () => {
   }, []);
 
   const toggle = async () => {
-    if (lock.current) return;
     if (!pushSupported()) {
       setMessage('이 브라우저는 알림을 받을 수 없습니다. 아이폰은 홈 화면에 추가한 앱에서 켤 수 있습니다.');
       return;
     }
-    lock.current = true;
+    if (!lock.tryLock()) return; // 켜고 끄는 중에 다시 누르면 무시합니다(busy는 다음 렌더에야 바뀜).
     setBusy(true);
     setMessage('');
     try {
@@ -45,7 +45,7 @@ export const PushToggle = () => {
       // 권한·서버 안내는 그대로, 브라우저 오류(구독 실패 등)는 알기 쉬운 말로 바꿉니다.
       setMessage(error instanceof Error && /[가-힣]/.test(error.message) ? error.message : '알림을 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
-      lock.current = false;
+      lock.unlock();
       setBusy(false);
     }
   };

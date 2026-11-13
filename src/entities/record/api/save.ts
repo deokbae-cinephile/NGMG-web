@@ -177,11 +177,13 @@ export const useRecordOutbox = () => {
     flushing = true;
     // 한 항목이 계속 실패해도(예: 그 사이 장소가 지워짐) 뒤 항목은 이어서 올립니다.
     let failed = 0;
+    let saved = 0;
     try {
       for (const item of await outboxList<RecordInput>(OUTBOX_KIND)) {
         try {
           await saveRecord({ ...item.payload, force: true });
           await outboxRemove(item.id);
+          saved += 1;
         } catch {
           failed += 1;
         }
@@ -191,7 +193,8 @@ export const useRecordOutbox = () => {
     } finally {
       setError(failed ? `저장 대기 중인 기록 ${failed}건을 올리지 못했습니다. 잠시 뒤 다시 시도합니다.` : '');
       flushing = false;
-      void client.invalidateQueries({ queryKey: ['records'] });
+      // 올린 기록이 있을 때만 목록을 다시 받습니다. (대기열이 비어도 1분마다·화면에 돌아올 때마다 확인하므로, 늘 다시 받으면 모든 기록 조회가 반복됩니다)
+      if (saved) void client.invalidateQueries({ queryKey: ['records'] });
     }
   }, [client]);
 

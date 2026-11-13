@@ -56,6 +56,10 @@ export const removePhotos = async (paths: (string | null | undefined)[]) => {
 export const signPhotos = async (paths: string[], { throwOnError = false } = {}) => {
   const urls = new Map<string, PhotoUrls>();
   const now = Date.now();
+  // 다시 쓸 수 없게 된 주소는 지워, 오래 켜 둔 탭에서 캐시가 계속 커지지 않게 합니다.
+  signedCache.forEach((cached, path) => {
+    if (cached.expires - now <= REUSE_MARGIN) signedCache.delete(path);
+  });
   // 받아 둔 주소가 1시간 넘게 남았으면 그대로 씁니다. 주소가 같아야 브라우저가 사진을 다시 받지 않습니다.
   const unique = [...new Set(paths)].filter((path) => {
     const cached = signedCache.get(path);

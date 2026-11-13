@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ITEM_PHOTO_LIMIT } from '@/entities/record';
+import { fileKey } from '@/shared/lib';
 import { RemovablePhoto } from '@/shared/ui';
 
 /** 이미 올린 사진(경로·주소) */
@@ -53,7 +54,7 @@ export const ItemPhotosField = ({ id, label, photos, files, onChange }: Props) =
             </li>
           ))}
           {files.map((file, index) => (
-            <li key={`${file.name}-${file.lastModified}-${index}`}>
+            <li key={fileKey(file)}>
               <RemovablePhoto
                 file={file}
                 alt={`${label} 새 사진 ${index + 1} 미리보기`}

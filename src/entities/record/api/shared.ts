@@ -15,7 +15,7 @@ export const SELECT =
 export type Row = Omit<PlaceRecord, 'photos' | 'fish' | 'menu_items'> & { photos: Omit<RecordPhoto, 'url'>[]; fish?: FishCatch[]; menu_items?: MenuItem[] };
 
 /** 원본과 썸네일 주소 */
-export const photoFields = (urls: Map<string, PhotoUrls>, path: string | null, extra: string[] = []) => {
+const photoFields = (urls: Map<string, PhotoUrls>, path: string | null, extra: string[] = []) => {
   const photo = path ? urls.get(path) : undefined;
   return {
     photo_url: photo?.url,

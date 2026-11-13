@@ -60,10 +60,16 @@ export const formatMenu = (items: MenuDraft[]) =>
 
 const given = (ratings: AnglerRatings = {}) => ANGLERS.filter((angler) => typeof ratings[angler] === 'number');
 
+/** 평점들의 평균(소수 첫째 자리까지 반올림). 평점이 없으면 undefined입니다. */
+export const averageRating = (values: number[]) => (values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : undefined);
+
+/** 평점을 '4.5점'처럼 씁니다. */
+export const formatRating = (rating: number) => `${rating.toFixed(1)}점`;
+
 /** 두 조사가 모두 준 평점의 평균(소수 첫째 자리). 한 사람만 줬거나 아무도 안 줬으면 null입니다. */
 export const combinedRating = (ratings: AnglerRatings = {}) => {
   const values = given(ratings).map((angler) => ratings[angler]!);
-  return values.length === ANGLERS.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : null;
+  return values.length === ANGLERS.length ? averageRating(values)! : null;
 };
 
 /** 한 사람만 평점을 줘 나머지 사람을 기다리는지 */
@@ -74,6 +80,9 @@ export const missingRaters = (ratings: AnglerRatings = {}) => ANGLERS.filter((an
 
 /** '김 조사 4점 / 류 조사 5점' */
 export const ratingDetail = (ratings: AnglerRatings = {}) => given(ratings).map((angler) => `${angler} ${ratings[angler]}점`).join(' / ');
+
+/** 한 사람만 준 평점의 안내: '김 조사 평점을 기다리는 중 (류 조사 3.5점)' */
+export const pendingRatingText = (ratings: AnglerRatings = {}) => `${missingRaters(ratings).join(', ')} 평점을 기다리는 중 (${ratingDetail(ratings)})`;
 
 /** 기록이나 메뉴 가운데 한 사람만 평점을 준 것이 있으면 평점을 기다리는 기록입니다. */
 export const pendingRating = (record: { angler_ratings?: AnglerRatings; menu_items?: { angler_ratings?: AnglerRatings }[] }) =>

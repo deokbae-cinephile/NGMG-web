@@ -108,8 +108,27 @@ const menuDex = (db: Db) => {
     .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1) || ko(a.name, b.name));
 };
 
+const partialRating = (ratings: unknown, anglers: string[]) => {
+  const given = anglers.filter((angler) => typeof (ratings as Record<string, unknown> | null)?.[angler] === 'number').length;
+  return given > 0 && given < anglers.length;
+};
+
+const pendingRatings = (db: Db, anglers: string[]) => {
+  const { records, linked } = joined(db);
+  const menu = linked(db.menu_items);
+  return [...records.values()]
+    .map((record) => ({ record, menu: menu.filter((item) => item.record_id === record.id) }))
+    .filter(({ record, menu }) => partialRating(record.angler_ratings, anglers) || menu.some((item) => partialRating(item.angler_ratings, anglers)))
+    .sort((a, b) => String(b.record.visited_on).localeCompare(String(a.record.visited_on)))
+    .map(({ record, menu }) => ({ id: record.id, visited_on: record.visited_on, place_name: record.place.name, angler_ratings: record.angler_ratings ?? null, menu_ratings: menu.map((item) => item.angler_ratings ?? null) }));
+};
+
+/** GET으로 받은 배열 인자('{김 조사,류 조사}')를 목록으로 바꿉니다. */
+const list = (value: unknown) => (Array.isArray(value) ? value : String(value ?? '').replace(/^\{|\}$/g, '').split(',').filter(Boolean));
+
 /** 집계 함수 이름이면 결과를, 아니면 undefined를 돌려줍니다. */
-export const aggregate = (db: Db, name: string, body: { target_year?: number }) => {
+export const aggregate = (db: Db, name: string, body: { target_year?: number; anglers?: unknown }) => {
+  if (name === 'pending_ratings') return pendingRatings(db, list(body.anglers));
   if (name === 'place_ratings') return placeRatings(db);
   if (name === 'species_options') return speciesOptions(db);
   if (name === 'stat_years') return statYears(db);

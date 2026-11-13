@@ -21,7 +21,7 @@ export const GEAR_CATEGORIES = ['로드', '릴', '라인', '채비', '미끼', '
 export const LINE_SUBCATEGORIES = ['원줄', '목줄'] as const;
 
 /** 세부 분류. 세부 분류가 없던 라인은 원줄로 봅니다. */
-export const gearSubcategory = (gear: Pick<Gear, 'category' | 'subcategory'>) => (gear.category === '라인' ? gear.subcategory || LINE_SUBCATEGORIES[0] : '');
+const gearSubcategory = (gear: Pick<Gear, 'category' | 'subcategory'>) => (gear.category === '라인' ? gear.subcategory || LINE_SUBCATEGORIES[0] : '');
 
 /** '로드', '원줄'처럼 보여 줄 분류 이름 */
 export const gearKind = (gear: Pick<Gear, 'category' | 'subcategory'>) => gearSubcategory(gear) || gear.category;

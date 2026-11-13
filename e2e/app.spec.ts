@@ -184,3 +184,36 @@ test('장소 상세: 예전 주소(/places/<id>)로 들어와도 새 주소(/pla
   await page.goto('./place');
   await expect(page.getByRole('heading', { name: '페이지를 찾을 수 없습니다' })).toBeVisible();
 });
+
+test('다른 탭에서 토큰을 새로 받아도 권한을 다시 읽지 않아 수정 단추가 사라지지 않는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  let roleRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/rest/v1/members')) roleRequests += 1;
+  });
+  await page.goto('./place?id=p1');
+  await expect(page.getByRole('button', { name: '장소 수정' })).toBeVisible();
+  const before = roleRequests;
+  // 다른 탭이 토큰을 새로 받으면 storage 이벤트로 세션이 바뀝니다(1시간마다 갱신하는 것과 같음). 그 뒤 화면을 옮겨 다시 그립니다.
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'sb-localhost-auth-token' })));
+  await page.getByRole('link', { name: '도감' }).click();
+  await page.goBack();
+  await expect(page.getByRole('button', { name: '장소 수정' })).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(roleRequests).toBe(before);
+});
+
+test('저장 대기열이 비어 있으면 화면으로 돌아와도 기록을 다시 받지 않는다', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./schedule?date=2026-10-30');
+  await expect(page.getByRole('heading', { name: '기록', exact: true })).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  let recordRequests = 0;
+  page.on('request', (request) => {
+    if (/\/rest\/v1\/(records|rpc\/(place_ratings|pending_ratings|stat_years|year_stats|fish_dex|menu_dex))/.test(request.url())) recordRequests += 1;
+  });
+  // 화면으로 돌아오면 저장 대기열을 확인합니다(올릴 것이 없으면 다시 받을 것도 없음).
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await page.waitForTimeout(500);
+  expect(recordRequests).toBe(0);
+});

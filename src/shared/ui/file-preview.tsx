@@ -1,22 +1,21 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useLayoutEffect, useRef, type MouseEvent } from 'react';
 import { Icon } from './icon';
 
-/** 고른 사진 파일을 올리기 전에 미리 보여 줍니다. 읽는 동안에는 빈 칸을 둡니다. */
+/**
+ * 고른 사진 파일을 올리기 전에 미리 보여 줍니다.
+ * 파일을 base64 글자로 읽지 않고 주소(Object URL)만 만들어 큰 사진도 메모리를 두 번 쓰지 않으며, 미리보기가 사라지면 주소를 풀어 줍니다.
+ * 그리기 전에(useLayoutEffect) 주소를 넣어 빈 이미지가 잠깐 보이지 않게 합니다.
+ */
 const FilePreview = ({ file, alt, className = '' }: { file: File; alt: string; className?: string }) => {
-  const [src, setSrc] = useState<string>();
+  const image = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    const reader = new FileReader();
-    reader.onload = () => setSrc(String(reader.result));
-    reader.readAsDataURL(file);
-    return () => reader.abort();
+  useLayoutEffect(() => {
+    const url = URL.createObjectURL(file);
+    if (image.current) image.current.src = url;
+    return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  return src ? (
-    <img src={src} alt={alt} className={`border border-line bg-surface object-cover ${className}`} />
-  ) : (
-    <span aria-hidden="true" className={`block border border-line bg-surface ${className}`} />
-  );
+  return <img ref={image} alt={alt} decoding="async" className={`border border-line bg-surface object-cover ${className}`} />;
 };
 
 type RemovablePhotoProps = {

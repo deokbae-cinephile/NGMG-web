@@ -96,6 +96,9 @@ export const useDeletePlace = () => {
   const client = useQueryClient();
   return useMutation({
     mutationFn: deletePlace,
-    onSuccess: () => invalidatePlaceData(client),
+    // 다시 받기를 기다리지 않습니다. 기다리면 지운 장소의 상세 화면이 지도로 옮기기 전에 잠깐 '장소를 찾을 수 없습니다'로 바뀝니다.
+    onSuccess: () => {
+      void invalidatePlaceData(client);
+    },
   });
 };

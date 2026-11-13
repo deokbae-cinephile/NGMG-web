@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ALL_KINDS, BASE_PLACE, KIND_LABEL } from '@/entities/place';
+import { BASE_PLACE, KIND_LABEL, KINDS } from '@/entities/place';
 import { usePlaceRatings } from '@/entities/record';
 import { useCurrentWeather, usePrefetchWeather } from '../api/weather';
 import { WeatherBadge } from './weather-badge';
-import type { Place } from '@/shared/api';
-import { useTheme } from '@/shared/lib';
+import type { Place, PlaceKind } from '@/shared/api';
+import { useTheme, type Kakao } from '@/shared/lib';
 import { useLocateControl } from './locate-control';
 import { applyRating, clusterStyle, createBasePin, createPin, pinOffsets } from '../model/pins';
 import { MapPopup } from './map-popup';
@@ -72,13 +72,15 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
   const refitPopup = useFollowSelected({ map, container, popup, selected, offsets, focusKey });
   const locateControl = useLocateControl({ map, onMove: onClose, onLocated: (latitude, longitude) => setHere({ latitude, longitude }) });
 
+  // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다. 묶음은 지도와 테마마다 한 번만 만들고, 장소가 바뀌면(검색·분류 필터) 핀만 바꿔 넣습니다.
+  // 장소가 바뀔 때마다 묶음을 새로 만들면 예전 묶음이 지도 이벤트를 계속 받으며 메모리에 쌓입니다.
+  const clusterers = useRef<Map<PlaceKind, Kakao>>(undefined);
   useEffect(() => {
     if (!map) return;
     const { kakao, instance } = map;
-    pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
-    // 분류마다 따로 묶어 묶음 색이 분류를 나타내게 합니다.
-    const clusterers = ALL_KINDS.map(
-      (kind) =>
+    const made = new Map(
+      KINDS.map((kind) => [
+        kind,
         new kakao.maps.MarkerClusterer({
           map: instance,
           averageCenter: true,
@@ -86,21 +88,42 @@ export const PlaceMap = ({ places, selectedId, picking, onSelect, onClose, onPic
           calculator: [10, 30, 50],
           styles: Array.from({ length: 4 }, () => clusterStyle(kind, dark)),
           texts: (count: number) => `${KIND_LABEL[kind]} ${count}`, // 색만으로 구분되지 않게 분류 이름을 함께 씁니다.
-          markers: places
-            .filter((place) => place.kind === kind)
-            .map(
-              (place) =>
-                new kakao.maps.CustomOverlay({
-                  position: new kakao.maps.LatLng(place.latitude, place.longitude),
-                  content: pins.current.get(place.id),
-                  yAnchor: 1, // 핀의 뾰족한 끝이 장소 위치에 오게 합니다.
-                  clickable: true,
-                }),
-            ),
         }),
+      ]),
     );
-    return () => clusterers.forEach((clusterer) => clusterer.clear());
-  }, [map, places, offsets, selectFromPin, dark]);
+    clusterers.current = made;
+    return () => {
+      clusterers.current = undefined;
+      made.forEach((clusterer) => {
+        clusterer.clear();
+        clusterer.setMap(null); // 지도에서 떼어 지도 이벤트를 더 받지 않게 합니다.
+      });
+    };
+  }, [map, dark]);
+
+  // 위의 묶음 효과가 먼저 실행되므로 여기서는 늘 지금 지도·테마의 묶음을 씁니다.
+  useEffect(() => {
+    const made = clusterers.current;
+    if (!map || !made) return;
+    const { kakao } = map;
+    pins.current = new Map(places.map((place) => [place.id, createPin(place, offsets.get(place.id) ?? 0, selectFromPin)]));
+    made.forEach((clusterer, kind) =>
+      clusterer.addMarkers(
+        places
+          .filter((place) => place.kind === kind)
+          .map(
+            (place) =>
+              new kakao.maps.CustomOverlay({
+                position: new kakao.maps.LatLng(place.latitude, place.longitude),
+                content: pins.current.get(place.id),
+                yAnchor: 1, // 핀의 뾰족한 끝이 장소 위치에 오게 합니다.
+                clickable: true,
+              }),
+          ),
+      ),
+    );
+    return () => made.forEach((clusterer) => clusterer.clear());
+  }, [map, dark, places, offsets, selectFromPin]);
 
   useEffect(() => {
     places.forEach((place) => {

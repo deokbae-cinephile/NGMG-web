@@ -26,8 +26,12 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     if (urls.length) navigator.serviceWorker.controller?.postMessage({ type: 'cache-assets', urls });
   };
   const sendAllAssets = () => sendAssets(performance.getEntriesByType('resource').map((entry) => entry.name).filter(isAsset));
+  // 새 서비스 워커로 바뀔 때마다(새 배포) 이벤트가 다시 오므로, 새로 받는 파일을 지켜보는 옵저버는 한 번만 만듭니다.
+  let watching = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     sendAllAssets();
+    if (watching) return;
+    watching = true;
     new PerformanceObserver((list) => sendAssets(list.getEntries().map((entry) => entry.name).filter(isAsset))).observe({ type: 'resource' });
   });
   window.addEventListener('online', sendAllAssets);

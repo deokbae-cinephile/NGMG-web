@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Kakao } from '@/shared/lib';
 import { Icon } from '@/shared/ui';
 import { START_VIEW } from '../model/pins';
@@ -16,6 +16,14 @@ export const useLocateControl = ({ map, onMove, onLocated }: { map?: KakaoMap; o
   const [locateNotice, setLocateNotice] = useState('');
   const myLocation = useRef<Kakao>(undefined);
   const locateButton = useRef<HTMLButtonElement>(null);
+  // 지도는 화면을 다시 열 때 다시 쓰므로(useKakaoMap), 화면을 떠나면 내 위치 점을 지도에서 뗍니다.
+  useEffect(
+    () => () => {
+      myLocation.current?.setMap(null);
+      myLocation.current = undefined;
+    },
+    [],
+  );
 
   const locate = () => {
     if (!map || locating) return;

@@ -59,9 +59,16 @@ test('장소: 수정하고 삭제한다', async ({ page }) => {
   await dialog.getByRole('button', { name: '저장' }).click();
   await expect(page.getByRole('heading', { name: '푸른바다횟집', exact: true })).toBeVisible();
 
+  // 지운 뒤 지도로 가기 전에 '장소를 찾을 수 없습니다'가 잠깐이라도 보이면 기록합니다.
+  await page.evaluate(() => {
+    new MutationObserver(() => {
+      if (document.body.textContent?.includes('장소를 찾을 수 없습니다')) (window as unknown as { __missingShown: boolean }).__missingShown = true;
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
   await page.getByRole('button', { name: '장소 삭제' }).click();
   await expect(page.getByRole('heading', { name: '내 장소', exact: true })).toBeVisible();
   expect(db.places!.map((item) => item.id)).not.toContain('p2');
+  expect(await page.evaluate(() => (window as unknown as { __missingShown?: boolean }).__missingShown ?? false)).toBe(false);
 });
 
 test('장소: 긴 이름도 화면을 넘치지 않는다', async ({ page }) => {
@@ -693,4 +700,41 @@ test('무악재역 핀도 다른 핀처럼 누르면(터치 포함) 고르고 �
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('group', { name: '무악재역 정보' })).toBeVisible();
   await expect(page.getByRole('group', { name: '지도 단추' }).getByRole('button', { name: '무악재역', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('지도: 검색·분류를 바꿔도 핀 묶음은 분류마다 하나씩만 지도에 붙어 있다(예전 묶음이 쌓이지 않음)', async ({ page }) => {
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  const search = page.getByRole('searchbox', { name: '이름·주소로 찾기' });
+  for (const text of ['거', '거문', '거문도', '', '바다']) await search.fill(text);
+  await page.getByRole('group', { name: '분류' }).getByRole('button', { name: '낚시' }).click();
+  await page.getByRole('group', { name: '분류' }).getByRole('button', { name: '전체' }).click();
+  await expect(page.locator('.pin:not(.pin-base)')).toHaveCount(1); // '바다'로 찾은 장소만 핀이 있습니다.
+  expect(await page.evaluate(() => (window as unknown as { __clusterers: Set<unknown> }).__clusterers.size)).toBe(4);
+});
+
+test('지도: 다른 화면에 다녀와도 지도를 새로 만들지 않고 다시 쓰며, 핀·위치 지정·내 위치가 그대로 동작한다', async ({ page, context }) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 34.5, longitude: 127.2 });
+  const db = await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await expect(page.locator('.my-location')).toHaveCount(1);
+  for (let round = 0; round < 2; round += 1) {
+    await page.getByRole('link', { name: '도감' }).click();
+    await expect(page.getByRole('heading', { name: '어종 도감' })).toBeAttached();
+    await page.getByRole('link', { name: '지도', exact: true }).first().click();
+    await expect(page.locator('.pin:not(.pin-base)')).toHaveCount(3);
+  }
+  expect(await page.evaluate(() => (window as unknown as { __maps: number }).__maps)).toBe(1);
+  await expect(page.locator('.my-location')).toHaveCount(0); // 떠날 때 내 위치 점을 뗍니다(다시 눌러야 다시 찾음).
+  await expect(page.locator('.pin-base')).toHaveCount(1); // 무악재역 핀도 하나만 있습니다.
+  // 다시 연 지도에서도 위치를 지정해 새 장소 창을 엽니다.
+  await page.getByRole('button', { name: '위치 지정', exact: true }).click();
+  const box = (await page.getByTestId('map').boundingBox())!;
+  await page.getByTestId('map').click({ position: { x: box.width * 0.6, y: box.height * 0.5 } });
+  await expect(page.getByRole('dialog', { name: '새 장소' })).toBeVisible();
+  expect(db.places).toHaveLength(3);
 });

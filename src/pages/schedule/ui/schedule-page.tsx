@@ -24,6 +24,9 @@ const PaneHead = ({ id, title, children }: { id: string; title: string; children
   </div>
 );
 
+/** 휴대폰 배치(달력 아래 고른 날, 일정 추가 알림창). styles의 lg(64rem) 경계와 같습니다. */
+const narrow = () => window.matchMedia('(width < 64rem)');
+
 export const SchedulePage = () => {
   const [params, setParams] = useSearchParams();
   const date = normalizeDateKey(params.get('date'));
@@ -32,18 +35,18 @@ export const SchedulePage = () => {
   // from: 어디서 일정 창을 열었는지. 알림창에서 열었으면 저장 뒤 달력의 날짜로 초점을 옮깁니다.
   const [form, setForm] = useState<{ event?: CalendarEvent; from?: 'sheet' }>();
   // 휴대폰: 고른 날(들어오면 오늘)의 '일정 추가' 알림창이 아래에 처음부터 열려 있고, 날짜를 누르면 그날로 바뀝니다. 저절로 닫히지 않고 닫기 단추로 닫습니다.
-  const [sheet, setSheet] = useState(() => window.matchMedia('(width < 64rem)').matches);
+  const [sheet, setSheet] = useState(() => narrow().matches);
   // 일정 창을 여는 동안 알림창은 그대로 두어, 창을 닫으면 키보드 초점이 알림창의 단추로 돌아옵니다. 저장하면 알림창도 닫습니다.
   const openForm = (from?: 'sheet') => setForm({ from });
 
   // 화면을 넓혀 휴대폰 배치가 아니게 되면 (보이지 않는) 알림창을 닫습니다.
   useEffect(() => {
-    const wide = window.matchMedia('(width >= 64rem)');
+    const query = narrow();
     const close = () => {
-      if (wide.matches) setSheet(false);
+      if (!query.matches) setSheet(false);
     };
-    wide.addEventListener('change', close);
-    return () => wide.removeEventListener('change', close);
+    query.addEventListener('change', close);
+    return () => query.removeEventListener('change', close);
   }, []);
   const [recordForm, setRecordForm] = useState<{ event?: CalendarEvent; record?: PlaceRecord }>();
 
@@ -95,7 +98,7 @@ export const SchedulePage = () => {
             onMonthChange={setMonth}
             onSelect={(day) => {
               setParams({ date: toDateKey(day) }, { replace: true });
-              if (window.matchMedia('(width < 64rem)').matches) setSheet(true); // 넓은 화면은 고른 날 머리의 단추를 씁니다.
+              if (narrow().matches) setSheet(true); // 넓은 화면은 고른 날 머리의 단추를 씁니다.
             }}
             label={(day) => {
               const count = counts.get(toDateKey(day));

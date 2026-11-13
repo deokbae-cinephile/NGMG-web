@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { useFishDex, useMenuDex, useSignedPhotos, type DexEntry, type DexMenu } from '@/entities/record';
+import { formatRating, useFishDex, useMenuDex, useSignedPhotos, type DexEntry, type DexMenu } from '@/entities/record';
 import { formatDate, Link } from '@/shared/lib';
 import { CardGridSkeleton, ErrorText, Icon, SearchField, type IconName } from '@/shared/ui';
 import { toMenuEntry } from '../model';
@@ -140,7 +140,7 @@ const MenuDex = ({ keyword }: { keyword: string }) => {
               photo={photo ? <img src={photo.thumb} alt={`${name} 사진`} loading="lazy" className="aspect-[4/3] w-full bg-surface object-cover" /> : undefined}
             >
               <dt className="mono-label">평점</dt>
-              <dd>{rating !== null ? `${rating.toFixed(1)}점` : pending || '-'}</dd>
+              <dd>{rating !== null ? formatRating(rating) : pending || '-'}</dd>
               <dt className="mono-label">최근 가격</dt>
               <dd>
                 <span className="whitespace-nowrap">{price === null ? '-' : `${price.toLocaleString('ko-KR')}원`}</span>

@@ -120,7 +120,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 83개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
+| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 87개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-server.ts`가 흉내 냅니다(`fakeBackend`). 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 
@@ -158,15 +158,16 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 - 첫 화면(`src/app/splash.tsx`): 가운데 로고만 놓인 스플래시가 앱이 준비될 때까지 보였다가 서서히 사라집니다. 탭마다 한 번만 로고를 보여 주고(`sessionStorage`의 `ngmg:intro`), 그 뒤에는 바탕만 덮었다가 바로 엽니다. `index.html`의 `#boot`가 같은 모습이라 자바스크립트를 받는 동안에도 이어집니다.
 - 화면 전환: 로그인 뒤 다른 메뉴의 코드를 미리 받고, 데이터가 오는 동안에는 스켈레톤(`src/shared/ui/skeleton.tsx`)으로 자리를 잡아 화면이 밀리지 않게 합니다.
 - 지도는 마지막으로 보던 곳에서 시작합니다(`map-view`). 저장된 위치가 없으면 무악재역에서 시작합니다.
+- 카카오 지도는 지우는 API가 없어 화면을 열 때마다 새로 만들면 떠난 지도가 메모리에 남습니다. 지도는 한 번만 만들어 다시 쓰고(`src/pages/map/model/use-kakao-map.ts`), 화면을 떠날 때 지도 칸을 떼고 그 화면이 단 이벤트·핀 묶음·오버레이(무악재역 핀, 말풍선, 내 위치 점)를 모두 뗍니다. 핀 묶음은 지도와 테마마다 한 번만 만들고 장소가 바뀌면 핀만 바꿔 넣습니다.
 
 ## 경량화 원칙
 
 - 구조는 FSD(Feature-Sliced Design)를 따르고 Steiger(`steiger.config.ts`)로 검사합니다. 한 화면에서만 쓰는 코드는 그 화면 슬라이스에 두고, 두 곳 이상에서 쓰게 되면 features·widgets로 올립니다. 폼 슬라이스 이름이 모두 `-form`이라 `fsd/repetitive-naming`만 끕니다.
-- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감)은 DB 함수(`20261128000000_aggregates.sql`, `security invoker`라 RLS 그대로)가 셉니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
+- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감, 평점 대기)은 DB 함수(`20261128000000_aggregates.sql`, `20261129000000_pending_ratings.sql`, `security invoker`라 RLS 그대로)가 셉니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
 - Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.
-- 사진은 올릴 때(가로 3200px이 넘는 큰 사진은 먼저 줄여 읽어 휴대폰 메모리를 아낌) 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 잡은 물고기·음식은 칸마다 5장까지이며, 대표(첫) 사진은 `photo_path`, 나머지 4장은 `extra_photo_paths`에 둡니다(`20261125000000_item_photos.sql`). 도감·사진 모아 보기의 대표 사진은 `photo_path`를 그대로 씁니다. 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올립니다(`forEachLimit`). 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
+- 사진은 올릴 때(가로 3200px이 넘는 큰 사진은 먼저 줄여 읽어 휴대폰 메모리를 아낌) 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 잡은 물고기·음식은 칸마다 5장까지이며, 대표(첫) 사진은 `photo_path`, 나머지 4장은 `extra_photo_paths`에 둡니다(`20261125000000_item_photos.sql`). 도감·사진 모아 보기의 대표 사진은 `photo_path`를 그대로 씁니다. 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올리되 풀기·줄이기는 한 장씩 차례로 해 메모리 최고점을 낮춥니다(`forEachLimit`, `compressImageWithThumb`). 올리기 전 미리보기는 Object URL로 보여 주고 사라지면 풉니다. 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
 - 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
 - 사진 여러 장은 브라우저 기본 가로 스크롤(scroll-snap)로 넘깁니다. 슬라이드 라이브러리(Embla)는 일부 휴대폰에서 밀어도 넘어가지 않아 걷어 냈습니다. 슬라이드 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
 - 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답(DB는 요청 토큰의 사용자별로 따로 저장)을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받고, 저장은 `always`라 오프라인이면 바로 실패를 알립니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
