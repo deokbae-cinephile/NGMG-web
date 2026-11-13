@@ -738,3 +738,24 @@ test('지도: 다른 화면에 다녀와도 지도를 새로 만들지 않고 �
   await expect(page.getByRole('dialog', { name: '새 장소' })).toBeVisible();
   expect(db.places).toHaveLength(3);
 });
+
+test('지도: 현재 위치를 찾는 중에 다른 화면으로 가면, 늦게 온 위치는 버려 다시 연 지도에 점이 남지 않는다', async ({ page }) => {
+  // 위치 응답을 0.8초 늦게 줍니다.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: (success: PositionCallback) =>
+          setTimeout(() => success({ coords: { latitude: 34.5, longitude: 127.2, accuracy: 10 } } as GeolocationPosition), 800),
+      },
+    });
+  });
+  await fakeBackend(page, seed());
+  await page.goto('./');
+  await expect(page.locator('.pin').first()).toBeVisible();
+  await page.getByRole('button', { name: '현재 위치로 이동' }).click();
+  await page.getByRole('link', { name: '도감' }).click();
+  await page.waitForTimeout(1200); // 그사이 위치 응답이 옵니다.
+  await page.getByRole('link', { name: '지도', exact: true }).first().click();
+  await expect(page.locator('.pin:not(.pin-base)')).toHaveCount(3);
+  await expect(page.locator('.my-location')).toHaveCount(0);
+});

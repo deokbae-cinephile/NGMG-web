@@ -16,14 +16,17 @@ export const useLocateControl = ({ map, onMove, onLocated }: { map?: KakaoMap; o
   const [locateNotice, setLocateNotice] = useState('');
   const myLocation = useRef<Kakao>(undefined);
   const locateButton = useRef<HTMLButtonElement>(null);
-  // 지도는 화면을 다시 열 때 다시 쓰므로(useKakaoMap), 화면을 떠나면 내 위치 점을 지도에서 뗍니다.
-  useEffect(
-    () => () => {
+  // 지도는 화면을 다시 열 때 다시 쓰므로(useKakaoMap), 화면을 떠나면 내 위치 점을 지도에서 떼고,
+  // 떠난 뒤에 도착한 위치 응답은 버립니다(다시 쓰는 지도에 점을 남기거나 지도를 옮기지 않게).
+  const active = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
       myLocation.current?.setMap(null);
       myLocation.current = undefined;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const locate = () => {
     if (!map || locating) return;
@@ -36,6 +39,7 @@ export const useLocateControl = ({ map, onMove, onLocated }: { map?: KakaoMap; o
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (!active.current) return;
         setLocating(false);
         const { kakao, instance } = map;
         const position = new kakao.maps.LatLng(coords.latitude, coords.longitude);
@@ -54,6 +58,7 @@ export const useLocateControl = ({ map, onMove, onLocated }: { map?: KakaoMap; o
         setLocateNotice('지도를 현재 위치로 옮겼습니다.');
       },
       (failure) => {
+        if (!active.current) return;
         setLocating(false);
         setLocateError(
           failure.code === failure.PERMISSION_DENIED
