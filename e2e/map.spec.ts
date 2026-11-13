@@ -334,6 +334,34 @@ test('지도 날씨: 고른 뒤 받기에 실패하면 그 장소의 날씨를 �
   await expect(badge).not.toContainText('°');
 });
 
+test('지도 날씨: 날씨 서버가 답하지 않으면 오래 기다리지 않고 끊어 다시 받고, 다시 받은 날씨를 보여 준다', async ({ page }) => {
+  test.setTimeout(45_000);
+  await fakeBackend(page, seed());
+  let calls = 0;
+  await page.route('https://api.open-meteo.com/**', async (route) => {
+    calls += 1;
+    if (calls <= 2) return; // 처음 두 요청(모든 핀 미리 받기, 고른 장소)은 답하지 않고 멈춥니다(2026-11-13 장애와 같음).
+    await route.fallback(); // 그다음부터는 가짜 날씨 서버가 답합니다.
+  });
+  await page.goto('./');
+  await expect.poll(() => calls).toBeGreaterThanOrEqual(1);
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  const badge = page.getByRole('status').filter({ hasText: '날씨' });
+  await expect(badge).toContainText('거문도 방파제의 날씨를 불러오는 중입니다.');
+  await expect(badge).toContainText('14°', { timeout: 25_000 }); // 멈춘 요청을 끊고 다시 받습니다.
+  expect(calls).toBeGreaterThanOrEqual(3);
+});
+
+test('지도 날씨: 날씨 서버가 계속 답하지 않으면 그 장소의 날씨를 못 불러왔다고 알린다', async ({ page }) => {
+  test.setTimeout(45_000);
+  await fakeBackend(page, seed());
+  await page.route('https://api.open-meteo.com/**', () => undefined); // 늘 멈춥니다.
+  await page.goto('./');
+  await page.getByRole('button', { name: /^거문도 방파제 \(낚시\) 선택/ }).click();
+  const badge = page.getByRole('status').filter({ hasText: '날씨' });
+  await expect(badge).toContainText('거문도 방파제의 날씨를 불러오지 못했습니다.', { timeout: 30_000 });
+});
+
 test('지도 날씨: 모든 핀의 날씨를 한 번에 미리 받아, 핀마다 그곳 기온을 바로 보여 준다', async ({ page }) => {
   const base = seed();
   await fakeBackend(page, { ...base, places: [...base.places!, { ...place('p8', '북쪽 포인트'), latitude: 36.03 }] });

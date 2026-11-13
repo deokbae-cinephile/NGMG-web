@@ -29,16 +29,30 @@ const toWeather = ({ current }: Current): CurrentWeather => ({ state: weatherSta
 const weatherKey = (position?: Position) => ['weather', position?.latitude.toFixed(2), position?.longitude.toFixed(2)];
 
 /**
+ * 날씨 서버가 가끔 연결만 되고 답하지 않습니다(2026-11-13, 한 요청이 5분 동안 멈춤). 기다리기만 하면 날씨가 나오지 않고
+ * 다시 시도하지도 않으므로, 이 시간 안에 답이 없으면 끊고 실패로 봅니다(한 번 더 시도한 뒤 못 불러왔다고 알림). 보통은 1초 안에 옵니다.
+ */
+const TIMEOUT = 8_000;
+
+/**
  * 여러 좌표의 지금 날씨를 한 번에 받습니다. 키가 필요 없는 Open-Meteo를 씁니다.
  * 좌표를 쉼표로 이어 보내면 같은 순서의 목록으로 돌려줍니다(좌표가 하나면 목록이 아닌 하나).
  */
 const fetchWeathers = async (positions: Position[]): Promise<CurrentWeather[]> => {
   const join = (pick: (position: Position) => number) => positions.map((position) => pick(position).toFixed(3)).join(',');
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${join((p) => p.latitude)}&longitude=${join((p) => p.longitude)}&current=temperature_2m,weather_code&timezone=Asia%2FSeoul`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('날씨를 불러오지 못했습니다.');
-  const body = (await response.json()) as Current | Current[];
-  return (Array.isArray(body) ? body : [body]).map(toWeather);
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), TIMEOUT);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error('날씨를 불러오지 못했습니다.');
+    const body = (await response.json()) as Current | Current[]; // 본문을 받는 동안 멈춰도 끊습니다.
+    return (Array.isArray(body) ? body : [body]).map(toWeather);
+  } catch {
+    throw new Error('날씨를 불러오지 못했습니다.');
+  } finally {
+    window.clearTimeout(timer);
+  }
 };
 
 const STALE = 15 * 60_000;
