@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
+import { averageRating, combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
-import { formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
+import { fileKey, formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
 import { ErrorText, Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 import { fishError, FishFieldset, type FishDraft } from './fish-fieldset';
@@ -33,8 +33,7 @@ const itemRating = (row: MenuRow) => {
  */
 const restaurantRating = (rows: MenuRow[]) => {
   if (rows.some((row) => isPartialRating(toRatings(row.ratings)))) return null;
-  const values = rows.flatMap((row) => itemRating(row) ?? []);
-  return values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : undefined;
+  return averageRating(rows.flatMap((row) => itemRating(row) ?? []));
 };
 
 export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Props) => {
@@ -93,6 +92,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
     const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
     const anglerRatings = toRatings(ratings);
+    const menuRating = restaurantRating(keptMenu);
     // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 못 막으므로 ref로 바로 잠급니다.
     // 두 번째 저장은 같은 base_updated_at으로 충돌 검사를 해 가짜 '먼저 고쳤습니다' 안내가 뜰 수 있습니다.
     if (tooMany || !lock.tryLock()) return;
@@ -108,7 +108,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         end_date: kind === 'restaurant' ? values.visited_on : values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
-        rating: kind === 'restaurant' ? (restaurantRating(keptMenu) === undefined ? legacyRating : (restaurantRating(keptMenu) ?? null)) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
+        rating: kind === 'restaurant' ? (menuRating === undefined ? legacyRating : menuRating) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
         angler_ratings: kind === 'restaurant' ? {} : anglerRatings,
         gear_sets: record?.gear_sets ?? [], // 장비 세트는 더 받지 않고 예전 값은 그대로 둡니다.
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
@@ -257,7 +257,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
             <section aria-label="올릴 사진 미리보기">
               <ul className="grid grid-cols-3 gap-2">
                 {files.map((file, index) => (
-                  <li key={`${file.name}-${file.lastModified}-${index}`}>
+                  <li key={fileKey(file)}>
                     <RemovablePhoto
                       file={file}
                       alt={`올릴 사진 ${index + 1} 미리보기`}

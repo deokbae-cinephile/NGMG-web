@@ -6,6 +6,7 @@ import { closedReason, KIND_LABEL, PlaceSearch, savePlace, usePlaces } from '@/e
 import { type CalendarEvent, type PlaceDraft, type PlaceKind } from '@/shared/api';
 import { ErrorText, Field, IconButton, SAVE_KEY, TextareaField } from '@/shared/ui';
 import { GearPicker } from './gear-picker';
+import { useSubmitLock } from '@/shared/lib';
 
 type Values = { title: string; date: string; end_date: string; memo: string };
 type Props = { date: string; event?: CalendarEvent; onDone: (date: string) => void };
@@ -34,7 +35,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   const [gearOpen, setGearOpen] = useState(!event);
   const [gearMissing, setGearMissing] = useState(false);
   const gearArea = useRef<HTMLDivElement>(null);
-  const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
+  const lock = useSubmitLock();
 
   const save = useMutation({
     mutationKey: SAVE_KEY,
@@ -75,15 +76,12 @@ export const EventForm = ({ date, event, onDone }: Props) => {
       });
       return;
     }
-    if (locked.current) return;
-    locked.current = true;
+    if (!lock.tryLock()) return;
     save.mutate(
       { ...values, place },
       {
-        onSuccess: () => onDone(values.date),
-        onError: () => {
-          locked.current = false;
-        },
+        onSuccess: () => onDone(values.date), // 성공하면 창이 닫히므로 잠금을 풀지 않습니다.
+        onError: lock.unlock,
       },
     );
   };

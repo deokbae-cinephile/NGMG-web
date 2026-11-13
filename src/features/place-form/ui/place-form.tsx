@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { PlaceSearch, useSavePlace } from '@/entities/place';
 import type { PlaceDraft, PlaceKind } from '@/shared/api';
 import { ErrorText, Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
 import { KindFieldset } from './kind-fieldset';
+import { useSubmitLock } from '@/shared/lib';
 
 type Values = {
   name: string;
@@ -44,7 +45,7 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
   const [photo, setPhoto] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [id] = useState(() => initial?.id ?? crypto.randomUUID());
-  const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
+  const lock = useSubmitLock();
   const save = useSavePlace();
 
   const fill = (place: PlaceDraft) => {
@@ -56,8 +57,7 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
   };
 
   const onValid = (values: Values) => {
-    if (locked.current) return;
-    locked.current = true;
+    if (!lock.tryLock()) return;
     save.mutate(
       {
         ...values,
@@ -74,10 +74,8 @@ export const PlaceForm = ({ initial, onDone }: Props) => {
         removePhoto,
       },
       {
-        onSuccess: onDone,
-        onError: () => {
-          locked.current = false;
-        },
+        onSuccess: onDone, // 성공하면 창이 닫히므로 잠금을 풀지 않습니다.
+        onError: lock.unlock,
       },
     );
   };

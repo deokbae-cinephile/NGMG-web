@@ -6,26 +6,12 @@ import { cleanKeyword, recordSearchFilter } from '../model';
 import { PAGE_SIZE, SELECT, withPhotoUrls, type Row } from './shared';
 
 /** 전체 기록 찾기 조건. 모두 함께 맞아야 합니다. */
-export type RecordFilters = {
-  kind?: PlaceKind;
-  keyword?: string;
-  placeId?: string;
-  /** 이 조사가 잡은 물고기가 있는 기록 */
-  angler?: string;
-};
+type RecordFilters = { kind?: PlaceKind; keyword?: string };
 
-const fetchPage = async (page: number, { kind, keyword = '', placeId, angler }: RecordFilters) => {
+const fetchPage = async (page: number, { kind, keyword = '' }: RecordFilters) => {
   const from = page * PAGE_SIZE;
   let query = supabase.from('records').select(SELECT);
   if (kind) query = query.eq('place.kind', kind);
-  if (placeId) query = query.eq('place_id', placeId);
-  if (angler) {
-    const caught = await supabase.from('fish_catches').select('record_id').eq('angler', angler).limit(2000);
-    if (caught.error) throw new Error('기록을 불러오지 못했습니다.');
-    const ids = [...new Set(caught.data.map((row) => row.record_id as string))];
-    if (!ids.length) return [];
-    query = query.in('id', ids);
-  }
   const text = cleanKeyword(keyword);
   if (text) {
     // 어종과 장소 이름은 다른 표에 있어 맞는 기록과 장소를 먼저 찾아 조건에 더합니다.
@@ -102,9 +88,12 @@ export const useRecordedEventIds = (events: Pick<CalendarEvent, 'id' | 'date' | 
     queryFn: async () => {
       const columns = 'event_id, place_id, visited_on, end_date';
       const places = [...new Set(events.flatMap((event) => event.place_id ?? []))];
+      // 장소로 찾을 때는 일정들이 걸친 기간과 겹치는 기록만 받습니다(자주 간 장소의 지난 기록을 모두 받지 않게).
+      const first = events.reduce((min, event) => (event.date < min ? event.date : min), events[0]!.date);
+      const last = events.reduce((max, event) => (event.end_date > max ? event.end_date : max), events[0]!.end_date);
       // 일정의 장소를 나중에 바꿔도 연결된 기록을 찾도록 일정 id로도 조회합니다.
       const [byPlace, byEvent] = await Promise.all([
-        places.length ? supabase.from('records').select(columns).in('place_id', places) : { data: [], error: null },
+        places.length ? supabase.from('records').select(columns).in('place_id', places).lte('visited_on', last).gte('end_date', first) : { data: [], error: null },
         supabase.from('records').select(columns).in('event_id', events.map((event) => event.id)),
       ]);
       if (byPlace.error || byEvent.error) throw new Error('기록을 불러오지 못했습니다.');

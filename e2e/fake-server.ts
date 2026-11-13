@@ -14,6 +14,7 @@ export const KAKAO_SDK = `
     class Map {
       constructor(el) {
         this.el = el;
+        window.__maps = (window.__maps || 0) + 1; // 지도를 몇 번 만들었는지 검사합니다(다시 열 때는 다시 씀).
         el.dataset.demo = '가짜 지도 · Kakao 키 연결 전';
         el.addEventListener('click', (e) => {
           if (e.target !== el) return;
@@ -41,16 +42,19 @@ export const KAKAO_SDK = `
       setPosition(position) { this.o.position = position; this.o.content.style.left = ((position.getLng() - 125.5) / 4.5) * 100 + '%'; this.o.content.style.top = ((38.6 - position.getLat()) / 5.6) * 100 + '%'; }
     }
     class MarkerClusterer {
-      constructor({ map, markers }) {
-        this.items = markers.map((m) => {
+      constructor({ map, markers = [] }) { this.map = map; this.items = []; this.addMarkers(markers); }
+      addMarkers(markers) {
+        markers.forEach((m) => {
           const pin = m.o.content;
           pin.style.position = 'absolute';
           pin.style.left = ((m.o.position.getLng() - 125.5) / 4.5) * 100 + '%';
           pin.style.top = ((38.6 - m.o.position.getLat()) / 5.6) * 100 + '%';
-          return map.el.appendChild(pin);
+          this.items.push(this.map.el.appendChild(pin));
         });
+        (window.__clusterers ||= new Set()).add(this); // 지도에 붙어 있는 묶음 수를 검사합니다.
       }
-      clear() { this.items.forEach((i) => i.remove()); }
+      clear() { this.items.forEach((i) => i.remove()); this.items = []; }
+      setMap(map) { if (!map) { this.clear(); window.__clusterers?.delete(this); } }
     }
     const Status = { OK: 'OK', ZERO_RESULT: 'ZERO_RESULT' };
     class Places {

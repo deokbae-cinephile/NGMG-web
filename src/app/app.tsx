@@ -97,11 +97,12 @@ export const App = () => {
     return () => window.clearTimeout(timer);
   }, [session]);
 
-  const userId = session?.user.id;
+  // 로그아웃되면 화면에 남은 데이터를 지웁니다. 권한(역할)은 계정마다 따로 기억하므로(useRole) 다른 계정으로 들어와도 다시 읽습니다.
+  // 세션은 토큰을 새로 받을 때마다(약 1시간) 바뀌므로, 그때마다 권한을 지우면 수정 단추가 잠깐 사라졌다 다시 나타납니다.
+  const signedOut = session === null;
   useEffect(() => {
-    if (session === null) client.clear(); // 로그아웃되면 화면에 남은 데이터를 지웁니다.
-    else client.removeQueries({ queryKey: ['session', 'role'] }); // 다른 계정(예: 게스트)으로 들어오면 역할을 다시 읽습니다.
-  }, [session, userId]);
+    if (signedOut) client.clear();
+  }, [signedOut]);
 
   return (
     <ErrorBoundary>

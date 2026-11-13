@@ -1,11 +1,11 @@
 # NGMG Web - 낚고먹고
 
 [![CI](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml/badge.svg)](https://github.com/deokbae-cinephile/NGMG-web/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-2.0.0-2f7bd8)
+![version](https://img.shields.io/badge/version-2.0.1-2f7bd8)
 
 낚시 포인트와 맛집을 지도에 남기고, 출조 일정과 조과 기록, 통계와 도감을 함께 챙기는 2인용 반응형 웹 서비스입니다.
 
-> **프로젝트 상태:** v2.0.0 (1.0.0 정식 출시 뒤 시맨틱 버저닝으로 갱신). 두 사람이 직접 쓰는 서비스로, Supabase와 Kakao 지도를 연결해 [ngmg.kr](https://ngmg.kr)에 배포했습니다. 공용 계정으로만 로그인할 수 있으며, 서버 없이 둘러보려면 `pnpm run demo`를 실행합니다.
+> **프로젝트 상태:** v2.0.1 (1.0.0 정식 출시 뒤 시맨틱 버저닝으로 갱신). 두 사람이 직접 쓰는 서비스로, Supabase와 Kakao 지도를 연결해 [ngmg.kr](https://ngmg.kr)에 배포했습니다. 공용 계정으로만 로그인할 수 있으며, 서버 없이 둘러보려면 `pnpm run demo`를 실행합니다.
 
 ## 주요 기능
 

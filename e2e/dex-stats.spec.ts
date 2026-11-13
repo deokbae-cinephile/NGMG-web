@@ -133,7 +133,7 @@ test('통계: 자주 간 낚시 포인트·맛집을 누르면 장소 상세로 
   await page.getByRole('region', { name: '자주 간 낚시 포인트' }).getByRole('link', { name: /거문도 방파제/ }).click();
   await expect(page).toHaveURL(/\/place\?id=p1$/);
   // 평점 대기 조회가 끝난 뒤에도 칸이 없는지 봅니다(조회 중에도 칸을 그리지 않으므로).
-  const pending = page.waitForResponse((response) => /\/rest\/v1\/records\?select=id%2C\+?visited_on%2C\+?angler_ratings/.test(response.url()));
+  const pending = page.waitForResponse((response) => /\/rest\/v1\/rpc\/pending_ratings\?anglers=/.test(response.url()));
   await page.goto('./settings');
   await pending;
   await expect(page.getByRole('region', { name: '알림', exact: true })).toBeVisible();

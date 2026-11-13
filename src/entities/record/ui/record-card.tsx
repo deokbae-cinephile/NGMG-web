@@ -5,7 +5,7 @@ import { WeatherIcon } from '@/shared/ui';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
-import { ANGLERS, isPartialRating, missingRaters, pendingRating, RECORD_LABELS } from '../model';
+import { ANGLERS, formatRating, isPartialRating, missingRaters, pendingRating, RECORD_LABELS } from '../model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
@@ -28,7 +28,7 @@ const Rating = ({ record }: { record: PlaceRecord }) => {
   return (
     <dl>
       <dt className="mono-label">평점</dt>
-      <dd>{`${Number(record.rating).toFixed(1)}점`}</dd>
+      <dd>{formatRating(Number(record.rating))}</dd>
     </dl>
   );
 };

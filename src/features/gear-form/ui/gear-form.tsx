@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { GEAR_CATEGORIES, LINE_SUBCATEGORIES, useSaveGear, type Gear } from '@/entities/gear';
 import { ANGLERS } from '@/shared/api';
 import { ErrorText, Field, IconButton, TextareaField } from '@/shared/ui';
+import { useSubmitLock } from '@/shared/lib';
 
 type Values = { angler: string; category: string; subcategory: string; brand: string; name: string; memo: string };
 
@@ -22,12 +23,11 @@ export const GearForm = ({ initial, angler, onDone }: Props) => {
   });
   const category = useWatch({ control, name: 'category' });
   const [id] = useState(() => initial?.id ?? crypto.randomUUID());
-  const locked = useRef(false); // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 막지 못합니다.
+  const lock = useSubmitLock();
   const save = useSaveGear();
 
   const onValid = (values: Values) => {
-    if (locked.current) return;
-    locked.current = true;
+    if (!lock.tryLock()) return;
     save.mutate(
       {
         id,
@@ -42,10 +42,8 @@ export const GearForm = ({ initial, angler, onDone }: Props) => {
         ...(initial ? { created_at: initial.created_at } : {}),
       },
       {
-        onSuccess: onDone,
-        onError: () => {
-          locked.current = false;
-        },
+        onSuccess: onDone, // 성공하면 창이 닫히므로 잠금을 풀지 않습니다.
+        onError: lock.unlock,
       },
     );
   };

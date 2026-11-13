@@ -1,4 +1,4 @@
-import { isPartialRating, missingRaters, ratingDetail, type DexMenu } from '@/entities/record';
+import { isPartialRating, pendingRatingText, type DexMenu } from '@/entities/record';
 
 /** priceChange: 가장 최근 가격에서 그 전에 적은 가격을 뺀 값(가격이 두 번 이상 있을 때만). 0이면 그대로입니다. */
 export type MenuDexEntry = {
@@ -23,7 +23,7 @@ export const toMenuEntry = (row: DexMenu): MenuDexEntry => {
     priceChange: row.price_change,
     rating: row.rating === null ? null : Number(row.rating),
     photoPath: row.photo_path ?? undefined,
-    pending: waiting ? `${missingRaters(waiting).join(', ')} 평점을 기다리는 중 (${ratingDetail(waiting)})` : '',
+    pending: waiting ? pendingRatingText(waiting) : '',
     latest: { id: row.latest_id, record: { visited_on: row.latest_visited_on, place: { name: row.place_name } } },
   };
 };
