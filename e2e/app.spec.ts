@@ -81,6 +81,7 @@ test('설정: 평점 대기 배지와 목록, 출조 알림, 화면 테마, 앱 
   });
   await expect(page.getByRole('region', { name: '앱 설치' }).getByRole('button', { name: '앱 설치' })).toBeVisible();
   await expect(page.getByRole('region', { name: '앱 정보' })).toContainText(/v\d+\.\d+\.\d+ \(\d{4}\.\d{2}\.\d{2}\)/); // 버전 뒤에 배포 날짜
+  await expect(page.getByRole('region', { name: '앱 정보' }).getByRole('link', { name: '날씨·지도·글꼴 출처 (README)' })).toHaveAttribute('href', /NGMG-web#출처$/); // 출처는 README에
   await expectFits(page);
   await expectAccessible(page);
 
