@@ -1,7 +1,7 @@
 import { addDays, toDateKey } from '../src/shared/lib/date.ts';
 import type { Seed } from './fake-server.ts';
 
-// 데모와 README 스크린샷에 쓰는 가상 데이터입니다.
+// 데모에 쓰는 가상 데이터입니다.
 const place = (id: string, name: string, kind: string, latitude: number, longitude: number, address: string) => ({
   id, name, kind, latitude, longitude, address, memo: '', photo_path: null, created_at: `2026-0${id.slice(1)}-01T00:00:00Z`,
 });
