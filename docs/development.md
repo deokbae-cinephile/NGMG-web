@@ -105,7 +105,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 1.1.0부터 [시맨틱 버저닝](https://semver.org/lang/ko/)을 따릅니다. 버그 수정은 PATCH, 기능 추가는 MINOR, 호환이 깨지는 변경은 MAJOR를 올립니다.
 
-1. PR 안에서 `package.json`의 `version`, README 배지·상태 줄, `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다. 설정의 앱 정보는 `package.json` 버전과 빌드한 날(한국 시간, `vite.config.ts`의 `__BUILD_DATE__`)을 'v1.5.2 (2026.11.12)'처럼 보여 줍니다.
+1. PR 안에서 `package.json`의 `version`과 `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다. README는 두지 않습니다(사용자 요청, 2026-11-14). 외부 자료의 출처는 [출처](credits.md)에 적습니다. 설정의 앱 정보는 `package.json` 버전과 빌드한 날(한국 시간, `vite.config.ts`의 `__BUILD_DATE__`)을 'v1.5.2 (2026.11.12)'처럼 보여 줍니다.
 2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다.
 
    ```bash

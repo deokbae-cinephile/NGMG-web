@@ -47,7 +47,7 @@ const PendingRatingList = ({ records }: { records: PendingRating[] }) => (
 );
 
 /** 설정: 평점 대기, 출조 알림, 화면 테마, 앱 설치, 앱 정보 */
-const SOURCES_URL = 'https://github.com/deokbae-cinephile/NGMG-web#출처';
+const SOURCES_URL = 'https://github.com/deokbae-cinephile/NGMG-web/blob/main/docs/credits.md';
 
 export const SettingsPage = () => {
   const canWrite = useCanWrite();
@@ -71,10 +71,10 @@ export const SettingsPage = () => {
           <dt className="mono-label">버전</dt>
           <dd>{`v${APP_VERSION} (${BUILD_DATE})`}</dd> {/* 배포한 날(빌드 날짜) */}
           <dt className="mono-label">출처</dt>
-          {/* 날씨(Open-Meteo, CC BY 4.0)·지도·글꼴의 출처는 화면이 아니라 README에 적고, 여기서 그곳으로 잇습니다. */}
+          {/* 날씨(Open-Meteo, CC BY 4.0)·지도·글꼴의 출처는 화면이 아니라 저장소 문서(docs/credits.md)에 적고, 여기서 그곳으로 잇습니다. */}
           <dd>
             <a className="underline underline-offset-4" href={SOURCES_URL}>
-              날씨·지도·글꼴 출처 (README)
+              날씨·지도·글꼴 출처
             </a>
           </dd>
         </dl>
