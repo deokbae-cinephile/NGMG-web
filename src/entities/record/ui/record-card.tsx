@@ -5,12 +5,16 @@ import { WeatherIcon } from '@/shared/ui';
 import { FishRow } from './fish-row';
 import { MenuRow } from './menu-row';
 import { RecordPhotos } from './record-photos';
-import { ANGLERS, formatRating, isPartialRating, missingRaters, pendingRating, RECORD_LABELS } from '../model';
+import { ANGLERS, formatRating, isPartialRating, missingRaters, pendingRating, ratersOf, RECORD_LABELS } from '../model';
 
 type Props = { record: PlaceRecord; heading?: ReactNode; actions?: ReactNode };
 
-/** 평점: 두 사람이 다 주면 평균, 한 사람만 주면 기다리는 사람을 보여 줍니다. 조사별 점수 줄('김 조사 3점 / 류 조사 3.5점')은 쓰지 않습니다(사용자 요청). */
+/**
+ * 평점: 두 사람이 다 주면 평균, 한 사람만 주면 기다리는 사람을 보여 줍니다. 혼자 다녀온 기록은 그 사람의 평점입니다.
+ * 조사별 점수 줄('김 조사 3점 / 류 조사 3.5점')은 쓰지 않습니다(사용자 요청).
+ */
 const Rating = ({ record }: { record: PlaceRecord }) => {
+  // 혼자 다녀온 기록은 pendingRating이 거짓이라, 아래 대기 문구는 함께 다녀온 기록에서만 씁니다.
   if (pendingRating(record)) {
     // 기록 평점과 음식 평점의 대기를 나눠 누가 어느 평점을 줘야 하는지 씁니다. ('김 조사 평점을 기다리는 중', '류 조사 음식 평점을 기다리는 중')
     const recordWaiting = isPartialRating(record.angler_ratings) ? missingRaters(record.angler_ratings) : [];
@@ -53,6 +57,12 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
                 {record.weather}
               </>
             )}
+            {record.solo_angler && (
+              <>
+                {' / '}
+                <span className="whitespace-nowrap">{`${record.solo_angler} 혼자`}</span> {/* 줄이 넘치면 '류 조사 혼자'를 통째로 다음 줄로 넘깁니다. */}
+              </>
+            )}
           </p>
           {heading}
         </div>
@@ -81,7 +91,7 @@ export const RecordCard = ({ record, heading, actions }: Props) => {
           <ul className="grid gap-2 sm:grid-cols-2">
             {menu.map((item) => (
               <li key={item.id} className="border border-soft p-2">
-                <MenuRow item={item} />
+                <MenuRow item={item} raters={ratersOf(record.solo_angler)} />
               </li>
             ))}
           </ul>

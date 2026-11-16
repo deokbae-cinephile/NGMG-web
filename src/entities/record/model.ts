@@ -58,7 +58,10 @@ export const formatMenu = (items: MenuDraft[]) =>
     .map(({ name, price }) => (price ? `${name} ${Number(price)}원` : name))
     .join(' / ');
 
-const given = (ratings: AnglerRatings = {}) => ANGLERS.filter((angler) => typeof ratings[angler] === 'number');
+/** 평점을 주는 사람. 혼자 다녀온 기록은 그 사람만, 함께 다녀온 기록은 두 조사 모두입니다. */
+export const ratersOf = (soloAngler?: string | null): readonly string[] => (soloAngler ? [soloAngler] : ANGLERS);
+
+const given = (ratings: AnglerRatings = {}, raters: readonly string[] = ANGLERS) => raters.filter((angler) => typeof ratings[angler] === 'number');
 
 /** 평점들의 평균(소수 첫째 자리까지 반올림). 평점이 없으면 undefined입니다. */
 export const averageRating = (values: number[]) => (values.length ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10 : undefined);
@@ -66,17 +69,20 @@ export const averageRating = (values: number[]) => (values.length ? Math.round((
 /** 평점을 '4.5점'처럼 씁니다. */
 export const formatRating = (rating: number) => `${rating.toFixed(1)}점`;
 
-/** 두 조사가 모두 준 평점의 평균(소수 첫째 자리). 한 사람만 줬거나 아무도 안 줬으면 null입니다. */
-export const combinedRating = (ratings: AnglerRatings = {}) => {
-  const values = given(ratings).map((angler) => ratings[angler]!);
-  return values.length === ANGLERS.length ? averageRating(values)! : null;
+/** 평점을 주는 사람(raters)이 모두 준 평점의 평균(소수 첫째 자리). 혼자 다녀온 기록은 그 사람의 평점입니다. 아직 다 주지 않았으면 null입니다. */
+export const combinedRating = (ratings: AnglerRatings = {}, raters: readonly string[] = ANGLERS) => {
+  const values = given(ratings, raters).map((angler) => ratings[angler]!);
+  return values.length > 0 && values.length === raters.length ? averageRating(values)! : null;
 };
 
-/** 한 사람만 평점을 줘 나머지 사람을 기다리는지 */
-export const isPartialRating = (ratings: AnglerRatings = {}) => given(ratings).length > 0 && given(ratings).length < ANGLERS.length;
+/** 일부만 평점을 줘 나머지 사람을 기다리는지. 혼자 다녀온 기록(평점을 주는 사람이 한 명)은 기다리지 않습니다. */
+export const isPartialRating = (ratings: AnglerRatings = {}, raters: readonly string[] = ANGLERS) => {
+  const count = given(ratings, raters).length;
+  return count > 0 && count < raters.length;
+};
 
 /** 아직 평점을 주지 않은 조사 */
-export const missingRaters = (ratings: AnglerRatings = {}) => ANGLERS.filter((angler) => typeof ratings[angler] !== 'number');
+export const missingRaters = (ratings: AnglerRatings = {}, raters: readonly string[] = ANGLERS) => raters.filter((angler) => typeof ratings[angler] !== 'number');
 
 /** '김 조사 4점 / 류 조사 5점' */
 export const ratingDetail = (ratings: AnglerRatings = {}) => given(ratings).map((angler) => `${angler} ${ratings[angler]}점`).join(' / ');
@@ -84,6 +90,8 @@ export const ratingDetail = (ratings: AnglerRatings = {}) => given(ratings).map(
 /** 한 사람만 준 평점의 안내: '김 조사 평점을 기다리는 중 (류 조사 3.5점)' */
 export const pendingRatingText = (ratings: AnglerRatings = {}) => `${missingRaters(ratings).join(', ')} 평점을 기다리는 중 (${ratingDetail(ratings)})`;
 
-/** 기록이나 메뉴 가운데 한 사람만 평점을 준 것이 있으면 평점을 기다리는 기록입니다. */
-export const pendingRating = (record: { angler_ratings?: AnglerRatings; menu_items?: { angler_ratings?: AnglerRatings }[] }) =>
-  isPartialRating(record.angler_ratings) || (record.menu_items ?? []).some((item) => isPartialRating(item.angler_ratings));
+/** 기록이나 메뉴 가운데 한 사람만 평점을 준 것이 있으면 평점을 기다리는 기록입니다. 혼자 다녀온 기록은 기다리지 않습니다(DB의 pending_ratings와 같음). */
+export const pendingRating = (record: { solo_angler?: string | null; angler_ratings?: AnglerRatings; menu_items?: { angler_ratings?: AnglerRatings }[] }) => {
+  const raters = ratersOf(record.solo_angler);
+  return isPartialRating(record.angler_ratings, raters) || (record.menu_items ?? []).some((item) => isPartialRating(item.angler_ratings, raters));
+};

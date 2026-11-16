@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { averageRating, combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
+import { ANGLERS, averageRating, combinedRating, formatMenu, isPartialRating, MAX_PHOTOS, ratersOf, RECORD_FIELDS, RecordConflictError, useDeleteRecord, useSaveRecord, WEATHER_STATES, type RecordInput } from '@/entities/record';
 import type { Place, PlaceRecord, RecordDetails, RecordPhoto } from '@/shared/api';
 import { fileKey, formatDate, toDateKey, useSubmitLock } from '@/shared/lib';
 import { ErrorText, Field, IconButton, RemovablePhoto, TextareaField } from '@/shared/ui';
@@ -21,20 +21,23 @@ type Props = {
 
 const TEXT_FIELDS: (keyof TextValues)[] = ['companions', 'gear', 'rig', 'bait', 'weather', 'tide', 'wind', 'water_temp', 'menu'];
 
-/** 메뉴 평점: 두 사람 평균. 조사별 평점을 하나도 안 줬으면 예전에 남긴 평점을 그대로 씁니다. */
-const itemRating = (row: MenuRow) => {
-  const given = toRatings(row.ratings);
-  return combinedRating(given) ?? (Object.keys(given).length ? null : row.legacyRating);
+/** 메뉴 평점: 두 사람 평균, 혼자 다녀왔으면 그 사람의 평점. 조사별 평점을 하나도 안 줬으면 예전에 남긴 평점을 그대로 씁니다. */
+const itemRating = (row: MenuRow, raters: readonly string[]) => {
+  const given = toRatings(row.ratings, raters);
+  return combinedRating(given, raters) ?? (Object.keys(given).length ? null : row.legacyRating);
 };
 
 /**
- * 맛집 기록 평점: 평점이 정해진 메뉴들의 평균. 한 사람만 평점을 준 메뉴가 있으면 비워 둡니다(null).
+ * 맛집 기록 평점: 평점이 정해진 메뉴들의 평균. 함께 다녀왔는데 한 사람만 평점을 준 메뉴가 있으면 비워 둡니다(null).
  * 평점을 준 메뉴가 하나도 없으면 undefined를 돌려 예전에 기록에 남긴 평점을 쓰게 합니다.
  */
-const restaurantRating = (rows: MenuRow[]) => {
-  if (rows.some((row) => isPartialRating(toRatings(row.ratings)))) return null;
-  return averageRating(rows.flatMap((row) => itemRating(row) ?? []));
+const restaurantRating = (rows: MenuRow[], raters: readonly string[]) => {
+  if (rows.some((row) => isPartialRating(toRatings(row.ratings, raters), raters))) return null;
+  return averageRating(rows.flatMap((row) => itemRating(row, raters) ?? []));
 };
+
+/** 다녀온 사람: 함께(null) 또는 한 사람만 */
+const VISITORS = [{ value: null, label: '함께' }, ...ANGLERS.map((angler) => ({ value: angler, label: `${angler} 혼자` }))];
 
 export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Props) => {
   const kind = place.kind;
@@ -72,6 +75,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     record && !Object.keys(record.angler_ratings ?? {}).length && !record.menu_items.some((item) => Object.keys(item.angler_ratings ?? {}).length) ? record.rating : null,
   );
   const [ratings, setRatings] = useState<RatingDraft>(() => toDraft(record?.angler_ratings));
+  // 혼자 다녀온 기록은 그 사람의 평점만 받아 바로 평점으로 정합니다(사용자 요청). 함께면 null입니다.
+  const [solo, setSolo] = useState<string | null>(record?.solo_angler ?? null);
+  const raters = ratersOf(solo);
   const lock = useSubmitLock();
   const save = useSaveRecord();
   const remove = useDeleteRecord();
@@ -89,10 +95,11 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
     setCheckedFish(true);
     if (keptFish.some((item) => fishError(item))) return;
     setCheckedMenu(true);
-    if (kind === 'restaurant' && menu.some((row) => menuRowError(row))) return;
+    if (kind === 'restaurant' && menu.some((row) => menuRowError(row, raters))) return;
     const keptMenu = kind === 'restaurant' ? menu.filter((row) => row.name.trim()) : [];
-    const anglerRatings = toRatings(ratings);
-    const menuRating = restaurantRating(keptMenu);
+    // 평점은 다녀온 사람의 것만 남깁니다. 혼자로 바꿔 숨은 칸의 평점은 저장하지 않습니다.
+    const anglerRatings = toRatings(ratings, raters);
+    const menuRating = restaurantRating(keptMenu, raters);
     // isPending은 다음 렌더에야 바뀌어 빠른 연속 클릭을 못 막으므로 ref로 바로 잠급니다.
     // 두 번째 저장은 같은 base_updated_at으로 충돌 검사를 해 가짜 '먼저 고쳤습니다' 안내가 뜰 수 있습니다.
     if (tooMany || !lock.tryLock()) return;
@@ -108,8 +115,9 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         end_date: kind === 'restaurant' ? values.visited_on : values.end_date || values.visited_on,
         catches: record?.catches ?? '', // 조과는 잡은 물고기로 대신합니다. 예전에 적은 값은 지우지 않습니다.
         memo: values.memo,
-        rating: kind === 'restaurant' ? (menuRating === undefined ? legacyRating : menuRating) : (combinedRating(anglerRatings) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
+        rating: kind === 'restaurant' ? (menuRating === undefined ? legacyRating : menuRating) : (combinedRating(anglerRatings, raters) ?? (Object.keys(anglerRatings).length ? null : legacyRating)),
         angler_ratings: kind === 'restaurant' ? {} : anglerRatings,
+        solo_angler: solo,
         gear_sets: record?.gear_sets ?? [], // 장비 세트는 더 받지 않고 예전 값은 그대로 둡니다.
         people: record?.people ?? null, // 지금은 입력받지 않아도 예전에 남긴 값은 지우지 않습니다.
         price: kind === 'restaurant' ? (record?.price ?? null) : null, // 합계는 보여 주지 않지만 예전에 남긴 값은 지우지 않습니다.
@@ -134,8 +142,8 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           id: row.id,
           name: row.name.trim(),
           price: row.price ? Number(row.price) : null,
-          rating: itemRating(row),
-          angler_ratings: toRatings(row.ratings),
+          rating: itemRating(row, raters),
+          angler_ratings: toRatings(row.ratings, raters),
           photo_path: row.photo_path,
           extra_photo_paths: row.extra_photo_paths,
           position,
@@ -189,6 +197,16 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           />
         )}
       </div>
+      {/* 혼자 다녀왔으면 그 사람의 평점 칸만 보이고, 그 평점이 곧 평점입니다(평점 대기 아님). */}
+      <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <legend className="mono-label pb-1">다녀온 사람</legend>
+        {VISITORS.map((visitor) => (
+          <label key={visitor.label} className="flex min-h-11 items-center gap-2">
+            <input type="radio" name="record-visitor" className="size-5 accent-ink" checked={solo === visitor.value} onChange={() => setSolo(visitor.value)} />
+            {visitor.label}
+          </label>
+        ))}
+      </fieldset>
       {kind === 'fishing' && (
         <>
           <div className="flex flex-col gap-1.5">
@@ -202,7 +220,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
           </div>
         </>
       )}
-      {kind === 'restaurant' && <MenuFieldset value={menu} showErrors={checkedMenu} onChange={setMenu} />}
+      {kind === 'restaurant' && <MenuFieldset value={menu} raters={raters} showErrors={checkedMenu} onChange={setMenu} />}
       {kind !== 'restaurant' && (
         <>
           {fields.length > 0 && (
@@ -212,7 +230,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
               ))}
             </div>
           )}
-          <AnglerRatingFields id="record-rating" value={ratings} onChange={setRatings} />
+          <AnglerRatingFields id="record-rating" raters={raters} value={ratings} onChange={setRatings} />
         </>
       )}
       <TextareaField label="메모" {...register('memo')} />
@@ -274,7 +292,7 @@ export const RecordForm = ({ place, record, date, endDate, eventId, onDone }: Pr
         </>
       )}
 
-      {kind === 'fishing' && <FishFieldset value={fish} showErrors={checkedFish} onChange={setFish} />}
+      {kind === 'fishing' && <FishFieldset value={fish} soloAngler={solo} showErrors={checkedFish} onChange={setFish} />}
 
       <ErrorText error={save.error ?? remove.error} />
       <div className="flex flex-wrap justify-end gap-2">

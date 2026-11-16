@@ -104,6 +104,8 @@ export type PlaceRecord = RecordDetails & {
   menu_items: MenuItem[];
   gear_sets: RecordGearSet[];
   angler_ratings: AnglerRatings;
+  /** 혼자 다녀왔으면 그 조사. 그 사람의 평점이 곧 평점입니다. 비어 있으면 두 사람이 함께 다녀온 기록입니다. */
+  solo_angler?: string | null;
   /** 마지막으로 고친 시각. 두 사람이 동시에 고쳤는지 확인하는 데 씁니다. */
   updated_at?: string;
 };

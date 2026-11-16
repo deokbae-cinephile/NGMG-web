@@ -18,7 +18,7 @@ const Section = ({ id, title, children }: { id: string; title: string; children:
 );
 
 /**
- * 평점 대기: 한 사람만 평점을 준 기록. 누르면 그 기록이 있는 날로 갑니다.
+ * 평점 대기: 함께 다녀왔는데 한 사람만 평점을 준 기록. 누르면 그 기록이 있는 날로 갑니다. 혼자 다녀온 기록은 들어오지 않습니다.
  * 기다리는 기록이 없으면 칸 전체를 보여 주지 않습니다(사용자 요청). 메뉴의 건수 표시와 같은 자료라 대개 바로 정해집니다.
  */
 const PendingRatingSection = () => {
@@ -26,7 +26,7 @@ const PendingRatingSection = () => {
   if (isPending || (!error && !data.length)) return null;
   return (
     <Section id="settings-pending" title="평점 대기">
-      <p className="mb-3 text-sm text-muted">한 사람만 평점을 준 기록입니다. 나머지 사람이 평점을 주면 평균을 냅니다.</p>
+      <p className="mb-3 text-sm text-muted">한 사람만 평점을 준 기록입니다. 나머지 사람이 평점을 주면 평균을 냅니다. 혼자 다녀온 기록이면 기록을 고쳐 다녀온 사람을 고르면 그 평점으로 정합니다.</p>
       {error ? <ErrorText error={error} /> : <PendingRatingList records={data} />}
     </Section>
   );

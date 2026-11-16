@@ -76,7 +76,7 @@ export const PHOTO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4">
 
 const RECORD_DEFAULTS = {
   memo: '', catches: '', rating: null, event_id: null, people: null, price: null, day_order: 0, created_at: '2026-01-01T00:00:00Z',
-  companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '', gear_sets: [], angler_ratings: {},
+  companions: '', gear: '', rig: '', bait: '', weather: '', tide: '', wind: '', water_temp: '', menu: '', gear_sets: [], angler_ratings: {}, solo_angler: null,
 };
 const DEFAULTS: Record<string, Record<string, unknown>> = {
   places: { memo: '', address: '', photo_path: null, open_time: null, close_time: null, closed_days: [], created_at: '2026-01-01T00:00:00Z' },

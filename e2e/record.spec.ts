@@ -46,6 +46,93 @@ test('기록: 사진과 함께 저장한다', async ({ page }) => {
   expect(db.records!.at(-1)).toMatchObject({ rating: 4.3, angler_ratings: { '김 조사': 5, '류 조사': 3.5 } });
 });
 
+test('기록: 혼자 다녀왔으면 그 사람의 평점 칸만 보이고, 그 평점이 곧 평점이다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./place?id=p1');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  const visitor = dialog.getByRole('group', { name: '다녀온 사람' });
+  await expect(visitor.getByRole('radio', { name: '함께' })).toBeChecked(); // 새 기록은 함께 다녀온 기록으로 시작합니다.
+  // 함께면 한 사람만 줬을 때 평점 대기라고 알리고, 혼자 다녀왔다면 다녀온 사람을 고르라고 안내합니다.
+  await dialog.getByLabel('김 조사 평점').selectOption('4');
+  await expect(dialog.getByRole('status').filter({ hasText: "평점을 기다리는 기록으로 알려 드립니다. 혼자 다녀왔다면 '다녀온 사람'에서" })).toBeVisible();
+  await visitor.getByRole('radio', { name: '류 조사 혼자' }).check();
+  await expect(dialog.getByLabel('김 조사 평점')).toHaveCount(0); // 다녀온 사람의 평점 칸만 보입니다.
+  await expect(dialog.getByLabel('류 조사 평점')).toHaveValue('');
+  await expect(dialog.getByRole('status').filter({ hasText: '평점을 기다리는' })).toHaveCount(0);
+  await dialog.getByLabel('류 조사 평점').selectOption('3.5');
+  // 새 물고기의 조사도 혼자 다녀온 사람으로 고릅니다.
+  await dialog.getByRole('button', { name: '물고기 추가' }).click();
+  const fish = dialog.getByRole('group', { name: '물고기 1', exact: true });
+  await expect(fish.getByRole('radio', { name: '류 조사' })).toBeChecked();
+  await fish.getByLabel('길이 (cm)').fill('25');
+  await expectFits(page);
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+
+  // 숨은 김 조사 평점(4점)은 남기지 않고, 류 조사 평점이 그대로 기록의 평점입니다.
+  const saved = db.records!.at(-1)!;
+  expect(saved).toMatchObject({ solo_angler: '류 조사', rating: 3.5 });
+  expect(saved.angler_ratings).toEqual({ '류 조사': 3.5 });
+  expect(db.fish_catches!.at(-1)).toMatchObject({ angler: '류 조사', length_cm: 25 });
+  const card = page.getByRole('article').filter({ hasText: '류 조사 혼자' });
+  await expect(card.getByText('3.5점', { exact: true })).toBeVisible();
+  await expect(card.getByText(/기다리는 중/)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /평점 대기/ })).toHaveCount(0);
+});
+
+test('기록: 한 사람만 평점을 준 기록을 혼자 다녀온 기록으로 고치면 평점 대기에서 빠진다', async ({ page }) => {
+  const base = seed();
+  base.records![0] = { ...base.records![0]!, rating: null, angler_ratings: { '김 조사': 4 } }; // 함께 다녀왔는데 한 사람만 평점을 줌
+  base.records![1] = { ...base.records![1]!, rating: 5, angler_ratings: { '류 조사': 5 }, solo_angler: '류 조사' }; // 혼자 다녀온 기록은 기다리지 않음
+  const db = await fakeBackend(page, base);
+  await page.goto('./place?id=p1');
+  await expect(page.getByRole('link', { name: /설정.*평점 대기 1건/ }).first()).toBeVisible();
+  await expect(page.getByText('류 조사 평점을 기다리는 중')).toBeVisible();
+
+  await page.getByRole('button', { name: '기록 수정' }).first().click();
+  const dialog = page.getByRole('dialog', { name: '기록 수정' });
+  const visitor = dialog.getByRole('group', { name: '다녀온 사람' });
+  await expect(visitor.getByRole('radio', { name: '함께' })).toBeChecked();
+  await visitor.getByRole('radio', { name: '김 조사 혼자' }).check();
+  await expect(dialog.getByLabel('김 조사 평점')).toHaveValue('4');
+  await expect(dialog.getByLabel('류 조사 평점')).toHaveCount(0);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+
+  const saved = db.records!.find((row) => row.id === 'r00')!;
+  expect(saved).toMatchObject({ solo_angler: '김 조사', rating: 4 });
+  expect(saved.angler_ratings).toEqual({ '김 조사': 4 });
+  await expect(page.getByText('류 조사 평점을 기다리는 중')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /평점 대기/ })).toHaveCount(0);
+  await expect(page.getByRole('article').filter({ hasText: '김 조사 혼자' }).getByText('4.0점', { exact: true })).toBeVisible();
+
+  // 다시 열면 혼자 다녀온 사람이 골라져 있습니다.
+  await page.getByRole('button', { name: '기록 수정' }).first().click();
+  await expect(page.getByRole('dialog', { name: '기록 수정' }).getByRole('radio', { name: '김 조사 혼자' })).toBeChecked();
+});
+
+test('기록: 혼자 다녀온 맛집은 음식마다 그 사람의 평점이 음식 평점이다', async ({ page }) => {
+  const db = await fakeBackend(page, seed());
+  await page.goto('./place?id=p2');
+  await page.getByRole('button', { name: '기록 추가' }).click();
+  const dialog = page.getByRole('dialog', { name: '새 기록' });
+  await dialog.getByLabel('음식 1', { exact: true }).fill('모둠회');
+  await dialog.getByRole('group', { name: '다녀온 사람' }).getByRole('radio', { name: '류 조사 혼자' }).check();
+  await expect(dialog.getByLabel('음식 1 김 조사 평점')).toHaveCount(0);
+  await dialog.getByLabel('음식 1 류 조사 평점').selectOption('3.5');
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(dialog).toBeHidden();
+
+  expect(db.records!.at(-1)).toMatchObject({ solo_angler: '류 조사', rating: 3.5 });
+  expect(db.menu_items!.at(-1)).toMatchObject({ name: '모둠회', rating: 3.5 });
+  expect(db.menu_items!.at(-1)!.angler_ratings).toEqual({ '류 조사': 3.5 });
+  const card = page.getByRole('article').filter({ hasText: '류 조사 혼자' });
+  await expect(card.getByText('평점 3.5점')).toBeVisible();
+  await expect(card.getByText(/기다리는 중/)).toHaveCount(0);
+});
+
 test('기록: 물고기·음식 한 칸에 사진을 5장까지 올리고(첫 장이 대표), 넘치면 알리며, 기록에 모두 보인다', async ({ page }) => {
   const db = await fakeBackend(page, seed());
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');

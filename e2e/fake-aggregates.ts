@@ -113,11 +113,13 @@ const partialRating = (ratings: unknown, anglers: string[]) => {
   return given > 0 && given < anglers.length;
 };
 
+// 혼자 다녀온 기록(solo_angler)은 기다리지 않습니다(20261201000000_solo_rating.sql).
 const pendingRatings = (db: Db, anglers: string[]) => {
   const { records, linked } = joined(db);
   const menu = linked(db.menu_items);
   return [...records.values()]
     .map((record) => ({ record, menu: menu.filter((item) => item.record_id === record.id) }))
+    .filter(({ record }) => !record.solo_angler)
     .filter(({ record, menu }) => partialRating(record.angler_ratings, anglers) || menu.some((item) => partialRating(item.angler_ratings, anglers)))
     .sort((a, b) => String(b.record.visited_on).localeCompare(String(a.record.visited_on)))
     .map(({ record, menu }) => ({ id: record.id, visited_on: record.visited_on, place_name: record.place.name, angler_ratings: record.angler_ratings ?? null, menu_ratings: menu.map((item) => item.angler_ratings ?? null) }));
