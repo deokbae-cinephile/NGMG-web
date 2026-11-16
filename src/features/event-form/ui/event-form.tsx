@@ -31,10 +31,8 @@ export const EventForm = ({ date, event, onDone }: Props) => {
   const client = useQueryClient();
   const [id] = useState(() => event?.id ?? crypto.randomUUID());
   const [gearIds, setGearIds] = useState<string[]>(event?.gear_ids ?? []);
-  // 챙길 물품은 여닫습니다. 새 일정은 하나 이상 골라야 저장되므로 열어 두고, 수정할 때는 닫아 둡니다.
+  // 챙길 물품은 고르지 않아도 저장합니다(선택, 사용자 요청). 여닫을 수 있고, 새 일정은 열어 두고 수정할 때는 닫아 둡니다.
   const [gearOpen, setGearOpen] = useState(!event);
-  const [gearMissing, setGearMissing] = useState(false);
-  const gearArea = useRef<HTMLDivElement>(null);
   const lock = useSubmitLock();
 
   const save = useMutation({
@@ -63,17 +61,6 @@ export const EventForm = ({ date, event, onDone }: Props) => {
     if (placeClosed) {
       setClosedShown(true);
       requestAnimationFrame(() => placeArea.current?.querySelector<HTMLElement>('button')?.focus());
-      return;
-    }
-    if (!event && gearIds.length === 0) {
-      // 새 일정은 챙길 물품을 하나 이상 골라야 저장합니다(사용자 요청). 목록을 열고 첫 칸으로 초점을 옮깁니다.
-      setGearMissing(true);
-      setGearOpen(true);
-      // 첫 체크 칸으로, 등록한 물품이 없으면 물품 화면 링크로, 그것도 없으면 여닫기 단추로 옮깁니다.
-      requestAnimationFrame(() => {
-        const area = gearArea.current;
-        (area?.querySelector<HTMLElement>('input[type="checkbox"]') ?? area?.querySelector<HTMLElement>('fieldset a') ?? area?.querySelector<HTMLElement>('button'))?.focus();
-      });
       return;
     }
     if (!lock.tryLock()) return;
@@ -146,18 +133,7 @@ export const EventForm = ({ date, event, onDone }: Props) => {
         )}
       </fieldset>
 
-      <div ref={gearArea}>
-        <GearPicker
-          value={gearIds}
-          onChange={(ids) => {
-            setGearIds(ids);
-            if (ids.length) setGearMissing(false);
-          }}
-          open={gearOpen}
-          onOpenChange={setGearOpen}
-          error={gearMissing && gearIds.length === 0 ? '챙길 물품을 하나 이상 골라 주세요.' : undefined}
-        />
-      </div>
+      <GearPicker value={gearIds} onChange={setGearIds} open={gearOpen} onOpenChange={setGearOpen} />
 
       <TextareaField label="메모" {...register('memo')} />
       <ErrorText error={save.error} />

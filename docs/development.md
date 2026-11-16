@@ -52,7 +52,7 @@ supabase db query --remote "insert into public.members (user_id) select id from 
 
 ## 알림 (웹 푸시)
 
-출조 전날 오후 6시(내일 일정이 있을 때)와 토요일 오후 6시(한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 출조 알림에는 일정마다 챙길 물품 개수를 적고, 누르면 `/schedule?date=<내일>&focus=gear`로 열려 실제 물품이 있는 첫 일정의 챙길 물품 체크리스트로 스크롤하고 초점을 옮깁니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
+출조 전날 오후 6시(내일 일정이 있을 때)와 토요일 오후 6시(함께 다녀왔는데 한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 출조 알림에는 일정마다 챙길 물품 개수를 적고, 누르면 `/schedule?date=<내일>&focus=gear`로 열려 실제 물품이 있는 첫 일정의 챙길 물품 체크리스트로 스크롤하고 초점을 옮깁니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
 
 - 구독: `push_subscriptions` 표(멤버만 읽고 씀)
 - 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
@@ -67,6 +67,13 @@ supabase functions deploy notify --use-api
 # 예약 호출이 쓸 주소와 비밀 값(위 CRON_SECRET과 같은 값)을 Vault에 넣습니다.
 supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_cron_secret'); select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/notify', 'notify_url')"
 ```
+
+## 평점
+
+- 평점은 조사마다 0.5점 단위(0.5~5점)로 줍니다. 기록 폼의 **다녀온 사람**(함께, 김 조사 혼자, 류 조사 혼자)에 따라 평점을 주는 사람이 정해집니다.
+- 함께 다녀온 기록은 두 사람이 모두 줘야 평균을 내고, 한 사람만 주면 평점 대기입니다(설정 화면의 목록, 메뉴의 건수, 토요일 알림).
+- 혼자 다녀온 기록(`records.solo_angler`, `20261201000000_solo_rating.sql`)은 그 사람의 평점 칸만 보이고, 그 평점이 곧 기록의 평점(맛집은 음식 평점)이라 평점 대기가 아닙니다. 혼자로 바꿔 숨은 칸의 평점은 저장하지 않습니다.
+- 평점 대기 판정은 앱(`pendingRating`), DB 함수(`pending_ratings`), 알림 함수(`notify`), E2E 가짜 서버(`e2e/fake-aggregates.ts`)가 같은 규칙을 따르므로 하나를 바꾸면 함께 고칩니다.
 
 ## 오프라인 저장과 동시 수정
 
@@ -120,7 +127,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 
 | 종류 | 위치 | 비고 |
 | --- | --- | --- |
-| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 90개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
+| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 94개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
 
 프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-server.ts`가 흉내 냅니다(`fakeBackend`). 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
 

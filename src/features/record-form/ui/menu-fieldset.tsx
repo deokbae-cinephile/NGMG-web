@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { MenuItem } from '@/shared/api';
 import { Field, IconButton, TextareaField } from '@/shared/ui';
 import { ItemPhotosField, type SavedPhoto } from './item-photos-field';
-import { AnglerRatingFields, toDraft, type RatingDraft } from './angler-rating-fields';
+import { AnglerRatingFields, toDraft, toRatings, type RatingDraft } from './angler-rating-fields';
 
 export type MenuRow = {
   id: string;
@@ -36,14 +36,17 @@ export const newMenuRow = (item?: MenuItem): MenuRow => ({
   files: [],
 });
 
-const nameError = (row: MenuRow) => ((row.price || Object.values(row.ratings).some(Boolean) || row.files.length) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined);
+/** 이름 없이 가격·평점·사진만 적은 줄. 평점은 평점을 주는 사람(raters)의 것만 봅니다(다녀온 사람을 바꿔 숨은 칸의 값은 저장하지 않음). */
+const nameError = (row: MenuRow, raters?: readonly string[]) =>
+  (row.price || Object.keys(toRatings(row.ratings, raters)).length || row.files.length) && !row.name.trim() ? '음식 이름을 입력해 주세요.' : undefined;
 // 비었거나 0~9로만 된 십진수만 받습니다(Number()는 '0x10'·'1e3'도 숫자로 바꾸므로 쓰지 않음).
 const priceError = (row: MenuRow) => (row.price !== '' && !/^\d+$/.test(row.price) ? '0 이상의 정수로 입력해 주세요.' : undefined);
 
 /** 내용을 적다 만 줄 */
-export const menuRowError = (row: MenuRow) => nameError(row) ?? priceError(row);
+export const menuRowError = (row: MenuRow, raters?: readonly string[]) => nameError(row, raters) ?? priceError(row);
 
-type Props = { value: MenuRow[]; showErrors: boolean; onChange: (rows: MenuRow[]) => void };
+/** raters: 음식 평점을 주는 사람. 혼자 다녀온 기록은 그 사람의 평점 칸만 보입니다. */
+type Props = { value: MenuRow[]; raters: readonly string[]; showErrors: boolean; onChange: (rows: MenuRow[]) => void };
 
 /** 메뉴 이름 칸을 글 길이만큼 늘립니다. 긴 이름도 잘리지 않고 여러 줄로 다 보입니다. */
 const fitHeight = (input: HTMLTextAreaElement) => {
@@ -52,7 +55,7 @@ const fitHeight = (input: HTMLTextAreaElement) => {
 };
 
 /** 맛집 기록의 음식(화면 표기는 '음식', 코드와 DB는 menu). 음식마다 가격, 평점, 사진(5장까지)을 적고, 버튼으로 줄을 늘립니다. */
-export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
+export const MenuFieldset = ({ value, raters, showErrors, onChange }: Props) => {
   const add = useRef<HTMLButtonElement>(null);
   const focusId = useRef<string>(undefined);
   const set = (id: string, patch: Partial<MenuRow>) => onChange(value.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -81,7 +84,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                 placeholder="예: 모둠회 중"
                 maxLength={60}
                 value={row.name}
-                error={showErrors ? nameError(row) : undefined}
+                error={showErrors ? nameError(row, raters) : undefined}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') event.preventDefault();
                 }}
@@ -103,7 +106,7 @@ export const MenuFieldset = ({ value, showErrors, onChange }: Props) => {
                   onChange={(event) => set(row.id, { price: event.target.value.replace(/[,\s원]/g, '') })}
                 />
               </div>
-              <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />
+              <AnglerRatingFields id={`${row.id}-rating`} prefix={`${label} `} raters={raters} value={row.ratings} onChange={(ratings) => set(row.id, { ratings })} />
               <ItemPhotosField id={`${row.id}-photo`} label={label} photos={row.photos} files={row.files} onChange={(next) => set(row.id, next)} />
               {value.length > 1 && (
                 <div className="flex justify-end">

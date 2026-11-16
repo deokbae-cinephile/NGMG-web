@@ -99,10 +99,11 @@ const FishItem = ({ fish, index, showError, species, listId, onChange, onRemove 
   );
 };
 
-type Props = { value: FishDraft[]; showErrors: boolean; onChange: (value: FishDraft[]) => void };
+/** soloAngler: 혼자 다녀온 기록이면 그 조사. 새 물고기의 조사를 그 사람으로 고릅니다. */
+type Props = { value: FishDraft[]; soloAngler: string | null; showErrors: boolean; onChange: (value: FishDraft[]) => void };
 
-/** 잡은 물고기: 조사, 어종, 길이, 사진(5장까지). 여러 마리를 더할 수 있습니다. */
-export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
+/** 잡은 물고기: 조사, 어종, 길이, 사진(5장까지). 여러 마리를 더할 수 있습니다. 새 물고기의 조사는 혼자 다녀온 사람, 아니면 바로 앞 물고기의 조사입니다. */
+export const FishFieldset = ({ value, soloAngler, showErrors, onChange }: Props) => {
   const { data: species = [] } = useSpeciesOptions();
   const listId = useId();
   return (
@@ -129,7 +130,7 @@ export const FishFieldset = ({ value, showErrors, onChange }: Props) => {
         />
       ))}
     </ol>
-    <IconButton icon="plus" label="물고기 추가" className="self-start" onClick={() => onChange([...value, newFish(value.at(-1)?.angler)])} />
+    <IconButton icon="plus" label="물고기 추가" className="self-start" onClick={() => onChange([...value, newFish(soloAngler ?? value.at(-1)?.angler)])} />
   </section>
   );
 };

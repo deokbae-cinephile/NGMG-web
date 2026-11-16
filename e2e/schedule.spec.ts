@@ -4,7 +4,7 @@ import { acceptDialogs, expectAccessible, expectFits, fakeBackend, place, seed }
 
 acceptDialogs();
 
-test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다. 새 일정은 챙길 물품을 하나 이상 골라야 저장된다', async ({ page }, testInfo) => {
+test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다. 챙길 물품은 고르지 않아도 저장된다', async ({ page }, testInfo) => {
   const db = await fakeBackend(page, { ...seed(), angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
   await page.goto('./schedule?date=2026-11-07');
   await expect(page.getByRole('heading', { name: '새벽 출조' })).toBeVisible();
@@ -44,18 +44,16 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await dialog.getByRole('searchbox', { name: '장소 검색' }).fill('백도');
   await dialog.getByRole('searchbox', { name: '장소 검색' }).press('Enter');
   await dialog.getByRole('button', { name: /백도 횟집/ }).click();
-  // 새 일정은 챙길 물품이 열려 있고, 하나도 고르지 않으면 저장하지 않고 안내합니다.
+  // 새 일정은 챙길 물품이 열려 있습니다. 머리 단추로 여닫고, 고른 개수를 머리에 씁니다.
   await expect(dialog.getByRole('button', { name: /챙길 물품/ })).toHaveAttribute('aria-expanded', 'true');
-  await dialog.getByRole('button', { name: '저장' }).click();
-  await expect(dialog.getByText('챙길 물품을 하나 이상 골라 주세요.')).toBeVisible();
-  await expect(dialog.getByRole('checkbox', { name: /레가리스/ })).toBeFocused();
-  // 머리 단추로 여닫습니다.
   await dialog.getByRole('button', { name: /챙길 물품/ }).click();
   await expect(dialog.getByRole('checkbox', { name: /레가리스/ })).toBeHidden();
   await dialog.getByRole('button', { name: /챙길 물품/ }).click();
   await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
-  await expect(dialog.getByText('챙길 물품을 하나 이상 골라 주세요.')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: '챙길 물품 (1개 고름)' })).toBeVisible();
+  await dialog.getByRole('checkbox', { name: /레가리스/ }).uncheck();
+  // 챙길 물품은 선택이라 하나도 고르지 않아도 저장합니다(사용자 요청).
+  await expect(dialog.getByRole('button', { name: '챙길 물품 (0개 고름)' })).toBeVisible();
   await dialog.getByRole('button', { name: '저장' }).click();
 
   await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();
@@ -69,7 +67,7 @@ test('일정: 날짜를 눌러 장소가 붙은 일정을 만들고 삭제한다
   await page.getByRole('button', { name: /^10 일 \(화\), 2026년 11월, 일정 1건, 연박 일정/ }).click();
   await expect(page.getByRole('heading', { name: '점심' })).toBeVisible();
   await page.getByRole('button', { name: /^9 일 \(월\), 2026년 11월/ }).click();
-  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', end_date: '2026-11-10', start_time: '00:00:00', end_time: null }); // 시작 시간은 받지 않아 새 일정은 0시로 둡니다.
+  expect(db.events!.at(-1)).toMatchObject({ date: '2026-11-09', end_date: '2026-11-10', start_time: '00:00:00', end_time: null, gear_ids: [] }); // 시작 시간은 받지 않아 새 일정은 0시로 둡니다.
 
   await page.getByRole('button', { name: '점심 일정 삭제' }).click();
   await expect(page.getByRole('heading', { name: '점심' })).toBeHidden();
@@ -248,7 +246,7 @@ test('일정·기록 목록: 수정 단추는 휴대폰에서도 각 항목의 �
 test('새 일정: 일정 날짜가 맛집 휴무 요일이면 그 맛집은 고를 수 없고, 고른 뒤 휴무일로 바꾸면 저장을 막는다', async ({ page }, testInfo) => {
   const base = seed();
   base.places = base.places!.map((item) => (item.id === 'p2' ? { ...item, closed_days: [3] } : item)); // 바다횟집: 수요일 휴무
-  const db = await fakeBackend(page, { ...base, angler_gear: [{ id: 'g1', angler: '김 조사', category: '로드', brand: '다이와', name: '레가리스' }] });
+  const db = await fakeBackend(page, base);
   await page.goto('./schedule?date=2026-11-11'); // 수요일
   if (testInfo.project.name !== 'desktop') await page.getByRole('button', { name: /^11 일 \(수\)/ }).click();
   await page.getByRole('button', { name: '일정 추가', exact: true }).filter({ visible: true }).click();
@@ -267,7 +265,6 @@ test('새 일정: 일정 날짜가 맛집 휴무 요일이면 그 맛집은 고�
   await search.press('Enter');
   await expect(saved).toBeEnabled();
   await saved.click();
-  await dialog.getByRole('checkbox', { name: /레가리스/ }).check();
   await dialog.getByLabel('시작 날짜').fill('2026-11-11');
   await dialog.getByLabel('종료 날짜').fill('2026-11-11');
   // 날짜를 바꾸는 순간 상태 영역(role=status)으로 알립니다.

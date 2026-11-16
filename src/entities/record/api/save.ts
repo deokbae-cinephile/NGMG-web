@@ -22,6 +22,8 @@ export type RecordInput = RecordDetails & {
   memo: string;
   rating: number | null;
   angler_ratings: AnglerRatings;
+  /** 혼자 다녀왔으면 그 조사, 함께면 null. (이 칸이 생기기 전에 기기에 남은 저장 대기 항목에는 없어 DB의 값을 그대로 둡니다.) */
+  solo_angler?: string | null;
   gear_sets: RecordGearSet[];
   files: File[];
   removedPhotos: Pick<RecordPhoto, 'id' | 'storage_path'>[];

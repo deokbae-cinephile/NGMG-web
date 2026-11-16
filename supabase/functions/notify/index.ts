@@ -64,12 +64,13 @@ const dailyMessages = async (): Promise<Message[]> => {
       tag: `trip-${tomorrow}`,
     });
   }
-  // 토요일 저녁에는 한 사람만 평점을 준 기록을 알려 줍니다.
+  // 토요일 저녁에는 함께 다녀왔는데 한 사람만 평점을 준 기록을 알려 줍니다. 혼자 다녀온 기록(solo_angler)은 그 사람의 평점이 곧 평점이라 셈하지 않습니다.
   if (kst().day === 6) {
     const [{ count }] = await sql<{ count: number }[]>`
       select count(*)::int as count from public.records r
-      where (select count(*) from jsonb_object_keys(r.angler_ratings)) = 1
-         or exists (select 1 from public.menu_items m where m.record_id = r.id and (select count(*) from jsonb_object_keys(m.angler_ratings)) = 1)`;
+      where r.solo_angler is null
+        and ((select count(*) from jsonb_object_keys(r.angler_ratings)) = 1
+          or exists (select 1 from public.menu_items m where m.record_id = r.id and (select count(*) from jsonb_object_keys(m.angler_ratings)) = 1))`;
     if (count) messages.push({ title: '평점 대기', body: `한 사람만 평점을 준 기록이 ${count}건 있습니다.`, url: '/schedule', tag: 'pending-ratings' });
   }
   return messages;
