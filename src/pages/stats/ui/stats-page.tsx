@@ -43,8 +43,16 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
   );
 };
 
-/** 조사마다 막대·범례의 칠. 왼쪽(먼저) 김 조사는 포인트 색, 오른쪽 류 조사는 글자색이라 밝기가 크게 달라 색을 구분하기 어려워도 갈립니다. */
-const ANGLER_FILL = ['bg-accent', 'bg-ink'];
+/**
+ * 조사마다의 색(ANGLERS 순서). 김 조사는 포인트 색(민트), 류 조사는 코랄입니다(사용자 결정).
+ * fill은 막대·범례의 칠로, 차가운 색과 따뜻한 색이라 색을 구분하기 어려워도 갈립니다(dataviz 검증: 적록 색약 ΔE 12.7, 일반 시각 21.0, 라이트·다크 모두).
+ * ink는 횟수·확률 큰 숫자의 글자색으로, 밝은 화면에서는 같은 계열의 진한 색입니다(큰 글자 대비 3:1 이상, 적록 색약 ΔE 9.3). 작은 글자(단위·막대 위 숫자)는 글자색 그대로 둡니다.
+ */
+const ANGLER_COLORS = [
+  { fill: 'bg-accent', ink: 'text-kim-ink' },
+  { fill: 'bg-ryu', ink: 'text-ryu-ink' },
+];
+const colorsOf = (index: number) => ANGLER_COLORS[index] ?? { fill: 'bg-soft', ink: '' };
 
 /** 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율(%). 출조가 없으면 undefined입니다. */
 const catchRate = (trips: number, caught: number) => (trips > 0 ? Math.round((caught / trips) * 100) : undefined);
@@ -60,13 +68,13 @@ export const StatsPage = () => {
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
   const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_catch_days: catchDays = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
   // 월별 출조는 조사마다 따로 셉니다(사용자 요청). 함께 다녀온 날은 두 사람 모두, 혼자 다녀온 날은 그 사람만 셉니다.
-  const series = ANGLERS.map((angler, index) => ({ angler, fill: ANGLER_FILL[index], months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
+  const series = ANGLERS.map((angler, index) => ({ angler, fill: colorsOf(index).fill, months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
   const maxMonth = Math.max(1, ...series.flatMap(({ months }) => months));
 
   // 출조 횟수와 잡은 물고기는 조사별로 셉니다(사용자 요청). 혼자 다녀온 기록은 그 사람의 출조에만 더해집니다.
   const tiles = [
-    ...ANGLERS.map((angler) => ({ label: `${angler} 출조`, value: `${anglerTrips[angler] ?? 0}`, unit: '회' })),
-    ...ANGLERS.map((angler) => ({ label: `${angler} 잡은 물고기`, value: `${anglerFish[angler] ?? 0}`, unit: '마리' })),
+    ...ANGLERS.map((angler, index) => ({ label: `${angler} 출조`, value: `${anglerTrips[angler] ?? 0}`, unit: '회', ink: colorsOf(index).ink })),
+    ...ANGLERS.map((angler, index) => ({ label: `${angler} 잡은 물고기`, value: `${anglerFish[angler] ?? 0}`, unit: '마리', ink: colorsOf(index).ink })),
   ];
 
   return (
@@ -88,11 +96,11 @@ export const StatsPage = () => {
 
         {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. 휴대폰·태블릿은 2×2(위 줄 출조, 아래 줄 잡은 물고기, 왼쪽 김 조사·오른쪽 류 조사), 넓은 화면은 네 칸을 한 줄에 둡니다. */}
         <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
-          {tiles.map(({ label, value, unit }) => (
+          {tiles.map(({ label, value, unit, ink }) => (
             <div key={label} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
               <dt className="mono-label">{label}</dt>
               <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
-                <span className="display-number">{value}</span>
+                <span className={`display-number ${ink}`}>{value}</span>
                 <span>{unit}</span>
               </dd>
             </div>
@@ -108,7 +116,7 @@ export const StatsPage = () => {
           </div>
         </div>
         <dl className="grid grid-cols-2 gap-px border-b border-line bg-line">
-          {ANGLERS.map((angler) => {
+          {ANGLERS.map((angler, index) => {
             const trips = anglerTrips[angler] ?? 0;
             const caught = catchDays[angler] ?? 0;
             const rate = catchRate(trips, caught);
@@ -120,7 +128,7 @@ export const StatsPage = () => {
                 ) : (
                   <>
                     <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
-                      <span className="display-number">{rate}</span>
+                      <span className={`display-number ${colorsOf(index).ink}`}>{rate}</span>
                       <span>%</span>
                     </dd>
                     <dd className="text-sm break-keep text-muted">{`출조 ${trips}회 중 ${caught}회 손맛`}</dd>
