@@ -85,12 +85,18 @@ test('통계: 조사별 출조 횟수·잡은 물고기·손맛 확률·월별 �
   // 물고기는 물고기마다 적은 조사로 셉니다(작년 물고기는 빼고). 칸 이름(term)과 값(definition)을 순서대로 봅니다.
   await expect(tiles.getByRole('term')).toHaveText(['김 조사 출조', '류 조사 출조', '김 조사 잡은 물고기', '류 조사 잡은 물고기']);
   await expect(tiles.getByRole('definition')).toHaveText(['3회', '2회', '2마리', '1마리']);
+  // 큰 숫자는 조사 색(밝은 화면은 진한 청록·코랄)입니다.
+  await expect(tiles.getByText('3', { exact: true })).toHaveCSS('color', 'rgb(34, 104, 93)');
+  await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
   // 손맛 확률: 출조한 날 가운데 그 사람이 물고기를 한 마리라도 잡은 날의 비율. 김 조사는 1월 5일·2월 3일(혼자), 류 조사는 1월 5일에 잡았습니다.
   const catchRate = page.getByRole('region', { name: '손맛 확률' });
   await expect(catchRate.getByRole('term')).toHaveText(['김 조사', '류 조사']);
   await expect(catchRate.getByRole('definition')).toHaveText(['67%', '출조 3회 중 2회 손맛', '50%', '출조 2회 중 1회 손맛']);
   // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
   const monthly = page.getByRole('region', { name: '월별 출조' });
+  // 막대·범례의 칠: 김 조사는 포인트 색(민트), 류 조사는 코랄입니다.
+  await expect(monthly.locator('.bg-accent').first()).toHaveCSS('background-color', 'rgb(142, 216, 203)');
+  await expect(monthly.locator('.bg-ryu').first()).toHaveCSS('background-color', 'rgb(222, 138, 119)');
   const months = monthly.getByRole('listitem'); // 범례는 읽지 않게 두어(aria-hidden) 달 12개만 목록 항목입니다.
   await expect(months).toHaveCount(12);
   await expect(months.nth(0)).toContainText('1월 출조 김 조사 2회, 류 조사 2회');
