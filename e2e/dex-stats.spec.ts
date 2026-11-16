@@ -91,9 +91,11 @@ test('통계: 조사별 출조 횟수·잡은 물고기·손맛 확률·월별 �
   await expect(catchRate.getByRole('definition')).toHaveText(['67%', '출조 3회 중 2회 손맛', '50%', '출조 2회 중 1회 손맛']);
   // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
   const monthly = page.getByRole('region', { name: '월별 출조' });
-  await expect(monthly.getByText('1월 출조 김 조사 2회, 류 조사 2회')).toBeAttached();
-  await expect(monthly.getByText('2월 출조 김 조사 1회, 류 조사 0회')).toBeAttached();
-  await expect(monthly.getByText('3월 출조 김 조사 0회, 류 조사 0회')).toBeAttached();
+  const months = monthly.getByRole('listitem'); // 범례는 읽지 않게 두어(aria-hidden) 달 12개만 목록 항목입니다.
+  await expect(months).toHaveCount(12);
+  await expect(months.nth(0)).toContainText('1월 출조 김 조사 2회, 류 조사 2회');
+  await expect(months.nth(1)).toContainText('2월 출조 김 조사 1회, 류 조사 0회');
+  await expect(months.nth(2)).toContainText('3월 출조 김 조사 0회, 류 조사 0회');
   await expect(main.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
   // 사용자 요청으로 뺀 통계
