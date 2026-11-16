@@ -37,6 +37,7 @@ const statYears = (db: Db) => [...new Set((db.records ?? []).map((record) => Num
 
 // angler_trips: 조사마다 낚시 기록의 날짜 수. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람만 셉니다.
 // angler_fish: 그 낚시 기록들에서 조사마다 잡은 물고기 수(20261202000000_angler_stats.sql).
+// angler_catch_days·angler_months: 조사마다 다녀온 기록에서 자기 물고기가 있는 날 수, 달마다 다녀온 날 수(20261203000000_stats_by_angler.sql).
 const yearStats = (db: Db, year: number, anglers: string[]) => {
   const { records } = joined(db);
   const inYear = [...records.values()].filter((record) => String(record.visited_on).startsWith(String(year)));
@@ -55,12 +56,17 @@ const yearStats = (db: Db, year: number, anglers: string[]) => {
   };
   const fishingIds = new Set(fishing.map((record) => record.id));
   const caught = (db.fish_catches ?? []).filter((fish) => fishingIds.has(fish.record_id as string));
+  const went = (angler: string) => fishing.filter((record) => !record.solo_angler || record.solo_angler === angler);
+  const inMonth = (list: typeof fishing, month: number) => list.filter((record) => Number(String(record.visited_on).slice(5, 7)) === month);
+  const perAngler = <T,>(value: (angler: string) => T) => Object.fromEntries(anglers.map((angler) => [angler, value(angler)]));
   return {
     trips: days(fishing),
-    angler_trips: Object.fromEntries(anglers.map((angler) => [angler, days(fishing.filter((record) => !record.solo_angler || record.solo_angler === angler))])),
+    angler_trips: perAngler((angler) => days(went(angler))),
+    angler_catch_days: perAngler((angler) => days(went(angler).filter((record) => caught.some((fish) => fish.record_id === record.id && fish.angler === angler)))),
+    angler_months: perAngler((angler) => Array.from({ length: 12 }, (_, index) => days(inMonth(went(angler), index + 1)))),
     fish: caught.length,
-    angler_fish: Object.fromEntries(anglers.map((angler) => [angler, caught.filter((fish) => fish.angler === angler).length])),
-    months: Array.from({ length: 12 }, (_, index) => days(fishing.filter((record) => Number(String(record.visited_on).slice(5, 7)) === index + 1))),
+    angler_fish: perAngler((angler) => caught.filter((fish) => fish.angler === angler).length),
+    months: Array.from({ length: 12 }, (_, index) => days(inMonth(fishing, index + 1))),
     spots: rank(fishing),
     restaurants: rank(inYear.filter((record) => record.place.kind === 'restaurant')),
   };

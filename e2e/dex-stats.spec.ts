@@ -54,7 +54,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
-test('통계: 조사별 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
+test('통계: 조사별 출조 횟수·잡은 물고기·손맛 확률·월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
   // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -80,12 +80,20 @@ test('통계: 조사별 출조 횟수·잡은 물고기, 월별 출조, 자주 �
   });
   await page.goto('./stats');
   const main = page.getByRole('main');
+  const tiles = page.getByRole('region', { name: `${year}년 통계` });
   // 출조 횟수와 잡은 물고기는 조사별로 셉니다. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람의 출조에만 더하고,
   // 물고기는 물고기마다 적은 조사로 셉니다(작년 물고기는 빼고). 칸 이름(term)과 값(definition)을 순서대로 봅니다.
-  await expect(main.getByRole('term')).toHaveText(['김 조사 출조', '류 조사 출조', '김 조사 잡은 물고기', '류 조사 잡은 물고기']);
-  await expect(main.getByRole('definition')).toHaveText(['3회', '2회', '2마리', '1마리']);
-  await expect(page.getByText('3월 출조 0회')).toBeAttached(); // 월별 출조는 누구든 나간 날을 셉니다(1월 2일, 2월 1일).
-  await expect(page.getByText('2월 출조 1회')).toBeAttached();
+  await expect(tiles.getByRole('term')).toHaveText(['김 조사 출조', '류 조사 출조', '김 조사 잡은 물고기', '류 조사 잡은 물고기']);
+  await expect(tiles.getByRole('definition')).toHaveText(['3회', '2회', '2마리', '1마리']);
+  // 손맛 확률: 출조한 날 가운데 그 사람이 물고기를 한 마리라도 잡은 날의 비율. 김 조사는 1월 5일·2월 3일(혼자), 류 조사는 1월 5일에 잡았습니다.
+  const catchRate = page.getByRole('region', { name: '손맛 확률' });
+  await expect(catchRate.getByRole('term')).toHaveText(['김 조사', '류 조사']);
+  await expect(catchRate.getByRole('definition')).toHaveText(['67%', '출조 3회 중 2회 손맛', '50%', '출조 2회 중 1회 손맛']);
+  // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
+  const monthly = page.getByRole('region', { name: '월별 출조' });
+  await expect(monthly.getByText('1월 출조 김 조사 2회, 류 조사 2회')).toBeAttached();
+  await expect(monthly.getByText('2월 출조 김 조사 1회, 류 조사 0회')).toBeAttached();
+  await expect(monthly.getByText('3월 출조 김 조사 0회, 류 조사 0회')).toBeAttached();
   await expect(main.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
   // 사용자 요청으로 뺀 통계

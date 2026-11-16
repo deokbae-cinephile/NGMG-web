@@ -43,6 +43,12 @@ const Ranking = ({ id, title, rows, detail }: { id: string; title: string; rows:
   );
 };
 
+/** 조사마다 막대·범례의 칠. 왼쪽(먼저) 김 조사는 포인트 색, 오른쪽 류 조사는 글자색이라 밝기가 크게 달라 색을 구분하기 어려워도 갈립니다. */
+const ANGLER_FILL = ['bg-accent', 'bg-ink'];
+
+/** 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율(%). 출조가 없으면 undefined입니다. */
+const catchRate = (trips: number, caught: number) => (trips > 0 ? Math.round((caught / trips) * 100) : undefined);
+
 export const StatsPage = () => {
   const yearList = useStatYears();
   const years = withThisYear(yearList.data);
@@ -52,8 +58,10 @@ export const StatsPage = () => {
   const error = yearList.error ?? statsError;
 
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
-  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, months = Array<number>(12).fill(0), spots = [], restaurants = [] } = stats ?? {};
-  const maxMonth = Math.max(1, ...months);
+  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_catch_days: catchDays = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
+  // 월별 출조는 조사마다 따로 셉니다(사용자 요청). 함께 다녀온 날은 두 사람 모두, 혼자 다녀온 날은 그 사람만 셉니다.
+  const series = ANGLERS.map((angler, index) => ({ angler, fill: ANGLER_FILL[index], months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
+  const maxMonth = Math.max(1, ...series.flatMap(({ months }) => months));
 
   // 출조 횟수와 잡은 물고기는 조사별로 셉니다(사용자 요청). 혼자 다녀온 기록은 그 사람의 출조에만 더해집니다.
   const tiles = [
@@ -65,50 +73,96 @@ export const StatsPage = () => {
     <div>
       <title>통계 | 낚고먹고</title>
       <h1 className="sr-only">통계</h1>
-      <div className="cell-head">
-        <div className="flex items-baseline gap-3">
-          <h2 className="title text-xl">{`${year}년 통계`}</h2>
-        </div>
-        <select aria-label="연도" className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setPicked(Number(event.target.value))}>
-          {years.map((item) => (
-            <option key={item} value={item}>{`${item}년`}</option>
-          ))}
-        </select>
-      </div>
-      <ErrorText error={error} />
-
-      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. 휴대폰·태블릿은 2×2(위 줄 출조, 아래 줄 잡은 물고기, 왼쪽 김 조사·오른쪽 류 조사), 넓은 화면은 네 칸을 한 줄에 둡니다. */}
-      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
-        {tiles.map(({ label, value, unit }) => (
-          <div key={label} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
-            <dt className="mono-label">{label}</dt>
-            <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
-              <span className="display-number">{value}</span>
-              <span>{unit}</span>
-            </dd>
+      <section aria-labelledby="stats-year-title">
+        <div className="cell-head">
+          <div className="flex items-baseline gap-3">
+            <h2 id="stats-year-title" className="title text-xl">{`${year}년 통계`}</h2>
           </div>
-        ))}
-      </dl>
+          <select aria-label="연도" className="min-h-11 border border-field bg-surface px-3" value={year} onChange={(event) => setPicked(Number(event.target.value))}>
+            {years.map((item) => (
+              <option key={item} value={item}>{`${item}년`}</option>
+            ))}
+          </select>
+        </div>
+        <ErrorText error={error} />
+
+        {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. 휴대폰·태블릿은 2×2(위 줄 출조, 아래 줄 잡은 물고기, 왼쪽 김 조사·오른쪽 류 조사), 넓은 화면은 네 칸을 한 줄에 둡니다. */}
+        <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
+          {tiles.map(({ label, value, unit }) => (
+            <div key={label} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+              <dt className="mono-label">{label}</dt>
+              <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+                <span className="display-number">{value}</span>
+                <span>{unit}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* 손맛 확률: 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율(사용자 요청). 숫자 칸과 같은 모양에 근거(몇 번 중 몇 번)를 함께 씁니다. */}
+      <section aria-labelledby="catch-rate-title">
+        <div className="cell-head">
+          <div className="flex items-baseline gap-3">
+            <h2 id="catch-rate-title" className="title text-xl">손맛 확률</h2>
+          </div>
+        </div>
+        <dl className="grid grid-cols-2 gap-px border-b border-line bg-line">
+          {ANGLERS.map((angler) => {
+            const trips = anglerTrips[angler] ?? 0;
+            const caught = catchDays[angler] ?? 0;
+            const rate = catchRate(trips, caught);
+            return (
+              <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+                <dt className="mono-label">{angler}</dt>
+                {rate === undefined ? (
+                  <dd className="break-keep text-muted">출조 기록이 없습니다.</dd>
+                ) : (
+                  <>
+                    <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+                      <span className="display-number">{rate}</span>
+                      <span>%</span>
+                    </dd>
+                    <dd className="text-sm break-keep text-muted">{`출조 ${trips}회 중 ${caught}회 손맛`}</dd>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </dl>
+      </section>
 
       <section aria-labelledby="monthly-title">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
             <h2 id="monthly-title" className="title text-xl">월별 출조</h2>
           </div>
+          {/* 범례: 막대의 칠과 조사 이름. 달마다 조사별 횟수는 아래 화면 읽기 프로그램용 글로 알리므로 범례는 읽지 않습니다. */}
+          <ul aria-hidden="true" className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+            {series.map(({ angler, fill }) => (
+              <li key={angler} className="flex items-center gap-1.5 text-sm text-muted">
+                <span className={`size-3 border border-ink ${fill}`} />
+                {angler}
+              </li>
+            ))}
+          </ul>
         </div>
         <ol className="grid grid-cols-12 items-end gap-1 px-5 pt-6 pb-4 sm:gap-3">
-          {months.map((count, index) => (
+          {Array.from({ length: 12 }, (_, index) => (
             <li key={index} className="flex flex-col items-center gap-1">
-              <span aria-hidden="true" className="mono-label">{count}</span>
-              {/* 가장 많이 나간 달은 검정, 나머지는 포인트 색(연두)으로 칠합니다. */}
-              <span
-                aria-hidden="true"
-                className={`w-full border border-ink ${count > 0 && count === maxMonth ? 'bg-ink' : 'bg-accent'}`}
-                style={{ height: `${(count / maxMonth) * 8 + 0.125}rem` }}
-              />
+              {/* 달마다 조사별 막대 두 개를 2px 틈으로 붙입니다. 넓은 화면에서도 막대는 1.5rem보다 굵지 않고, 0회는 숫자를 쓰지 않습니다.
+                  휴대폰에서 막대보다 넓은 두 자리 숫자는 줄을 바꾸지 않고 막대 위 가운데에 놓습니다. */}
+              <span aria-hidden="true" className="flex w-full items-end justify-center gap-0.5">
+                {series.map(({ angler, fill, months }) => (
+                  <span key={angler} className="flex min-w-0 max-w-6 flex-1 flex-col items-center gap-1">
+                    <span className="text-[0.6875rem] leading-none whitespace-nowrap text-muted tabular-nums">{months[index] || ''}</span>
+                    <span className={`w-full border border-ink ${fill}`} style={{ height: `${(months[index]! / maxMonth) * 8 + 0.125}rem` }} />
+                  </span>
+                ))}
+              </span>
               <span className="mono-label">
                 {index + 1}
-                <span className="sr-only">{`월 출조 ${count}회`}</span>
+                <span className="sr-only">{`월 출조 ${series.map(({ angler, months }) => `${angler} ${months[index]}회`).join(', ')}`}</span>
               </span>
             </li>
           ))}
