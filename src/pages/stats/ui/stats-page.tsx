@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { RatingChip, useStatYears, useYearStats, type PlaceRank } from '@/entities/record';
+import { ANGLERS, RatingChip, useStatYears, useYearStats, type PlaceRank } from '@/entities/record';
 import { Link } from '@/shared/lib';
 import { ErrorText, PageSkeleton } from '@/shared/ui';
 import { withThisYear } from '../model';
@@ -52,12 +52,13 @@ export const StatsPage = () => {
   const error = yearList.error ?? statsError;
 
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
-  const { trips = 0, fish = 0, months = Array<number>(12).fill(0), spots = [], restaurants = [] } = stats ?? {};
+  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, months = Array<number>(12).fill(0), spots = [], restaurants = [] } = stats ?? {};
   const maxMonth = Math.max(1, ...months);
 
+  // 출조 횟수와 잡은 물고기는 조사별로 셉니다(사용자 요청). 혼자 다녀온 기록은 그 사람의 출조에만 더해집니다.
   const tiles = [
-    { label: '출조 횟수', value: `${trips}`, unit: '회' },
-    { label: '잡은 물고기', value: `${fish}`, unit: '마리' },
+    ...ANGLERS.map((angler) => ({ label: `${angler} 출조`, value: `${anglerTrips[angler] ?? 0}`, unit: '회' })),
+    ...ANGLERS.map((angler) => ({ label: `${angler} 잡은 물고기`, value: `${anglerFish[angler] ?? 0}`, unit: '마리' })),
   ];
 
   return (
@@ -76,8 +77,8 @@ export const StatsPage = () => {
       </div>
       <ErrorText error={error} />
 
-      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. */}
-      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line ">
+      {/* 칸 사이 1px 틈으로 검정 바탕이 보여 선이 됩니다. 휴대폰·태블릿은 2×2(위 줄 출조, 아래 줄 잡은 물고기, 왼쪽 김 조사·오른쪽 류 조사), 넓은 화면은 네 칸을 한 줄에 둡니다. */}
+      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
         {tiles.map(({ label, value, unit }) => (
           <div key={label} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
             <dt className="mono-label">{label}</dt>
