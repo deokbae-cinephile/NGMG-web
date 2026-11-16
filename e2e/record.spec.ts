@@ -261,8 +261,7 @@ test('사진 미리보기의 X 버튼으로 뺀다, 통계 순서, 기록에 인
   await dialog.getByRole('button', { name: '사진 1 빼기' }).click();
   await expect(dialog.getByRole('img', { name: '올릴 사진 1 미리보기' })).toHaveCount(0);
   await page.goto('./stats');
-  await expect(page.locator('dl dt').first()).toBeVisible();
-  expect(await page.locator('main dl').first().locator('dt').allTextContents()).toEqual(['출조 횟수', '잡은 물고기']);
+  await expect(page.getByRole('main').getByRole('term')).toHaveText(['김 조사 출조', '류 조사 출조', '김 조사 잡은 물고기', '류 조사 잡은 물고기']);
 });
 
 test('기록 화면에서 기록을 수정한다', async ({ page }) => {

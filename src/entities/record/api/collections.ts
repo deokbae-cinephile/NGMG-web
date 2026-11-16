@@ -1,13 +1,25 @@
 /** 통계·도감·사진 모음처럼 여러 기록을 모아 보는 조회 */
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase, type AnglerRatings, type FishCatch } from '@/shared/api';
+import { ANGLERS, supabase, type AnglerRatings, type FishCatch } from '@/shared/api';
 
 /** 자주 간 장소 한 줄. rank는 횟수가 같으면 같은 순위입니다(1, 1, 1, 4). rating은 평점을 준 기록의 평균입니다. */
 export type PlaceRank = { id: string; name: string; count: number; rating?: number; rank: number };
 
-/** 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳) */
-export type YearStats = { trips: number; fish: number; months: number[]; spots: PlaceRank[]; restaurants: PlaceRank[] };
+/**
+ * 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 조사별 출조 횟수·잡은 물고기, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳).
+ * angler_trips는 조사마다 센 출조 횟수입니다. 함께 다녀온 기록은 두 사람 모두에게, 혼자 다녀온 기록은 그 사람에게만 셉니다.
+ * angler_fish는 조사마다 잡은 물고기 수(물고기마다 적은 조사)입니다.
+ */
+export type YearStats = {
+  trips: number;
+  fish: number;
+  angler_trips: Partial<Record<string, number>>;
+  angler_fish: Partial<Record<string, number>>;
+  months: number[];
+  spots: PlaceRank[];
+  restaurants: PlaceRank[];
+};
 
 type RankRow = Omit<PlaceRank, 'rating'> & { rating: number | null };
 
@@ -27,7 +39,7 @@ export const useYearStats = (year: number) =>
   useQuery({
     queryKey: ['records', 'year-stats', year],
     queryFn: async (): Promise<YearStats> => {
-      const { data, error } = await supabase.read('year_stats', { target_year: year });
+      const { data, error } = await supabase.read('year_stats', { target_year: year, anglers: ANGLERS });
       if (error) throw new Error('통계를 불러오지 못했습니다.');
       const stats = data as Omit<YearStats, 'spots' | 'restaurants'> & { spots: RankRow[]; restaurants: RankRow[] };
       const ranks = (rows: RankRow[]) => rows.map(({ rating, ...row }) => ({ ...row, rating: rating ?? undefined }));

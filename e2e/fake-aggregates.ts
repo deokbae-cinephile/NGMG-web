@@ -35,7 +35,9 @@ const speciesOptions = (db: Db) => {
 
 const statYears = (db: Db) => [...new Set((db.records ?? []).map((record) => Number(String(record.visited_on).slice(0, 4))))].sort((a, b) => b - a);
 
-const yearStats = (db: Db, year: number) => {
+// angler_trips: 조사마다 낚시 기록의 날짜 수. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람만 셉니다.
+// angler_fish: 그 낚시 기록들에서 조사마다 잡은 물고기 수(20261202000000_angler_stats.sql).
+const yearStats = (db: Db, year: number, anglers: string[]) => {
   const { records } = joined(db);
   const inYear = [...records.values()].filter((record) => String(record.visited_on).startsWith(String(year)));
   const fishing = inYear.filter((record) => record.place.kind === 'fishing');
@@ -52,9 +54,12 @@ const yearStats = (db: Db, year: number) => {
     return rows.slice(0, 5).map(({ ratings, ...row }) => ({ ...row, rating: average(ratings), rank: rows.findIndex((other) => other.count === row.count) + 1 }));
   };
   const fishingIds = new Set(fishing.map((record) => record.id));
+  const caught = (db.fish_catches ?? []).filter((fish) => fishingIds.has(fish.record_id as string));
   return {
     trips: days(fishing),
-    fish: (db.fish_catches ?? []).filter((fish) => fishingIds.has(fish.record_id as string)).length,
+    angler_trips: Object.fromEntries(anglers.map((angler) => [angler, days(fishing.filter((record) => !record.solo_angler || record.solo_angler === angler))])),
+    fish: caught.length,
+    angler_fish: Object.fromEntries(anglers.map((angler) => [angler, caught.filter((fish) => fish.angler === angler).length])),
     months: Array.from({ length: 12 }, (_, index) => days(fishing.filter((record) => Number(String(record.visited_on).slice(5, 7)) === index + 1))),
     spots: rank(fishing),
     restaurants: rank(inYear.filter((record) => record.place.kind === 'restaurant')),
@@ -134,7 +139,7 @@ export const aggregate = (db: Db, name: string, body: { target_year?: number; an
   if (name === 'place_ratings') return placeRatings(db);
   if (name === 'species_options') return speciesOptions(db);
   if (name === 'stat_years') return statYears(db);
-  if (name === 'year_stats') return yearStats(db, Number(body.target_year));
+  if (name === 'year_stats') return yearStats(db, Number(body.target_year), list(body.anglers));
   if (name === 'fish_dex') return fishDex(db);
   if (name === 'menu_dex') return menuDex(db);
   return undefined;

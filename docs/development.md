@@ -68,12 +68,13 @@ supabase functions deploy notify --use-api
 supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_cron_secret'); select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/notify', 'notify_url')"
 ```
 
-## 평점
+## 다녀온 사람과 평점
 
 - 평점은 조사마다 0.5점 단위(0.5~5점)로 줍니다. 기록 폼의 **다녀온 사람**(함께, 김 조사 혼자, 류 조사 혼자)에 따라 평점을 주는 사람이 정해집니다.
 - 함께 다녀온 기록은 두 사람이 모두 줘야 평균을 내고, 한 사람만 주면 평점 대기입니다(설정 화면의 목록, 메뉴의 건수, 토요일 알림).
 - 혼자 다녀온 기록(`records.solo_angler`, `20261201000000_solo_rating.sql`)은 그 사람의 평점 칸만 보이고, 그 평점이 곧 기록의 평점(맛집은 음식 평점)이라 평점 대기가 아닙니다. 혼자로 바꿔 숨은 칸의 평점은 저장하지 않습니다.
 - 평점 대기 판정은 앱(`pendingRating`), DB 함수(`pending_ratings`), 알림 함수(`notify`), E2E 가짜 서버(`e2e/fake-aggregates.ts`)가 같은 규칙을 따르므로 하나를 바꾸면 함께 고칩니다.
+- 통계의 출조 횟수와 잡은 물고기는 조사별로 셉니다(`year_stats`의 `angler_trips`·`angler_fish`, `20261202000000_angler_stats.sql`). 출조 횟수는 그해 낚시 장소에 남긴 기록의 날짜 수이고, 함께 다녀온 기록은 두 사람 모두에게, 혼자 다녀온 기록은 그 사람에게만 더합니다. 잡은 물고기는 물고기마다 적은 조사로 셉니다. 월별 출조는 누구든 나간 날을 셉니다.
 
 ## 오프라인 저장과 동시 수정
 
@@ -170,7 +171,7 @@ supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_
 ## 경량화 원칙
 
 - 구조는 FSD(Feature-Sliced Design)를 따르고 Steiger(`steiger.config.ts`)로 검사합니다. 한 화면에서만 쓰는 코드는 그 화면 슬라이스에 두고, 두 곳 이상에서 쓰게 되면 features·widgets로 올립니다. 폼 슬라이스 이름이 모두 `-form`이라 `fsd/repetitive-naming`만 끕니다.
-- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감, 평점 대기)은 DB 함수(`20261128000000_aggregates.sql`, `20261129000000_pending_ratings.sql`, `security invoker`라 RLS 그대로)가 셉니다. 앱이 부르는 함수는 로그인한 계정(authenticated)만 실행할 수 있게 하므로(`20261130000000_rpc_execute_authenticated.sql`), 새 함수를 만들면 같은 식으로 anon·PUBLIC 실행 권한을 거둡니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
+- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감, 평점 대기)은 DB 함수(`20261128000000_aggregates.sql`, `20261129000000_pending_ratings.sql`, 혼자 다녀온 기록을 반영한 `20261201000000_solo_rating.sql`·`20261202000000_angler_stats.sql`, `security invoker`라 RLS 그대로)가 셉니다. 앱이 부르는 함수는 로그인한 계정(authenticated)만 실행할 수 있게 하므로(`20261130000000_rpc_execute_authenticated.sql`), 새 함수를 만들면 같은 식으로 anon·PUBLIC 실행 권한을 거둡니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
 
 - 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
 - Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.

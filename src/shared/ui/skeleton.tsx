@@ -136,11 +136,11 @@ const LAYOUTS = {
       ),
     ),
   ),
-  // 통계: 숫자 칸, 월별 막대, 자주 간 낚시 포인트·맛집
+  // 통계: 숫자 칸(조사별 출조·잡은 물고기 넷), 월별 막대, 자주 간 낚시 포인트·맛집
   stats: div(
     '',
     head('w-32', 'w-28'),
-    div('grid grid-cols-2 gap-px border-b border-line bg-line', ...times(2, div('flex flex-col gap-2 bg-paper p-5', 'h-3.5 w-16', span('flex items-end gap-1', 'h-[4.5rem] w-12', 'h-4 w-6')))),
+    div('grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4', ...times(4, div('flex flex-col gap-2 bg-paper p-5', 'h-3.5 w-16', span('flex items-end gap-1', 'h-[4.5rem] w-12', 'h-4 w-6')))),
     section('', head(), div('grid grid-cols-12 items-end gap-1 px-5 pt-6 pb-4 sm:gap-3', ...MONTH_BARS.map((height) => span('flex flex-col items-center gap-1', 'h-3 w-2', `w-full ${height}`, 'h-3 w-3')))),
     div('grid gap-px border-t border-line bg-line md:grid-cols-2', ...['w-40', 'w-28'].map((title) => section('bg-paper', head(title), div('cell-body flex flex-col gap-3', rankRow('w-full'), rankRow('w-1/2'))))),
   ),

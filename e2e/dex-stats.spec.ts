@@ -54,7 +54,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
-test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
+test('통계: 조사별 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
   // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -63,7 +63,7 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
     records: [
       { id: 'a', place_id: 'p1', visited_on: `${year}-01-05`, catches: '', rating: 4 },
       { id: 'b', place_id: 'p1', visited_on: `${year}-01-20`, catches: '', rating: 5 },
-      { id: 'c', place_id: 'p4', visited_on: `${year}-02-03`, catches: '' },
+      { id: 'c', place_id: 'p4', visited_on: `${year}-02-03`, catches: '', solo_angler: '김 조사' }, // 김 조사 혼자 출조
       { id: 'old', place_id: 'p1', visited_on: `${year - 1}-01-10`, catches: '' },
       { id: 'n', place_id: 'p3', visited_on: `${year}-03-01`, catches: '' },
       {
@@ -79,10 +79,14 @@ test('통계: 출조 횟수·잡은 물고기, 월별 출조, 자주 간 낚시 
     menu_items: [{ id: 'x1', record_id: 'm', name: '모둠회', price: 50000, position: 0, angler_ratings: { '김 조사': 4, '류 조사': 4 } }],
   });
   await page.goto('./stats');
-  const tiles = page.locator('main dl').first();
-  await expect(tiles).toContainText('출조 횟수3회');
-  await expect(tiles).toContainText('잡은 물고기3마리');
-  await expect(tiles.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
+  const main = page.getByRole('main');
+  // 출조 횟수와 잡은 물고기는 조사별로 셉니다. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람의 출조에만 더하고,
+  // 물고기는 물고기마다 적은 조사로 셉니다(작년 물고기는 빼고). 칸 이름(term)과 값(definition)을 순서대로 봅니다.
+  await expect(main.getByRole('term')).toHaveText(['김 조사 출조', '류 조사 출조', '김 조사 잡은 물고기', '류 조사 잡은 물고기']);
+  await expect(main.getByRole('definition')).toHaveText(['3회', '2회', '2마리', '1마리']);
+  await expect(page.getByText('3월 출조 0회')).toBeAttached(); // 월별 출조는 누구든 나간 날을 셉니다(1월 2일, 2월 1일).
+  await expect(page.getByText('2월 출조 1회')).toBeAttached();
+  await expect(main.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
   // 사용자 요청으로 뺀 통계
   for (const name of ['김 조사 vs 류 조사', '맛집', '평점 성향', '어종별 조과', '월별 어종', '장소별 조과율', '최대어 기록 변화']) await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
