@@ -7,16 +7,17 @@ import { ANGLERS, supabase, type AnglerRatings, type FishCatch } from '@/shared/
 export type PlaceRank = { id: string; name: string; count: number; rating?: number; rank: number };
 
 /**
- * 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 조사별 출조 횟수·잡은 물고기·물고기를 잡은 날·월별 출조, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳).
+ * 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 조사별 출조 횟수·잡은 물고기·어복 확률·물고기를 잡은 날·월별 출조, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳).
  * angler_trips는 조사마다 센 출조 횟수입니다. 함께 다녀온 기록은 두 사람 모두에게, 혼자 다녀온 기록은 그 사람에게만 셉니다.
- * angler_fish는 조사마다 잡은 물고기 수(물고기마다 적은 조사), angler_catch_days는 그 사람이 다녀온 날 가운데 물고기를 한 마리라도 잡은 날 수,
- * angler_months는 조사마다 1~12월에 다녀온 날 수입니다.
+ * angler_fish는 조사마다 잡은 물고기 수(물고기마다 적은 조사), angler_bream_prob는 조사마다 출조한 날 가운데 물고기를 잡은 비율(퍼센트),
+ * angler_catch_days는 그 사람이 다녀온 날 가운데 물고기를 한 마리라도 잡은 날 수, angler_months는 조사마다 1~12월에 다녀온 날 수입니다.
  */
 export type YearStats = {
   trips: number;
   fish: number;
   angler_trips: Partial<Record<string, number>>;
   angler_fish: Partial<Record<string, number>>;
+  angler_bream_prob: Partial<Record<string, number>>;
   angler_catch_days: Partial<Record<string, number>>;
   angler_months: Partial<Record<string, number[]>>;
   months: number[];
