@@ -1,4 +1,0 @@
-- [x] Remove .aider* files from repository
-- [x] Add .aider* pattern to .gitignore
-- [x] Verify AGENTS.md is properly configured (no changes needed)
-- [x] Run lint and typecheck tests successfully
