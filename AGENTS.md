@@ -1,72 +1,105 @@
-# AGENTS.md
+# AGENTS.md — ngmg-web
 
-## 전역 개발 규칙 (Global Rules)
+이 저장소는 낚시 일정·기록·도감, 통계 등을 관리하는 웹 앱입니다. 두 사람이 함께 사용하며, Supabase를 DB로 씁니다.
 
-### 1. 언어 및 응답 스타일
-- 모든 답변, 설명, 커밋 메시지, PR 본문, 코드 주석은 한국어로 작성한다.
-- 불필요한 전체 파일 탐색을 피하고 핵심 파일 위주로 최소한의 수정만 진행한다.
-- 작업 완료 후 사용자에게 질문하거나 요약을 출력했다면, 추가 도구(List agents 등)를 절대 호출하지 말고 즉시 응답을 종료한다.
-- 배포·CI·릴리스·PR 상태는 짐작하지 말고, 아래 "확인 명령"을 실행한 결과로만 말한다. 명령을 실행하지 못했다면 "확인하지 못했다"고 말한다.
+## 공통 규칙
 
-### 2. Git 브랜치 및 PR 워크플로우 (필수)
-- `main` 브랜치에 직접 커밋하거나 푸시하지 않는다. (main은 보호 규칙이 걸려 있어 `check` 검사를 통과해야만 바뀐다.)
-- 모든 작업은 최신 `main`을 기준으로 새 작업 브랜치(예: `feat/...`, `fix/...`, `refactor/...`, `docs/...`, `chore/...`)를 만든 뒤 진행한다.
-- 커밋 메시지는 `<타입>(<범위>): <한국어 요약>` 형식이다. 예: `feat(stats): 손맛 확률 섹션 제거`
-- 작업이 끝나면 작업 브랜치를 푸시하고 `main`을 대상으로 PR을 만든다. PR 본문에는 무엇을·왜 바꿨는지와 검사 결과를 적는다.
-- 병합은 squash로 한다. CI(`check`)가 통과하면 병합한다.
-- `.aider*` 같은 로컬 도구 파일은 커밋하지 않는다(`.gitignore`에 있음).
+- **언어:** 답변, 커밋 메시지, PR 본문, 코드 주석은 한국어로 씁니다. 코드·명령어·경로·식별자는 원래 언어로 둡니다.
+- **Git:** `main`에 직접 커밋하지 않습니다. 최신 `main`에서 `feat/…`, `fix/…`, `docs/…` 같은 브랜치를 만들고 PR로 합칩니다. 커밋은 Conventional Commits(`feat: 한국어 요약`)를 따릅니다.
+- **버전·기록:** Semantic Versioning(주.부.수), 변경은 `CHANGELOG.md`(Keep a Changelog)에 적습니다.
+- 사용자의 진행 중인 작업을 건드리지 않고, 비밀값·`.env`를 커밋하지 않습니다.
 
-### 3. 코드 품질
-- 기존 프로젝트의 코드 스타일, 폴더 구조(FSD, Steiger로 검사), 타입 규칙을 엄격히 준수한다.
-- 쓰지 않는 변수·import를 남기지 않는다(lint 실패 원인).
+## 명령
 
-### 4. 테스트 및 검사
-- PR 전에 로컬에서 CI와 같은 검사를 돌려 모두 통과시킨다.
-  ```bash
-  pnpm install --frozen-lockfile
-  pnpm lint          # eslint + steiger
-  pnpm typecheck     # tsc --noEmit
-  pnpm test:e2e      # Playwright E2E(axe 접근성 검사 포함)
-  pnpm build
-  ```
-- 이 저장소에는 단위 테스트(Vitest 등)가 없다. 화면 동작은 `e2e/`의 Playwright 테스트로 검사한다.
-- 화면 문구나 구역을 바꾸거나 지우면, 그 문구·구역을 찾는 `e2e/*.spec.ts`도 함께 고친다(지난 #82 CI 실패 원인).
-
-### 5. 버전·변경 기록
-- 버전은 SemVer를 따른다. 버그 수정·작은 변경은 수(2.3.1→2.3.2), 기능 추가는 부(2.3→2.4), 호환이 깨지면 주를 올린다.
-- 같은 PR 안에서 `package.json`의 `version`을 올리고, `CHANGELOG.md` 맨 위에 `## x.y.z - YYYY-MM-DD`와 바뀐 내용을 적는다.
-- DB 함수·마이그레이션 변경이 있으면 CHANGELOG 해당 절 첫 줄에 필요한 파일을 적는다(기존 절 형식을 따른다).
-
-### 6. 배포
-- `.github/workflows/deploy.yml`이 **main에 푸시(병합)될 때**와 **수동 실행(`workflow_dispatch`)** 때 GitHub Pages(https://ngmg.kr/)로 배포한다. 수동 실행은 고른 브랜치의 코드를 배포하므로 main 외 브랜치로 실행하지 않는다.
-- 태그·릴리스를 만들어도 배포는 일어나지 않는다. 스테이징 환경은 없다.
-
-### 7. 병합 뒤 태그·릴리스
-PR이 병합되면 아래 순서로 태그와 GitHub 릴리스를 만든다. 제목은 `v버전`, 본문은 CHANGELOG의 해당 절이다.
 ```bash
-(
-  set -euo pipefail
-  PR=<PR번호>
-  SHA=$(gh pr view "$PR" --json mergeCommit --jq .mergeCommit.oid)
-  git fetch origin main --tags
-  V=$(git show "$SHA:package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
-  git tag "v$V" "$SHA"
-  git push origin "v$V"
-  git show "$SHA:CHANGELOG.md" | awk -v v="$V" '$0 ~ "^## "v" " {f=1; next} /^## / && f {exit} f' > /tmp/notes.md
-  gh release create "v$V" --target "$SHA" --title "v$V" --notes-file /tmp/notes.md --latest
-)
+pnpm install          # 설치(pnpm 12, Node 24 이상)
+pnpm dev              # 개발 서버
+pnpm typecheck        # 타입 검사
+pnpm lint             # 린트(eslint + steiger)
+pnpm test:e2e         # E2E(Playwright, axe 접근성 검사 포함)
+pnpm build            # 운영 빌드(tsc + vite + spa-pages)
 ```
 
-### 8. 확인 명령
+PR 전에 `typecheck`, `lint`, `test:e2e`, `build`를 로컬에서 돌립니다.
+
+## 구조
+
+```
+src/
+├─ app/               주소별 화면(기본 HTML 구조는 layout.tsx, globals.css)
+│  ├─ splash.tsx      첫 화면 로고
+│  ├─ login/          로그인 폼(POST /api/session)
+│  ├─ map/            지도·장소 목록
+│  ├─ schedule/       일정 관리
+│  ├─ records/        기록 목록·추가
+│  ├─ guide-stats/    도감·통계
+│  └─ settings/       설정(테마, 알림, 장치 정보)
+├─ shared/            두 화면 이상에서 쓰는 코드
+│  ├─ lib/             공통 라이브러리(로그인, 날짜, 설정 저장)
+│  └─ ui/             공통 UI(단추, 입력칸, 스피너)
+├─ features/          FSD 특성 레이어(한 기능의 폼·리스트 등)
+│  ├─ place-form/
+│  ├─ record-form/
+│  └─ ...
+├- widgets/           FSD 위젯 레이어(화면 단위로 다시 조합)
+│  ├─ map-layout.tsx
+│  └─ ...
+└- pages/             FSD 페이지 레이어(화면별 진입점, react-router 대신 History API)
+   ├─ splash.tsx
+   ├─ login/
+   ├─ map/
+   ├─ schedule/
+   ├─ records/
+   ├─ guide-stats/
+   └─ settings/
+
+e2e/                  Playwright 시험, 가짜 서버
+public/               정적 파일(아이콘, 아이콘 폰트)
+scripts/              빌드 보조(spa-pages.mjs 등)
+```
+
+## 코드 규칙
+
+- **TypeScript strict:** `any`·`as` 단언·`@ts-ignore`를 피합니다. 외부 입력은 검사 함수로 확인합니다.
+- **구조:** FSD(Feature-Sliced Design)를 따르고 Steiger로 검사합니다. 한 화면에서만 쓰는 코드는 그 화면 슬라이스에 두고, 두 곳 이상에서 쓰게 되면 features·widgets로 올립니다.
+- **Supabase:** `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다. 로그인은 작은 클라이언트로, 저장소는 서명 주소·올리기·요청을 직접 보냅니다.
+- **사진:** 올릴 때 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다.
+- **라이브러리:** 경량화를 위해 필요할 때만 추가합니다. 날짜 계산은 `Date`·`Intl`로 직접 만듭니다.
+- **키보드:** 네이티브 HTML 요소(`<button>`, `<a href>`), `outline: none` 금지, `:focus-visible` 외곽선을 보여 줍니다.
+- **접근성:** 모든 기능을 키보드로 쓸 수 있어야 하고, `aria-*`를 올바르게 씁니다. 자동 검사: ESLint(jsx-a11y)와 Playwright + axe.
+
+## 환경 변수
+
+`.env.example`을 `.env.local`로 복사해 채웁니다. 배포할 때는 같은 이름으로 GitHub Secrets에 넣습니다.
+
+| 변수 | 용도 |
+|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase 연결. 없으면 앱이 시작되지 않습니다. |
+| `VITE_KAKAO_MAP_KEY` | Kakao 지도·장소 검색. 없으면 지도와 검색만 동작하지 않습니다. |
+
+세 값은 브라우저에 공개되는 값입니다. 데이터는 RLS가 보호합니다.
+
+## 배포
+
+GitHub Pages(https://ngmg.kr/)에 배포합니다. `.github/workflows/deploy.yml`이 **main에 푸시(병합)될 때**와 **수동 실행(`workflow_dispatch`)** 때 배포합니다. 수동 실행은 고른 브랜치의 코드를 배포하므로 main 외 브랜치로 실행하지 않습니다.
+
+## 버전과 릴리스
+
+1. PR 안에서 `package.json`의 `version`과 `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다.
+2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다.
+
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   # CHANGELOG에서 '## X.Y.Z' 절만 잘라 임시 파일로 만든 뒤 릴리스 노트로 씁니다.
+   awk '/^## X\.Y\.Z/{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > /tmp/release-notes.md
+   gh release create vX.Y.Z --title vX.Y.Z --notes-file /tmp/release-notes.md --latest
+   ```
+
+## 확인 명령
+
 ```bash
 gh pr checks <번호>                                         # PR의 CI 결과
 gh run list --workflow Deploy -L 1                          # 최근 배포: completed / success인지
 curl -s -o /dev/null -w "%{http_code}\n" https://ngmg.kr/   # 운영 사이트 200인지
 gh release list -L 1                                        # 방금 버전이 Latest인지
 ```
-
-### 9. 프로젝트 정보
-- **프로젝트 이름:** ngmg-web
-- **버전:** `package.json`의 `version`을 본다(이 파일에 숫자를 적어 두지 않는다).
-- **패키지 매니저:** pnpm(`package.json`의 `packageManager`)
-- **주요 기술:** React 19, Vite, TypeScript, TanStack Query, Supabase(PostgREST), Tailwind CSS 4, Playwright

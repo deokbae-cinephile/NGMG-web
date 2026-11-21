@@ -146,6 +146,34 @@ export const StatsPage = () => {
         </ol>
       </section>
 
+      {/* 어복 확률 */}
+      <section aria-labelledby="fishing-luck-title" className="pane">
+        <div className="cell-head">
+          <h2 id="fishing-luck-title" className="title text-xl">어복 확률</h2>
+        </div>
+        <div className="cell-body">
+          {ANGLERS.map((angler, index) => {
+            const trips = anglerTrips[angler] ?? 0;
+            return (
+              <div key={angler} className="flex flex-col gap-3 pb-4 last:pb-0">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`text-lg font-bold ${colorsOf(index).ink}`}>{angler}</span>
+                  <span className="text-lg font-bold">
+                    {trips === 0 ? '출조 기록이 없습니다' : `${((anglerCatchDays[angler] ?? 0) / trips).toFixed(2)}%`}
+                  </span>
+                </div>
+                <div className="flex h-3 overflow-hidden rounded-full bg-field">
+                  <span
+                    className={`h-full ${colorsOf(index).fill}`}
+                    style={{ width: trips === 0 ? '0%' : `${(anglerCatchDays[angler] ?? 0) / trips * 100}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* 넓은 화면은 왼쪽 낚시 포인트, 오른쪽 맛집. 좁은 화면은 위아래로 놓습니다. 1px 틈으로 바탕이 보여 선이 됩니다. */}
       <div className="grid gap-px border-t border-line bg-line md:grid-cols-2">
         <div className="bg-paper">
@@ -153,7 +181,7 @@ export const StatsPage = () => {
             id="top-spots"
             title="자주 간 낚시 포인트"
             rows={spots}
-            detail={({ rating }) => <RatingChip rating={rating} />} // 자주 간 맛집처럼 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
+            detail={({ rating }) => <RatingChip rating={rating} />} // 자문 간 맛집처럼 평점만 보여 줍니다(마릿수는 사용자 요청으로 뺌).
           />
         </div>
         <div className="bg-paper">
