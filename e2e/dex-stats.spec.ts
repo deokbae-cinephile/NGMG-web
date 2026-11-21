@@ -54,7 +54,7 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
-test('통계: 조사별 출조 횟수·잡은 물고기·손맛 확률·월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
+test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
   // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
@@ -88,10 +88,6 @@ test('통계: 조사별 출조 횟수·잡은 물고기·손맛 확률·월별 �
   // 큰 숫자는 조사 색(밝은 화면은 진한 청록·코랄)입니다.
   await expect(tiles.getByText('3', { exact: true })).toHaveCSS('color', 'rgb(34, 104, 93)');
   await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
-  // 손맛 확률: 출조한 날 가운데 그 사람이 물고기를 한 마리라도 잡은 날의 비율. 김 조사는 1월 5일·2월 3일(혼자), 류 조사는 1월 5일에 잡았습니다.
-  const catchRate = page.getByRole('region', { name: '손맛 확률' });
-  await expect(catchRate.getByRole('term')).toHaveText(['김 조사', '류 조사']);
-  await expect(catchRate.getByRole('definition')).toHaveText(['67%', '출조 3회 중 2회 손맛', '50%', '출조 2회 중 1회 손맛']);
   // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
   const monthly = page.getByRole('region', { name: '월별 출조' });
   // 막대·범례의 칠: 김 조사는 포인트 색(민트), 류 조사는 코랄입니다.
