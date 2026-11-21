@@ -38,18 +38,23 @@
 - DB 함수·마이그레이션 변경이 있으면 CHANGELOG 해당 절 첫 줄에 필요한 파일을 적는다(기존 절 형식을 따른다).
 
 ### 6. 배포
-- `.github/workflows/deploy.yml`이 **main에 푸시(병합)될 때만** GitHub Pages(https://ngmg.kr/)로 배포한다.
+- `.github/workflows/deploy.yml`이 **main에 푸시(병합)될 때**와 **수동 실행(`workflow_dispatch`)** 때 GitHub Pages(https://ngmg.kr/)로 배포한다. 수동 실행은 고른 브랜치의 코드를 배포하므로 main 외 브랜치로 실행하지 않는다.
 - 태그·릴리스를 만들어도 배포는 일어나지 않는다. 스테이징 환경은 없다.
 
 ### 7. 병합 뒤 태그·릴리스
 PR이 병합되면 아래 순서로 태그와 GitHub 릴리스를 만든다. 제목은 `v버전`, 본문은 CHANGELOG의 해당 절이다.
 ```bash
-git switch main && git pull
-V=$(node -p "require('./package.json').version")
-SHA=$(git rev-parse HEAD)
-git tag "v$V" "$SHA" && git push origin "v$V"
-awk -v v="$V" '$0 ~ "^## "v" " {f=1; next} /^## / && f {exit} f' CHANGELOG.md > /tmp/notes.md
-gh release create "v$V" --target "$SHA" --title "v$V" --notes-file /tmp/notes.md --latest
+(
+  set -euo pipefail
+  PR=<PR번호>
+  SHA=$(gh pr view "$PR" --json mergeCommit --jq .mergeCommit.oid)
+  git fetch origin main --tags
+  V=$(git show "$SHA:package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+  git tag "v$V" "$SHA"
+  git push origin "v$V"
+  git show "$SHA:CHANGELOG.md" | awk -v v="$V" '$0 ~ "^## "v" " {f=1; next} /^## / && f {exit} f' > /tmp/notes.md
+  gh release create "v$V" --target "$SHA" --title "v$V" --notes-file /tmp/notes.md --latest
+)
 ```
 
 ### 8. 확인 명령
