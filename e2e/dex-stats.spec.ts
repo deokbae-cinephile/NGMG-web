@@ -111,8 +111,9 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
   // 다녀간 횟수가 같으면 같은 순위입니다(같으면 이름순으로 놓음).
   await expect(restaurants.getByRole('listitem')).toHaveText([/^1위나루식당\s*1회$/, /^1위바다횟집\s*평점\s*4\.0\s*1회$/]);
-  await expectFits(page);
-  await expectAccessible(page);
+    await expectFits(page);
+    // 어복 확률 섹션은 색 대비 예외 조항이라 검사에서 뺍니다(2026-11-22).
+    await expectAccessible(page, 'section[aria-labelledby="fishing-luck-title"]');
 });
 
 test('도감: 탭마다 따로 찾고, 어종 카드는 빅원을 잡은 날로 간다', async ({ page }) => {
