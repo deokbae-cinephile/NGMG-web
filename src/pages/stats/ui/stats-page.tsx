@@ -108,32 +108,7 @@ export const StatsPage = () => {
         </dl>
       </section>
 
-      {/* 손맛 확률: 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율(사용자 요청). 숫자 칸과 같은 모양에 근거(몇 번 중 몇 번)를 함께 씁니다. */}
-      <section>
-        <dl className="grid grid-cols-2 gap-px border-b border-line bg-line">
-          {ANGLERS.map((angler, index) => {
-            const trips = anglerTrips[angler] ?? 0;
-            const caught = catchDays[angler] ?? 0;
-            const rate = catchRate(trips, caught);
-            return (
-              <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
-                <dt className="mono-label">{angler}</dt>
-                {rate === undefined ? (
-                  <dd className="break-keep text-muted">출조 기록이 없습니다.</dd>
-                ) : (
-                  <>
-                    <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
-                      <span className={`display-number ${colorsOf(index).ink}`}>{rate}</span>
-                      <span>%</span>
-                    </dd>
-                    <dd className="text-sm break-keep text-muted">{`출조 ${trips}회 중 ${caught}회 손맛`}</dd>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </dl>
-      </section>
+
 
       <section aria-labelledby="monthly-title">
         <div className="cell-head">
