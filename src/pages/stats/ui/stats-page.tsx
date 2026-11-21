@@ -54,8 +54,7 @@ const ANGLER_COLORS = [
 ];
 const colorsOf = (index: number) => ANGLER_COLORS[index] ?? { fill: 'bg-soft', ink: '' };
 
-/** 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율(%). 출조가 없으면 undefined입니다. */
-const catchRate = (trips: number, caught: number) => (trips > 0 ? Math.round((caught / trips) * 100) : undefined);
+
 
 export const StatsPage = () => {
   const yearList = useStatYears();
