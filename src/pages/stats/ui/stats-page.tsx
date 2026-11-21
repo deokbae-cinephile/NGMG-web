@@ -65,7 +65,7 @@ export const StatsPage = () => {
   const error = yearList.error ?? statsError;
 
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
-  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_catch_days: catchDays = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
+  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
   // 월별 출조는 조사마다 따로 셉니다(사용자 요청). 함께 다녀온 날은 두 사람 모두, 혼자 다녀온 날은 그 사람만 셉니다.
   const series = ANGLERS.map((angler, index) => ({ angler, fill: colorsOf(index).fill, months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
   const maxMonth = Math.max(1, ...series.flatMap(({ months }) => months));
