@@ -76,6 +76,15 @@ export const StatsPage = () => {
     ...ANGLERS.map((angler, index) => ({ label: `${angler} 잡은 물고기`, value: `${anglerFish[angler] ?? 0}`, unit: '마리', ink: colorsOf(index).ink })),
   ];
 
+  // 어복 확률 계산
+  const totalTrips = (anglerTrips['김 조사'] ?? 0) + (anglerTrips['류 조사'] ?? 0);
+  const kimFish = anglerFish['김 조사'] ?? 0;
+  const ryuFish = anglerFish['류 조사'] ?? 0;
+
+  // 어복 확률 계산 (반올림)
+  const kimProbability = totalTrips > 0 ? Math.round((kimFish / totalTrips) * 100) : 0;
+  const ryuProbability = totalTrips > 0 ? Math.round((ryuFish / totalTrips) * 100) : 0;
+
   return (
     <div>
       <title>통계 | 낚고먹고</title>
@@ -105,6 +114,27 @@ export const StatsPage = () => {
             </div>
           ))}
         </dl>
+
+        {/* 어복 확률 영역 - 월별 출조 바로 위에 추가 */}
+        <div className="flex flex-col gap-4 p-5 bg-paper">
+          <h3 className="title text-lg">어복 확률</h3>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center gap-4">
+              <span className={`${colorsOf(0).ink} font-medium`}>김 조사</span>
+              <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-full ${colorsOf(0).fill}`} style={{ width: `${kimProbability}%` }}></div>
+              </div>
+              <span className={`${colorsOf(0).ink} font-medium`}>{kimProbability}%</span>
+            </div>
+            <div className="flex justify-between items-center gap-4">
+              <span className={`${colorsOf(1).ink} font-medium`}>류 조사</span>
+              <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                <div className={`h-full ${colorsOf(1).fill}`} style={{ width: `${ryuProbability}%` }}></div>
+              </div>
+              <span className={`${colorsOf(1).ink} font-medium`}>{ryuProbability}%</span>
+            </div>
+          </div>
+        </div>
       </section>
 
 
