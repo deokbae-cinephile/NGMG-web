@@ -54,18 +54,16 @@ const ANGLER_COLORS = [
 ];
 const colorsOf = (index: number) => ANGLER_COLORS[index] ?? { fill: 'bg-soft', ink: '' };
 
-
-
 export const StatsPage = () => {
   const yearList = useStatYears();
   const years = withThisYear(yearList.data);
   const [picked, setPicked] = useState<number>();
-  const year = picked ?? years[0]!; // 고르기 전에는 기록이 있는 가장 최근 해
+  const year = picked ?? years[0]; // 고르기 전에는 기록이 있는 가장 최근 해
   const { data: stats, error: statsError } = useYearStats(year);
   const error = yearList.error ?? statsError;
 
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
-  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_catch_days: anglerCatchDays = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
+  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_bream_prob: breamProb = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
   // 월별 출조는 조사마다 따로 셉니다(사용자 요청). 함께 다녀온 날은 두 사람 모두, 혼자 다녀온 날은 그 사람만 셉니다.
   const series = ANGLERS.map((angler, index) => ({ angler, fill: colorsOf(index).fill, months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
   const maxMonth = Math.max(1, ...series.flatMap(({ months }) => months));
@@ -107,7 +105,23 @@ export const StatsPage = () => {
         </dl>
       </section>
 
-
+      {/* 월별 출조 상단에 어복 확률 배치. UI는 출조/잡은 물고기와 동일. */}
+      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
+        {ANGLERS.map((angler, index) => {
+          const trips = anglerTrips[angler] ?? 0;
+          return (
+            <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+              <dt className="mono-label">{`${angler} 어복 확률`}</dt>
+              <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+                <span className={`display-number ${colorsOf(index).ink}`}>
+                  {trips === 0 ? '출조 기록 없음' : breamProb[angler] != null ? `${breamProb[angler]}%` : '0%'}
+                </span>
+                <span>%</span>
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
 
       <section aria-labelledby="monthly-title">
         <div className="cell-head">
@@ -144,34 +158,6 @@ export const StatsPage = () => {
             </li>
           ))}
         </ol>
-      </section>
-
-      {/* 어복 확률 */}
-      <section aria-labelledby="fishing-luck-title" className="pane">
-        <div className="cell-head">
-          <h2 id="fishing-luck-title" className="title text-xl">어복 확률</h2>
-        </div>
-        <div className="cell-body">
-          {ANGLERS.map((angler, index) => {
-            const trips = anglerTrips[angler] ?? 0;
-            return (
-              <div key={angler} className="flex flex-col gap-3 pb-4 last:pb-0">
-                <div className="flex items-center justify-between gap-3">
-                  <span className={`text-lg font-bold ${colorsOf(index).ink}`}>{angler}</span>
-                  <span className="text-lg font-bold">
-                    {trips === 0 ? '출조 기록이 없습니다' : `${((anglerCatchDays[angler] ?? 0) / trips).toFixed(2)}%`}
-                  </span>
-                </div>
-                <div className="flex h-3 overflow-hidden rounded-full bg-field">
-                  <span
-                    className={`h-full ${colorsOf(index).fill}`}
-                    style={{ width: trips === 0 ? '0%' : `${(anglerCatchDays[angler] ?? 0) / trips * 100}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </section>
 
       {/* 넓은 화면은 왼쪽 낚시 포인트, 오른쪽 맛집. 좁은 화면은 위아래로 놓습니다. 1px 틈으로 바탕이 보여 선이 됩니다. */}

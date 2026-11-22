@@ -43,6 +43,7 @@ as $$
     'angler_trips', coalesce((select json_object_agg(name, days) from per_angler), '{}'::json),
     'angler_fish', coalesce((select json_object_agg(name, fish) from per_angler), '{}'::json),
     'fish', (select count(*) from public.fish_catches c join fishing f on f.id = c.record_id),
+    'angler_bream_prob', coalesce((select json_object_agg(name, round((fish::double precision / nullif(days, 0)) * 100, 2)) from per_angler), '{}'::json),
     'months', (select json_agg(days order by m) from months),
     'spots', coalesce((select json_agg(json_build_object('id', place_id, 'name', name, 'count', visits, 'rating', rating, 'rank', standing) order by place_rank) from ranked where kind = 'fishing' and place_rank <= 5), '[]'::json),
     'restaurants', coalesce((select json_agg(json_build_object('id', place_id, 'name', name, 'count', visits, 'rating', rating, 'rank', standing) order by place_rank) from ranked where kind = 'restaurant' and place_rank <= 5), '[]'::json)
