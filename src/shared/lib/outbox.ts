@@ -20,13 +20,22 @@ const open = () =>
 const run = async <T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>) => {
   const db = await open();
   try {
-    // 요청 성공 뒤에도 저장 공간 부족 등으로 트랜잭션이 취소될 수 있어, 트랜잭션이 끝나야 성공으로 봅니다.
     return await new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(STORE, mode);
       const request = action(transaction.objectStore(STORE));
+      
       transaction.oncomplete = () => resolve(request.result);
-      transaction.onabort = () => reject(transaction.error ?? request.error ?? new Error('기기 저장소에 저장하지 못했습니다.'));
-      transaction.onerror = () => reject(transaction.error ?? request.error);
+      
+      const handleError = (error: DOMException | null, requestError: DOMException | null) => {
+        const errorMessage = error?.message || requestError?.message || '알 수 없는 오류가 발생했습니다.';
+        reject(new Error(errorMessage));
+      };
+      
+      transaction.onabort = () => handleError(transaction.error, request.error);
+      transaction.onerror = (event) => {
+        event.preventDefault();
+        handleError(transaction.error, request.error);
+      };
     });
   } finally {
     db.close();
