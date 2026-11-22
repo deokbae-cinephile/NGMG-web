@@ -88,6 +88,10 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   // 큰 숫자는 조사 색(밝은 화면은 진한 청록·코랄)입니다.
   await expect(tiles.getByText('3', { exact: true })).toHaveCSS('color', 'rgb(34, 104, 93)');
   await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
+  // 어복 확률: 조사마다 출조한 날 가운데 자기 물고기를 잡은 날의 비율입니다(김 조사 3일 중 2일, 류 조사 2일 중 1일).
+  const luck = main.locator('dl', { has: page.getByText('김 조사 어복 확률') });
+  await expect(luck.getByRole('term')).toHaveText(['김 조사 어복 확률', '류 조사 어복 확률']);
+  await expect(luck.getByRole('definition')).toHaveText(['67%', '50%']);
   // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
   const monthly = page.getByRole('region', { name: '월별 출조' });
   // 막대·범례의 칠: 김 조사는 포인트 색(민트), 류 조사는 코랄입니다.
@@ -112,8 +116,7 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   // 다녀간 횟수가 같으면 같은 순위입니다(같으면 이름순으로 놓음).
   await expect(restaurants.getByRole('listitem')).toHaveText([/^1위나루식당\s*1회$/, /^1위바다횟집\s*평점\s*4\.0\s*1회$/]);
     await expectFits(page);
-    // 어복 확률 섹션은 색 대비 예외 조항이라 검사에서 뺍니다(2026-11-22).
-    await expectAccessible(page, 'section[aria-labelledby="fishing-luck-title"]');
+    await expectAccessible(page);
 });
 
 test('도감: 탭마다 따로 찾고, 어종 카드는 빅원을 잡은 날로 간다', async ({ page }) => {
