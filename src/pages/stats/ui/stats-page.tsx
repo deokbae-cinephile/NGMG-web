@@ -63,7 +63,7 @@ export const StatsPage = () => {
   const error = yearList.error ?? statsError;
 
   if (yearList.isPending || (!stats && !error)) return <PageSkeleton variant="stats" />;
-  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_bream_prob: breamProb = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
+  const { angler_trips: anglerTrips = {}, angler_fish: anglerFish = {}, angler_catch_days: anglerCatchDays = {}, angler_months: anglerMonths = {}, spots = [], restaurants = [] } = stats ?? {};
   // 월별 출조는 조사마다 따로 셉니다(사용자 요청). 함께 다녀온 날은 두 사람 모두, 혼자 다녀온 날은 그 사람만 셉니다.
   const series = ANGLERS.map((angler, index) => ({ angler, fill: colorsOf(index).fill, months: anglerMonths[angler] ?? Array<number>(12).fill(0) }));
   const maxMonth = Math.max(1, ...series.flatMap(({ months }) => months));
@@ -105,7 +105,7 @@ export const StatsPage = () => {
         </dl>
       </section>
 
-      {/* 월별 출조 상단에 어복 확률 배치. UI는 출조/잡은 물고기와 동일. */}
+      {/* 어복 확률: 조사마다 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율. 위 출조·잡은 물고기 칸과 같은 모양입니다. */}
       <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
         {ANGLERS.map((angler, index) => {
           const trips = anglerTrips[angler] ?? 0;
@@ -113,10 +113,14 @@ export const StatsPage = () => {
             <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
               <dt className="mono-label">{`${angler} 어복 확률`}</dt>
               <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
-                <span className={`display-number ${colorsOf(index).ink}`}>
-                  {trips === 0 ? '출조 기록 없음' : breamProb[angler] != null ? `${breamProb[angler]}%` : '0%'}
-                </span>
-                <span>%</span>
+                {trips === 0 ? (
+                  <span>출조 기록 없음</span>
+                ) : (
+                  <>
+                    <span className={`display-number ${colorsOf(index).ink}`}>{Math.round(((anglerCatchDays[angler] ?? 0) / trips) * 100)}</span>
+                    <span>%</span>
+                  </>
+                )}
               </dd>
             </div>
           );
