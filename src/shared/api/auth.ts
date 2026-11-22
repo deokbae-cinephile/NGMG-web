@@ -91,39 +91,74 @@ export const createAuth = ({ url, key, storageKey }: { url: string; key: string;
 
   /** 갱신은 한 번에 하나만 보냅니다. 갱신 토큰이 무효면 로그아웃하고, 네트워크 오류면 세션을 두고 나중에 다시 시도합니다. */
   const refresh = () =>
-    (refreshing ??= (async () => {
+    (refreshing ??= (async (): Promise<Session | null> => {
       try {
-        // 다른 탭이 이미 새 토큰을 받았으면 그것을 씁니다.
+        // 다른 탭이 이미 갱신된 세션을 저장했으면 그것을 씁니다.
         const stored = read();
-        if (stored && stored.refresh_token !== current?.refresh_token && stored.expires_at - REFRESH_MARGIN > now()) {
+        if (stored && stored.expires_at - REFRESH_MARGIN > now()) {
           set('TOKEN_REFRESHED', stored, false);
           return stored;
         }
-        if (!current) return null;
-        const used = current.refresh_token;
-        const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: used });
-        // 기다리는 동안 새 로그인이나 다른 탭이 세션을 바꿨으면 이 응답은 버리고 바뀐 세션을 씁니다.
-        // 저장소를 못 읽으면(undefined) 이 탭의 세션만 봅니다.
-        const latest = readStored();
-        // 다른 탭이 세션을 지웠으면(저장소는 쓸 수 있는데 키가 없음) 응답을 버리고 로그아웃합니다.
-        if (latest === null && current) {
-          set('SIGNED_OUT', null, false);
+        
+        // 현재 세션 확인 (로그아웃되었으면 중단)
+        if (!current) {
+          refreshing = undefined;
           return null;
         }
-        if (current?.refresh_token !== used || (latest && latest.refresh_token !== used)) {
-          if (latest && latest.refresh_token !== current?.refresh_token) set('TOKEN_REFRESHED', latest, false);
-          return current;
+        
+        const usedToken = current.refresh_token;
+        const { session, error } = await request('/token?grant_type=refresh_token', { refresh_token: usedToken });
+        
+        // 요청 전까지 다른 탭이 세션을 바았거나 로그아웃되었는지 확인
+        const latest = readStored();
+        
+        // 저장소를 읽을 수 없으면(undefined) 이 탭의 세션만 비교
+        if (latest === undefined) {
+          // current가 여전히 같은 토큰을 쓰고 있는지 확인
+          if (current.refresh_token !== usedToken) {
+            refreshing = undefined;
+            return current; // 다른 탭이 이미 바换了
+          }
+        } else {
+          // 저장소 상태 확인
+          if (latest === null) {
+            // 다른 탭이 로그아웃했으면 로그아웃
+            set('SIGNED_OUT', null, false);
+            refreshing = undefined;
+            return null;
+          }
+          
+          // 다른 탭이 토큰을 갱신했으면 그걸 씀
+          if (latest.refresh_token !== usedToken) {
+            set('TOKEN_REFRESHED', latest, false);
+            refreshing = undefined;
+            return latest;
+          }
+          
+          // 현재 탭의 세션이 바였으면 중단
+          if (current.refresh_token !== usedToken) {
+            refreshing = undefined;
+            return current;
+          }
         }
-        if (session) set('TOKEN_REFRESHED', session);
-        // 갱신 토큰이 없어졌거나 이미 쓴 것이면 다시 로그인해야 합니다. 그 밖의 실패(요청 과다, 서버 오류)는 다시 시도합니다.
-        else if (error && REVOKED.has(error.code ?? '')) set('SIGNED_OUT', null);
-        else retryLater();
-        return current;
+        
+        // 토큰 갱신 처리
+        if (session) {
+          set('TOKEN_REFRESHED', session);
+        } else if (error && REVOKED.has(error.code ?? '')) {
+          // 갱신 토큰이 무효면 로그아웃
+          set('SIGNED_OUT', null);
+        } else {
+          // 네트워크 오류 등은 나중에 다시 시도
+          retryLater();
+        }
+        
+        refreshing = undefined;
+        return read();
       } catch {
         retryLater(); // 오프라인
-        return current;
-      } finally {
         refreshing = undefined;
+        return current;
       }
     })());
 
