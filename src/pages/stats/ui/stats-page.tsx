@@ -102,9 +102,9 @@ export const StatsPage = () => {
         </dl>
       </section>
 
-      {/* 어복 확률과 최고 기록. 넓은 화면은 어복 확률 둘 옆에 최고 기록 둘을 한 줄로, 태블릿은 2×2, 휴대폰은 한 줄에 하나 놓습니다.
-          어복 확률은 조사마다 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율, 최고 기록은 가장 큰 물고기('우럭 30cm')이며 없으면 '-'입니다. */}
-      <dl aria-label="어복 확률과 최고 기록" className="grid grid-cols-1 gap-px border-b border-line bg-line md:grid-cols-2 lg:grid-cols-4">
+      {/* 어복 확률과 최고 기록. 넓은 화면은 어복 확률 둘 옆에 최고 기록 둘을 한 줄로, 휴대폰·태블릿은 위 출조 칸처럼 2×2(위 줄 어복 확률, 아래 줄 최고 기록, 왼쪽 김 조사·오른쪽 류 조사)로 놓습니다.
+          어복 확률은 조사마다 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율, 최고 기록은 가장 큰 물고기('33cm(우럭)')이며 없으면 '-'입니다. */}
+      <dl aria-label="어복 확률과 최고 기록" className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
         {ANGLERS.map((angler, index) => {
           const trips = anglerTrips[angler] ?? 0;
           return (
@@ -131,9 +131,9 @@ export const StatsPage = () => {
               <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
                 {max ? (
                   <>
-                    {max.species && <span>{`${max.species} `}</span>}
                     <span className={`display-number ${inkOf(index)}`}>{Number(max.length_cm)}</span>
                     <span>cm</span>
+                    {max.species && <span>{`(${max.species})`}</span>}
                   </>
                 ) : (
                   <span className={`display-number ${inkOf(index)}`}>-</span>
