@@ -89,8 +89,8 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   await expect(tiles.getByText('3', { exact: true })).toHaveCSS('color', 'rgb(34, 104, 93)');
   await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
   // 어복 확률: 조사마다 출조한 날 가운데 자기 물고기를 잡은 날의 비율입니다(김 조사 3일 중 2일, 류 조사 2일 중 1일).
-  // 변경된 구조에 따라 위치가 옆으로 이동한 영역을 탐색
-  const luck = page.getByRole('region', { name: `${year}년 통계` }).locator('.grid-cols-2').first();
+  // 변경된 구조에 따라 옆으로 이동한 영역에서 확률 데이터를 찾습니다.
+  const luck = page.getByRole('region', { name: `${year}년 통계` }).locator('.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4').nth(1);
   await expect(luck.getByRole('term')).toHaveText(['김 조사 어복 확률', '류 조사 어복 확률']);
   await expect(luck.getByRole('definition')).toHaveText(['67%', '50%']);
   // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
