@@ -85,7 +85,7 @@ test('통계: 기본은 전체 통계, 연도를 고르면 그 해만. 조사별
   await expect(page.getByRole('combobox', { name: '연도' })).toHaveValue('all');
   await expect(all.getByRole('definition')).toHaveText(['4회', '3회', '3마리', '1마리']);
   const everything = main.locator('dl[aria-label="어복 확률과 최고 기록"]');
-  await expect(everything.getByRole('definition')).toHaveText(['75%', '33%', '감성돔 41cm', '볼락 20cm']);
+  await expect(everything.getByRole('definition')).toHaveText(['75%', '33%', '41cm(감성돔)', '20cm(볼락)']);
   // 연도를 고르면 그 해의 값만 보입니다.
   await page.getByRole('combobox', { name: '연도' }).selectOption(`${year}`);
   const tiles = page.getByRole('region', { name: `${year}년 통계` });
@@ -98,9 +98,9 @@ test('통계: 기본은 전체 통계, 연도를 고르면 그 해만. 조사별
   await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
   // 어복 확률: 조사마다 출조한 날 가운데 자기 물고기를 잡은 날의 비율입니다(김 조사 3일 중 2일, 류 조사 2일 중 1일).
   const luck = main.locator('dl[aria-label="어복 확률과 최고 기록"]');
-  // 최고 기록: 조사마다 가장 큰 물고기를 '어종 길이cm'로 보여 줍니다. 어복 확률 옆(같은 목록)에 있고, 월별 출조는 없습니다.
+  // 최고 기록: 조사마다 가장 큰 물고기를 '33cm(우럭)'처럼 보여 줍니다. 어복 확률 옆(같은 목록)에 있고, 월별 출조는 없습니다.
   await expect(luck.getByRole('term')).toHaveText(['김 조사 어복 확률', '류 조사 어복 확률', '김 조사 최고 기록', '류 조사 최고 기록']);
-  await expect(luck.getByRole('definition')).toHaveText(['67%', '50%', '감성돔 41cm', '볼락 20cm']);
+  await expect(luck.getByRole('definition')).toHaveText(['67%', '50%', '41cm(감성돔)', '20cm(볼락)']);
   await expect(page.getByRole('heading', { name: '월별 출조' })).toHaveCount(0);
   await expect(main.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
@@ -117,7 +117,7 @@ test('통계: 기본은 전체 통계, 연도를 고르면 그 해만. 조사별
   await expect(restaurants.getByRole('listitem')).toHaveText([/^1위나루식당\s*1회$/, /^1위바다횟집\s*평점\s*4\.0\s*1회$/]);
   // 2025년: 최고 기록은 그 해의 최대어이고, 물고기를 못 잡은 조사는 '-'입니다.
   await page.getByRole('combobox', { name: '연도' }).selectOption(`${year - 1}`);
-  await expect(main.locator('dl[aria-label="어복 확률과 최고 기록"]').getByRole('definition')).toHaveText(['100%', '0%', '볼락 25cm', '-']);
+  await expect(main.locator('dl[aria-label="어복 확률과 최고 기록"]').getByRole('definition')).toHaveText(['100%', '0%', '25cm(볼락)', '-']);
     await expectFits(page);
     await expectAccessible(page);
 });
