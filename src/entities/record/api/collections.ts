@@ -22,6 +22,7 @@ export type YearStats = {
   months: number[];
   spots: PlaceRank[];
   restaurants: PlaceRank[];
+  angler_max_length?: Partial<Record<string, number>>;
 };
 
 type RankRow = Omit<PlaceRank, 'rating'> & { rating: number | null };

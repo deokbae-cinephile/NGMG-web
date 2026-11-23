@@ -127,6 +127,21 @@ export const StatsPage = () => {
         })}
       </dl>
 
+      {/* 최고 기록: 조사별로 잡은 물고기 중 가장 큰 크기. */}
+      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
+        {ANGLERS.map((angler, index) => (
+          <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+            <dt className="mono-label">{`${angler} 최고 기록`}</dt>
+            <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+              <span className={`display-number ${colorsOf(index).ink}`}>
+                {stats?.angler_max_length && stats.angler_max_length[angler] ? 
+                  `${stats.angler_max_length[angler]}cm` : 'N/A'}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
       <section aria-labelledby="monthly-title">
         <div className="cell-head">
           <div className="flex items-baseline gap-3">
