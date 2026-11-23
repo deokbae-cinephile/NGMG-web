@@ -105,8 +105,8 @@ export const StatsPage = () => {
         </dl>
       </section>
 
-      {/* 어복 확률: 조사마다 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율. 위 출조·잡은 물고기 칸과 같은 모양입니다. */}
-      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
+      {/* 어복 확률과 최고 기록: 조사마다 출조한 날 가운데 물고기를 한 마리라도 잡은 날의 비율과 최고 기록. */}
+      <div className="grid grid-cols-1 gap-px border-b border-line bg-line md:grid-cols-2 lg:grid-cols-4">
         {ANGLERS.map((angler, index) => {
           const trips = anglerTrips[angler] ?? 0;
           return (
@@ -125,10 +125,6 @@ export const StatsPage = () => {
             </div>
           );
         })}
-      </dl>
-
-      {/* 최고 기록: 조사별로 잡은 물고기 중 가장 큰 크기. */}
-      <dl className="grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4">
         {ANGLERS.map((angler, index) => (
           <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
             <dt className="mono-label">{`${angler} 최고 기록`}</dt>
@@ -140,7 +136,41 @@ export const StatsPage = () => {
             </dd>
           </div>
         ))}
-      </dl>
+      </div>
+
+      {/* 어복 확률과 최고 기록을 옆으로 배치 */}
+      <div className="grid grid-cols-1 gap-px border-b border-line bg-line md:grid-cols-2 lg:grid-cols-4">
+        {ANGLERS.map((angler, index) => {
+          const trips = anglerTrips[angler] ?? 0;
+          return (
+            <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+              <dt className="mono-label">{`${angler} 어복 확률`}</dt>
+              <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+                {trips === 0 ? (
+                  <span>출조 기록 없음</span>
+                ) : (
+                  <>
+                    <span className={`display-number ${colorsOf(index).ink}`}>{Math.round(((anglerCatchDays[angler] ?? 0) / trips) * 100)}</span>
+                    <span>%</span>
+                  </>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+        {ANGLERS.map((angler, index) => (
+          <div key={angler} className="flex min-w-0 flex-col gap-2 bg-paper p-5">
+            <dt className="mono-label">{`${angler} 최고 기록`}</dt>
+            <dd className="flex min-w-0 flex-wrap items-baseline gap-1">
+              <span className={`display-number ${colorsOf(index).ink}`}>
+                {stats?.angler_max_length && stats.angler_max_length[angler] ? 
+                  `${stats.angler_max_length[angler]}cm` : 'N/A'}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </div>
+
 
       <section aria-labelledby="monthly-title">
         <div className="cell-head">
