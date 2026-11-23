@@ -34,7 +34,7 @@ test('지도: 검색으로 장소를 추가하고, 분류 필터는 다른 메�
   // 다른 메뉴에 다녀오면 다시 '전체'에서 시작합니다.
   await page.getByRole('link', { name: '통계' }).first().click();
   await expect(page).toHaveURL(/\/stats$/);
-  await expect(page.getByRole('heading', { name: /년 통계$/ })).toBeVisible(); // 통계 화면이 다 뜬 뒤 지도로 돌아갑니다.
+  await expect(page.getByRole('heading', { name: '전체 통계' })).toBeVisible(); // 통계 화면이 다 뜬 뒤 지도로 돌아갑니다.
   await page.getByRole('link', { name: '지도' }).first().click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('button', { name: '전체', exact: true })).toHaveAttribute('aria-pressed', 'true');

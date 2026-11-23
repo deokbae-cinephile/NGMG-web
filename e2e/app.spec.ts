@@ -100,7 +100,7 @@ test('휴대폰: 머리글 없이 메뉴를 옮기면 맨 위부터 보인다', 
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.getByRole('link', { name: '통계' }).click();
-  await expect(page.getByRole('heading', { name: '월별 출조' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '전체 통계' })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 

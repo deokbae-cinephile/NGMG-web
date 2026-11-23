@@ -37,10 +37,11 @@ const statYears = (db: Db) => [...new Set((db.records ?? []).map((record) => Num
 
 // angler_trips: 조사마다 낚시 기록의 날짜 수. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람만 셉니다.
 // angler_fish: 그 낚시 기록들에서 조사마다 잡은 물고기 수(20261202000000_angler_stats.sql).
-// angler_catch_days·angler_months: 조사마다 다녀온 기록에서 자기 물고기가 있는 날 수, 달마다 다녀온 날 수(20261203000000_stats_by_angler.sql).
-const yearStats = (db: Db, year: number, anglers: string[]) => {
+// angler_catch_days: 조사마다 다녀온 기록에서 자기 물고기가 있는 날 수(20261203000000_stats_by_angler.sql).
+// year가 null이면 모든 해를 합친 전체 통계, angler_max_fish는 조사마다 가장 큰 물고기입니다(20261204000000_stats_all_years.sql).
+const yearStats = (db: Db, year: number | null, anglers: string[]) => {
   const { records } = joined(db);
-  const inYear = [...records.values()].filter((record) => String(record.visited_on).startsWith(String(year)));
+  const inYear = [...records.values()].filter((record) => String(record.visited_on).startsWith(String(year)) || year === null);
   const fishing = inYear.filter((record) => record.place.kind === 'fishing');
   const days = (list: typeof fishing) => new Set(list.map((record) => record.visited_on)).size;
   const rank = (list: typeof inYear) => {
@@ -57,16 +58,19 @@ const yearStats = (db: Db, year: number, anglers: string[]) => {
   const fishingIds = new Set(fishing.map((record) => record.id));
   const caught = (db.fish_catches ?? []).filter((fish) => fishingIds.has(fish.record_id as string));
   const went = (angler: string) => fishing.filter((record) => !record.solo_angler || record.solo_angler === angler);
-  const inMonth = (list: typeof fishing, month: number) => list.filter((record) => Number(String(record.visited_on).slice(5, 7)) === month);
   const perAngler = <T,>(value: (angler: string) => T) => Object.fromEntries(anglers.map((angler) => [angler, value(angler)]));
   return {
     trips: days(fishing),
     angler_trips: perAngler((angler) => days(went(angler))),
     angler_catch_days: perAngler((angler) => days(went(angler).filter((record) => caught.some((fish) => fish.record_id === record.id && fish.angler === angler)))),
-    angler_months: perAngler((angler) => Array.from({ length: 12 }, (_, index) => days(inMonth(went(angler), index + 1)))),
+    angler_max_fish: Object.fromEntries(anglers.flatMap((angler) => {
+      // 길이가 같으면 더 최근에 잡은 것(방문일이 늦은 것)입니다.
+      const date = (fish: Row) => String(joined(db).recordOf(fish).visited_on);
+      const best = caught.filter((fish) => fish.angler === angler && fish.length_cm != null).sort((a, b) => Number(b.length_cm) - Number(a.length_cm) || date(b).localeCompare(date(a)) || byId(a, b))[0];
+      return best ? [[angler, { species: best.species, length_cm: Number(best.length_cm) }]] : [];
+    })),
     fish: caught.length,
     angler_fish: perAngler((angler) => caught.filter((fish) => fish.angler === angler).length),
-    months: Array.from({ length: 12 }, (_, index) => days(inMonth(fishing, index + 1))),
     spots: rank(fishing),
     restaurants: rank(inYear.filter((record) => record.place.kind === 'restaurant')),
   };
@@ -140,12 +144,12 @@ const pendingRatings = (db: Db, anglers: string[]) => {
 const list = (value: unknown) => (Array.isArray(value) ? value : String(value ?? '').replace(/^\{|\}$/g, '').split(',').filter(Boolean));
 
 /** 집계 함수 이름이면 결과를, 아니면 undefined를 돌려줍니다. */
-export const aggregate = (db: Db, name: string, body: { target_year?: number; anglers?: unknown }) => {
+export const aggregate = (db: Db, name: string, body: { target_year?: number | null; anglers?: unknown }) => {
   if (name === 'pending_ratings') return pendingRatings(db, list(body.anglers));
   if (name === 'place_ratings') return placeRatings(db);
   if (name === 'species_options') return speciesOptions(db);
   if (name === 'stat_years') return statYears(db);
-  if (name === 'year_stats') return yearStats(db, Number(body.target_year), list(body.anglers));
+  if (name === 'year_stats') return yearStats(db, body.target_year == null ? null : Number(body.target_year), list(body.anglers));
   if (name === 'fish_dex') return fishDex(db);
   if (name === 'menu_dex') return menuDex(db);
   return undefined;

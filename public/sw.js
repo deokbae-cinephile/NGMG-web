@@ -9,9 +9,9 @@
 const VERSION = 'v2'; // v2: DB 응답을 계정별로 저장
 /**
  * DB 응답 캐시만 따로 올리는 버전. 응답에 값이 더해지면 올려, 느린 연결·오프라인에서 새 값이 없는 예전 응답을 쓰지 않게 합니다.
- * 앱 화면·파일·사진 캐시는 그대로 둡니다. v3: 연도 통계에 조사별 손맛 확률·월별 출조가 더해짐(2.3.0)
+ * 앱 화면·파일·사진 캐시는 그대로 둡니다. v3: 연도 통계에 조사별 손맛 확률·월별 출조가 더해짐(2.3.0), v4: 전체 통계와 조사별 최고 기록이 더해지고 월별 출조가 빠짐(2.6.0)
  */
-const DATA_VERSION = 'v3';
+const DATA_VERSION = 'v4';
 const SHELL = `ngmg-shell-${VERSION}`;
 const ASSETS = `ngmg-assets-${VERSION}`;
 const DATA = `ngmg-data-${DATA_VERSION}`;
