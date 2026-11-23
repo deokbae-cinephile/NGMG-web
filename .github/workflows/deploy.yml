@@ -36,13 +36,22 @@ jobs:
       - name: Build
         run: |
           if [ -n "$VITE_SUPABASE_URL" ] && [ -n "$VITE_SUPABASE_ANON_KEY" ] && [ -n "$VITE_KAKAO_MAP_KEY" ]; then
+            echo "Building with real secrets..."
             pnpm run build
           elif [ -n "$VITE_SUPABASE_URL$VITE_SUPABASE_ANON_KEY$VITE_KAKAO_MAP_KEY" ]; then
             echo "::error::Secrets 3개 중 일부만 있습니다. 모두 넣어 주세요."
             exit 1
           else
-            echo "::notice::Secrets가 없어 데모로 배포합니다."
+            echo "Building with demo mode (no secrets found)..."
             pnpm run build:demo
+          fi
+      - name: Verify Artifact Directory
+        run: |
+          ls -la dist/
+          echo "Checking if dist directory exists and contains files..."
+          if [ ! -d "dist" ]; then
+            echo "::error::Dist directory does not exist"
+            exit 1
           fi
       - uses: actions/upload-pages-artifact@v5
         with:
