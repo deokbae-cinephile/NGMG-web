@@ -6,11 +6,15 @@ import { ANGLERS, supabase, type AnglerRatings, type FishCatch } from '@/shared/
 /** 자주 간 장소 한 줄. rank는 횟수가 같으면 같은 순위입니다(1, 1, 1, 4). rating은 평점을 준 기록의 평균입니다. */
 export type PlaceRank = { id: string; name: string; count: number; rating?: number; rank: number };
 
+/** 조사마다 가장 큰 물고기 */
+export type MaxFish = { species: string; length_cm: number };
+
 /**
- * 한 해의 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 조사별 출조 횟수·잡은 물고기·물고기를 잡은 날·월별 출조, 월별 출조 날짜 수, 자주 간 낚시 포인트·맛집(5곳).
+ * 통계: 출조 횟수(낚시 기록의 날짜 수), 잡은 물고기, 조사별 출조 횟수·잡은 물고기·물고기를 잡은 날·가장 큰 물고기, 자주 간 낚시 포인트·맛집(5곳).
+ * 연도를 고르지 않으면(year가 undefined) 모든 해를 합친 전체 통계입니다.
  * angler_trips는 조사마다 센 출조 횟수입니다. 함께 다녀온 기록은 두 사람 모두에게, 혼자 다녀온 기록은 그 사람에게만 셉니다.
- * angler_fish는 조사마다 잡은 물고기 수(물고기마다 적은 조사), angler_catch_days는 그 사람이 다녀온 날 가운데 물고기를 한 마리라도 잡은 날 수,
- * angler_months는 조사마다 1~12월에 다녀온 날 수입니다.
+ * angler_fish는 조사마다 잡은 물고기 수(물고기마다 적은 조사), angler_catch_days는 그 사람이 다녀온 날 가운데 물고기를 한 마리라도 잡은 날 수입니다.
+ * angler_max_fish는 조사마다 길이가 가장 긴 물고기입니다(잡은 물고기가 없으면 그 조사의 값이 없습니다).
  */
 export type YearStats = {
   trips: number;
@@ -18,11 +22,9 @@ export type YearStats = {
   angler_trips: Partial<Record<string, number>>;
   angler_fish: Partial<Record<string, number>>;
   angler_catch_days: Partial<Record<string, number>>;
-  angler_months: Partial<Record<string, number[]>>;
-  months: number[];
+  angler_max_fish: Partial<Record<string, MaxFish>>;
   spots: PlaceRank[];
   restaurants: PlaceRank[];
-  angler_max_length?: Partial<Record<string, number>>;
 };
 
 type RankRow = Omit<PlaceRank, 'rating'> & { rating: number | null };
@@ -38,11 +40,12 @@ export const useStatYears = () =>
     },
   });
 
-/** 고른 해의 통계. DB에서 셉니다(기록을 모두 받지 않음). */
-export const useYearStats = (year: number) =>
+/** 고른 해의 통계(해를 고르지 않으면 전체). DB에서 셉니다(기록을 모두 받지 않음). */
+export const useYearStats = (year?: number) =>
   useQuery({
-    queryKey: ['records', 'year-stats', year],
+    queryKey: ['records', 'year-stats', year ?? 'all'],
     queryFn: async (): Promise<YearStats> => {
+      // 해를 고르지 않으면 target_year를 보내지 않아(GET 인자에서 빠짐) DB가 기본값 null, 곧 전체로 셉니다.
       const { data, error } = await supabase.read('year_stats', { target_year: year, anglers: ANGLERS });
       if (error) throw new Error('통계를 불러오지 못했습니다.');
       const stats = data as Omit<YearStats, 'spots' | 'restaurants'> & { spots: RankRow[]; restaurants: RankRow[] };

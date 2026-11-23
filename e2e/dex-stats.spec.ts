@@ -54,8 +54,8 @@ test('어종 도감: 어종별로 모으고 빅원의 길이와 잡은 조사를
   await expect(page.getByRole('dialog', { name: '기록 수정' }).getByLabel(/음식 2 류 조사 평점/)).toHaveValue('3.5');
 });
 
-test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 간 낚시 포인트·맛집만 보여 준다', async ({ page }) => {
-  // 통계는 기록이 있는 가장 최근 해를 먼저 보여 줍니다. 시계를 고정해 그해가 2026년이 되게 합니다.
+test('통계: 기본은 전체 통계, 연도를 고르면 그 해만. 조사별 출조·잡은 물고기·어복 확률·최고 기록, 자주 간 낚시 포인트·맛집', async ({ page }) => {
+  // 통계는 연도를 고르기 전에는 모든 해를 합친 전체 통계입니다. 시계를 고정해 올해가 2026년이 되게 합니다.
   const year = 2026;
   await page.clock.setFixedTime(new Date('2026-11-10T12:00:00+09:00'));
   await fakeBackend(page, {
@@ -80,6 +80,14 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   });
   await page.goto('./stats');
   const main = page.getByRole('main');
+  // 기본은 모든 해를 합친 전체 통계입니다(작년 기록과 물고기도 더합니다). 최고 기록은 연도를 통틀어 가장 큰 물고기입니다.
+  const all = page.getByRole('region', { name: '전체 통계' });
+  await expect(page.getByRole('combobox', { name: '연도' })).toHaveValue('all');
+  await expect(all.getByRole('definition')).toHaveText(['4회', '3회', '3마리', '1마리']);
+  const everything = main.locator('dl[aria-label="어복 확률과 최고 기록"]');
+  await expect(everything.getByRole('definition')).toHaveText(['75%', '33%', '감성돔 41cm', '볼락 20cm']);
+  // 연도를 고르면 그 해의 값만 보입니다.
+  await page.getByRole('combobox', { name: '연도' }).selectOption(`${year}`);
   const tiles = page.getByRole('region', { name: `${year}년 통계` });
   // 출조 횟수와 잡은 물고기는 조사별로 셉니다. 함께 다녀온 기록은 두 사람 모두, 혼자 다녀온 기록은 그 사람의 출조에만 더하고,
   // 물고기는 물고기마다 적은 조사로 셉니다(작년 물고기는 빼고). 칸 이름(term)과 값(definition)을 순서대로 봅니다.
@@ -89,19 +97,11 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   await expect(tiles.getByText('3', { exact: true })).toHaveCSS('color', 'rgb(34, 104, 93)');
   await expect(tiles.getByText('2', { exact: true }).first()).toHaveCSS('color', 'rgb(194, 110, 89)');
   // 어복 확률: 조사마다 출조한 날 가운데 자기 물고기를 잡은 날의 비율입니다(김 조사 3일 중 2일, 류 조사 2일 중 1일).
-  const luck = main.locator('dl', { has: page.getByText('김 조사 어복 확률') });
-  await expect(luck.getByRole('term')).toHaveText(['김 조사 어복 확률', '류 조사 어복 확률']);
-  await expect(luck.getByRole('definition')).toHaveText(['67%', '50%']);
-  // 월별 출조도 조사별입니다. 혼자 다녀온 2월 3일은 김 조사에게만 더합니다.
-  const monthly = page.getByRole('region', { name: '월별 출조' });
-  // 막대·범례의 칠: 김 조사는 포인트 색(민트), 류 조사는 코랄입니다.
-  await expect(monthly.locator('.bg-accent').first()).toHaveCSS('background-color', 'rgb(142, 216, 203)');
-  await expect(monthly.locator('.bg-ryu').first()).toHaveCSS('background-color', 'rgb(222, 138, 119)');
-  const months = monthly.getByRole('listitem'); // 범례는 읽지 않게 두어(aria-hidden) 달 12개만 목록 항목입니다.
-  await expect(months).toHaveCount(12);
-  await expect(months.nth(0)).toContainText('1월 출조 김 조사 2회, 류 조사 2회');
-  await expect(months.nth(1)).toContainText('2월 출조 김 조사 1회, 류 조사 0회');
-  await expect(months.nth(2)).toContainText('3월 출조 김 조사 0회, 류 조사 0회');
+  const luck = main.locator('dl[aria-label="어복 확률과 최고 기록"]');
+  // 최고 기록: 조사마다 가장 큰 물고기를 '어종 길이cm'로 보여 줍니다. 어복 확률 옆(같은 목록)에 있고, 월별 출조는 없습니다.
+  await expect(luck.getByRole('term')).toHaveText(['김 조사 어복 확률', '류 조사 어복 확률', '김 조사 최고 기록', '류 조사 최고 기록']);
+  await expect(luck.getByRole('definition')).toHaveText(['67%', '50%', '감성돔 41cm', '볼락 20cm']);
+  await expect(page.getByRole('heading', { name: '월별 출조' })).toHaveCount(0);
   await expect(main.getByText(/작년/)).toHaveCount(0); // 작년 비교는 사용자 요청으로 뺐습니다.
 
   // 사용자 요청으로 뺀 통계
@@ -115,6 +115,9 @@ test('통계: 조사별 출조 횟수·잡은 물고기·월별 출조, 자주 �
   const restaurants = page.getByRole('region', { name: '자주 간 맛집' });
   // 다녀간 횟수가 같으면 같은 순위입니다(같으면 이름순으로 놓음).
   await expect(restaurants.getByRole('listitem')).toHaveText([/^1위나루식당\s*1회$/, /^1위바다횟집\s*평점\s*4\.0\s*1회$/]);
+  // 2025년: 최고 기록은 그 해의 최대어이고, 물고기를 못 잡은 조사는 '-'입니다.
+  await page.getByRole('combobox', { name: '연도' }).selectOption(`${year - 1}`);
+  await expect(main.locator('dl[aria-label="어복 확률과 최고 기록"]').getByRole('definition')).toHaveText(['100%', '0%', '볼락 25cm', '-']);
     await expectFits(page);
     await expectAccessible(page);
 });

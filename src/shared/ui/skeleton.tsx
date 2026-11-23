@@ -91,11 +91,9 @@ const CARD_GRID = box('ol')(
 /** 도감처럼 사진 카드가 늘어선 칸의 자리. (도감은 머리 칸 없이 탭 아래에 바로 카드가 옵니다) */
 export const CardGridSkeleton = () => draw(CARD_GRID);
 
-/** 통계 월별 막대 높이(실제 막대처럼 들쭉날쭉하게) */
 /** 통계 숫자 칸: 이름, 큰 숫자와 단위 */
 const STAT_TILE = div('flex flex-col gap-2 bg-paper p-5', 'h-3.5 w-16', span('flex items-end gap-1', 'h-[4.5rem] w-12', 'h-4 w-6'));
 
-const MONTH_BARS = ['h-[0.125rem]', 'h-[0.125rem]', 'h-[2.125rem]', 'h-[4.125rem]', 'h-[3.125rem]', 'h-[6.125rem]', 'h-[5.125rem]', 'h-[8.125rem]', 'h-[4.125rem]', 'h-[3.125rem]', 'h-[5.125rem]', 'h-[0.125rem]'];
 
 const LAYOUTS = {
   // 지도: 휴대폰은 위에 지도, 아래에 목록. 넓은 화면은 왼쪽 지도, 오른쪽 목록.
@@ -139,13 +137,12 @@ const LAYOUTS = {
       ),
     ),
   ),
-  // 통계: 숫자 칸(조사별 출조·잡은 물고기 넷), 손맛 확률(조사별 둘), 월별 막대(범례), 자주 간 낚시 포인트·맛집
+  // 통계: 숫자 칸(조사별 출조·잡은 물고기 넷), 어복 확률·최고 기록(조사별 넷), 자주 간 낚시 포인트·맛집
   stats: div(
     '',
     head('w-32', 'w-28'),
     div('grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4', ...times(4, STAT_TILE)),
-    section('', head('w-24'), div('grid grid-cols-2 gap-px border-b border-line bg-line', ...times(2, div('flex flex-col gap-2 bg-paper p-5', 'h-3.5 w-12', span('flex items-end gap-1', 'h-[4.5rem] w-16', 'h-4 w-4'), 'h-3.5 w-32')))),
-    section('', div('cell-head', 'h-6 w-28', 'h-4 w-36'), div('grid grid-cols-12 items-end gap-1 px-5 pt-6 pb-4 sm:gap-3', ...MONTH_BARS.map((height) => span('flex flex-col items-center gap-1', 'h-3 w-2', `w-full ${height}`, 'h-3 w-3')))),
+    div('grid grid-cols-2 gap-px border-b border-line bg-line lg:grid-cols-4', ...times(4, STAT_TILE)),
     div('grid gap-px border-t border-line bg-line md:grid-cols-2', ...['w-40', 'w-28'].map((title) => section('bg-paper', head(title), div('cell-body flex flex-col gap-3', rankRow('w-full'), rankRow('w-1/2'))))),
   ),
   // 도감: 탭, 찾기 칸, 카드
