@@ -8,7 +8,7 @@
 - **스타일:** Tailwind CSS 4
 - **데이터:** Supabase (PostgREST)
 - **테스트:** Vitest, Playwright
-- **배포:** GitHub Actions, GitHub Pages
+- **배포:** GitHub Actions
 
 ## 프로젝트 구조
 
