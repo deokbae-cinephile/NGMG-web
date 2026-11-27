@@ -1,185 +1,54 @@
-# 개발 가이드
+# 낚고먹고 (NGMG-web)
+두 사람이 함께 쓰는 낚시·맛집 지도와 출조 일정·기록 서비스입니다. 배포 주소: [https://ngmg.kr](https://ngmg.kr)
 
-## 환경 변수
+## 주요 화면
+로그인이 필요한 앱이라 서버 없이 가짜 데이터로 띄운 데모 화면입니다(장소와 기록은 모두 가상 데이터).
 
-`.env.example`을 `.env`로 복사해 채웁니다. 배포할 때는 같은 이름으로 GitHub 저장소 Secrets에 넣습니다.
+<p>
+  <img src="documents/images/screen-map.jpg" alt="지도와 장소 목록 화면: 분류 필터와 위치·날씨 단추" width="180">
+  <img src="documents/images/screen-schedule.jpg" alt="일정 화면: 달력과 선택한 날의 출조 일정" width="180">
+  <img src="documents/images/screen-dex.jpg" alt="어종 도감 화면: 어종별 빅원, 잡은 사람, 장소" width="180">
+  <img src="documents/images/screen-stats.jpg" alt="통계 화면: 조사별 출조 횟수, 잡은 물고기, 어복 확률, 최고 기록" width="180">
+</p>
 
-| 변수                                             | 용도                         |
-| ------------------------------------------------ | ---------------------------- |
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`    | Supabase 연결. 없으면 앱이 시작되지 않습니다. |
-| `VITE_KAKAO_MAP_KEY`                             | Kakao 지도·장소 검색. 없으면 지도와 검색만 동작하지 않습니다. |
+## 주요 기능
+- **지도와 장소:** Kakao 지도에 낚시·맛집·숙박·기타 장소를 저장하고, 평점에 따라 핀 색이 바뀝니다. 고른 장소의 날씨와 기온은 Open-Meteo에서 받습니다.
+- **일정:** 달력에서 날짜를 눌러 장소가 붙은 출조 일정을 만들고, 그날 챙길 물품을 체크리스트로 확인합니다.
+- **기록:** 잡은 물고기와 먹은 음식을 사진(칸마다 5장까지)과 함께 남기고, 조사마다 0.5점 단위로 평점을 줍니다. 오프라인에서 저장하면 연결될 때 올립니다.
+- **도감·통계:** 어종·음식 도감과 조사별 출조 횟수, 잡은 물고기, 어복 확률, 최고 기록을 연도별 또는 전체로 봅니다.
+- **물품:** 낚시 장비를 조사별로 등록하고 일정에 연결합니다.
+- **알림과 설치:** 출조 전날 웹 푸시 알림을 받고, 홈 화면에 앱으로 설치할 수 있습니다.
+- **읽기 전용 계정:** `guest` 계정은 모든 데이터를 보기만 하고 쓰지 못합니다.
 
-세 값은 브라우저에 공개되는 값입니다. 데이터는 RLS가, Kakao 키는 등록된 도메인 제한이 보호합니다. `service_role` 키는 절대 넣지 않습니다.
+## 기술 스택
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=for-the-badge&logo=githubpages&logoColor=white)
 
-지도의 날씨(고른 핀의 지금 날씨와 기온)는 [Open-Meteo](https://open-meteo.com)에서 받습니다. 키가 필요 없어 따로 설정할 값이 없습니다. 비상업 용도에서 무료이며, 상업 서비스로 바꾸면 유료 요금제나 다른 날씨 API(기상청 단기예보 등)로 옮겨야 합니다. 서버가 가끔 연결만 되고 답하지 않아, 요청은 8초 안에 답이 없으면 끊고 한 번 더 시도합니다(`src/pages/map/api/weather.ts`).
-
-## 데모
-
-데모는 Supabase와 Kakao SDK 응답을 `e2e/fake-server.ts`의 가짜 서버로 대신합니다. 앱 코드(`src/`)에는 데모 분기가 없습니다. 지도는 실제 지도가 아니라 가짜 배경이고, 올린 사진도 자리표시 그림으로 보입니다.
-
-| 방법 | 설명 |
-| --- | --- |
-| `pnpm run demo` | 개발 서버와 Playwright 브라우저 창을 띄웁니다. 날씨도 가짜 값입니다. |
-| `pnpm run build:demo` | 정적 파일로 빌드합니다. `e2e/demo-setup.ts`가 브라우저의 `fetch`를 가로채 응답하고. 고친 데이터는 탭을 닫기 전까지 sessionStorage에 남습니다. |
-
-## 서버 준비 (Supabase)
-
+## 실행 방법
 ```bash
-supabase login                      # 브라우저 승인이 필요해 별도 터미널에서 실행합니다.
-supabase link --project-ref <프로젝트 ID>
-supabase db push --remote
-supabase config push                # 가입을 닫습니다 (enable_signup = false)
+# 레포지토리 클론
+git clone https://github.com/deokbae-cinephile/NGMG-web.git
+cd NGMG-web
+
+# 패키지 설치(Node 24 이상, pnpm 12)
+pnpm install
+
+# 환경 변수 파일 만들기(.env.example을 복사해 Supabase·Kakao 키를 채웁니다)
+cp .env.example .env.local
+
+# 개발 서버 실행(http://localhost:5173)
+pnpm dev
+
+# 서버와 키 없이 가짜 데이터로 둘러보기
+pnpm run demo
 ```
 
-두 사람은 공용 계정 하나를 함께 씁니다. 가입 화면은 없습니다.
-
-1. 대시보드 **Authentication > Users > Add user**에서 계정을 하나 만들고 **Auto Confirm User**를 켭니다.
-2. 계정을 멤버로 등록합니다. 등록되지 않은 계정은 로그인해도 빈 화면만 보이고 쓰기는 실패하므로, 가입 설정이 실수로 켜져도 다른 사람은 데이터에 접근하지 못합니다.
-
-```bash
-supabase db query --remote "insert into public.members (user_id) select id from auth.users on conflict do nothing"
-```
-
-로그인은 기기마다 한 번만 하면 유지됩니다.
-
-무료 플랜은 오랫동안 접속이 없으면 프로젝트가 일시 중지될 수 있습니다. 그때는 대시보드에서 다시 시작합니다.
-
-## 게스트 계정 (읽기 전용)
-
-`members.role`이 `guest`인 계정은 모든 데이터를 볼 수 있지만 쓰지 못합니다. `is_member()`는 `member`만 참이라 기존 ALL 정책(쓰기)을 막고, `is_reader()`로 표마다 SELECT 정책과 사진 저장소 읽기 정책을 더했습니다(`20261120000000_guest_read_only.sql`). 앱은 `members`에서 자기 역할을 읽어(`useRole`, `useCanWrite`, `<Writable>`) 쓰기 버튼과 알림 켜기를 감춥니다.
-
-게스트 계정은 저장소에 비밀번호를 남기지 않도록 DB에서 직접 만들었습니다. 새로 만들 때는 대시보드에서 계정을 만들고 `insert into public.members (user_id, role) values ('<사용자 id>', 'guest')`로 등록합니다(대시보드의 비밀번호 최소 길이는 6자).
-
-## 알림 (웹 푸시)
-
-출조 전날 오후 6시(내일 일정이 있을 때)와 토요일 오후 6시(함께 다녀왔는데 한 사람만 평점을 준 기록이 있을 때) 알림을 보냅니다. 출조 알림에는 일정마다 챙길 물품 개수를 적고, 누르면 `/schedule?date=<내일>&focus=gear`로 열려 실제 물품이 있는 첫 일정의 챙길 물품 체크리스트로 스크롤하고 초점을 옮깁니다. 설정 화면의 **알림**에서 기기마다 켜고, 켜면 테스트 알림이 바로 옵니다. 아이폰은 홈 화면에 추가한 앱(iOS 16.4 이상)에서만 받을 수 있습니다.
-
-- 구독: `push_subscriptions` 표(멤버만 읽고 씀)
-- 보내기: Edge Function `supabase/functions/notify`(VAPID 웹 푸시). 없어진 구독(404·410)은 지웁니다.
-- 예약: pg_cron `ngmg-daily-notify`가 매일 UTC 9시(한국 시간 오후 6시)에 Vault의 `notify_url`로 `notify_cron_secret`을 붙여 부릅니다. `notify_url`이 없으면 부르지 않고, `notify_cron_secret`이 없거나 함수의 `CRON_SECRET`과 다르면 함수가 403으로 거절합니다.
-
-새 프로젝트에서는 한 번만 준비합니다. 키와 비밀 값은 저장소에 넣지 않습니다.
-
-```bash
-# VAPID 키(P-256)와 예약 호출 비밀 값을 만들어 함수 비밀 값으로 넣습니다.
-supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:관리자@도메인 CRON_SECRET=...
-supabase functions deploy notify --use-api
-# 예약 호출이 쓸 주소와 비밀 값(위 CRON_SECRET과 같은 값)을 Vault에 넣습니다.
-supabase db query --remote "select vault.create_secret('<CRON_SECRET>', 'notify_cron_secret'); select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/notify', 'notify_url')"
-```
-
-## 다녀온 사람과 평점
-
-- 평점은 조사마다 0.5점 단위(0.5~5점)로 줍니다. 기록 폼의 **다녀온 사람**(함께, 김 조사 혼자, 류 조사 혼자)에 따라 평점을 주는 사람이 정해집니다.
-- 함께 다녀온 기록은 두 사람이 모두 줘야 평균을 내고, 한 사람만 주면 평점 대기입니다(설정 화면의 목록, 메뉴의 건수, 토요일 알림).
-- 혼자 다녀온 기록(`records.solo_angler`, `20261201000000_solo_rating.sql`)은 그 사람의 평점 칸만 보이고, 그 평점이 곧 기록의 평점(맛집은 음식 평점)이라 평점 대기가 아닙니다. 혼자로 바꿔 숨은 칸의 평점은 저장하지 않습니다.
-- 평점 대기 판정은 앱(`pendingRating`), DB 함수(`pending_ratings`), 알림 함수(`notify`), E2E 가짜 서버(`e2e/fake-aggregates.ts`)가 같은 규칙을 따르므로 하나를 바꾸면 함께 고칩니다.
-- 통계의 출조 횟수와 잡은 물고기는 조사별로 셉니다(`year_stats`의 `angler_trips`·`angler_fish`, `20261202000000_angler_stats.sql`). 출조 횟수는 그해 낚시 장소에 남긴 기록의 날짜 수이고, 함께 다녀온 기록은 두 사람 모두에게, 혼자 다녀온 기록은 그 사람에게만 더합니다. 잡은 물고기는 물고기마다 적은 조사로 셉니다.
-- 손맛 확률은 조사마다 출조한 날 가운데 그 사람이 물고기를 한 마리라도 잡은 날의 비율(반올림한 %)이고, 근거를 '출조 n회 중 m회 손맛'으로 함께 씁니다(`angler_catch_days`). 월별 출조도 조사별로 셉니다(`angler_months`, 둘 다 `20261203000000_stats_by_angler.sql`). 막대는 김 조사 포인트 색(`accent`, 민트), 류 조사 코랄(`ryu`)로 칠하고 범례를 둡니다. 두 색은 dataviz 검증 스크립트의 적록 색약 구분(ΔE 12.7)과 일반 시각 구분(ΔE 21.0)을 라이트·다크 모두 통과합니다. 색을 바꿀 때는 민트와 짝지어 같은 스크립트로 다시 확인합니다.
-
-## 오프라인 저장과 동시 수정
-
-- 저장 대기열(`src/shared/lib/outbox.ts`, IndexedDB): 오프라인에서 기록을 저장하면 입력과 사진 파일을 기기에 두고, 앱을 열 때·연결이 돌아올 때·화면으로 돌아올 때·1분마다 올립니다(`useRecordOutbox`). 같은 id와 사진 경로로 덮어쓰므로 일부만 올라간 뒤 다시 올려도 중복되지 않습니다. 오프라인에서 저장한 내용은 그 사이 다른 사람이 고쳤어도 덮어씁니다.
-- 동시 수정: 기록 폼은 열 때의 `updated_at`을 보내고, 저장 직전 DB 값과 다르면 `RecordConflictError`로 덮어쓸지 묻습니다.
-
-## 백업
-
-매주 월요일 3시(한국 시간)에 Edge Function `supabase/functions/backup`이 public 스키마의 모든 표를 `{ createdAt, tables: { 표 이름: 행[] } }` JSON으로 비공개 버킷 `backups`에 저장합니다(최근 12개). 사진 파일은 Storage `record-photos`에 그대로 있고 경로만 표에 남습니다.
-
-- 예약: pg_cron `ngmg-weekly-backup`이 Vault의 `backup_url`로 `notify_cron_secret`을 붙여 부릅니다.
-- 받기: 대시보드 **Storage > backups**에서 내려받습니다. 버킷에 정책이 없어 앱에서는 읽을 수 없습니다.
-- 되살리기: 표마다 `insert into public.<표> select * from json_populate_recordset(null::public.<표>, '<행 JSON>')`로 넣습니다. 외래 키 순서(places → events → records → 나머지)를 지킵니다.
-- `members`는 2026-11-10 이전 백업에 `role`이 없습니다. 그때는 `insert into public.members (user_id, role) select user_id, coalesce(role, 'member') from json_populate_recordset(null::public.members, '<행 JSON>')`로 넣습니다.
-- 새 프로젝트: `supabase functions deploy backup --use-api` 뒤 `select vault.create_secret('https://<프로젝트 ID>.supabase.co/functions/v1/backup', 'backup_url')`.
-
-## Kakao 지도 준비
-
-1. [Kakao Developers](https://developers.kakao.com)에서 앱을 만들고 **카카오맵** 사용을 켭니다.
-2. **플랫폼 > Web**에 `https://ngmg.kr`과 `https://www.ngmg.kr`을 등록합니다. (Kakao 콘솔이 localhost를 거절해 로컬에서는 지도가 뜨지 않을 수 있습니다.)
-3. **JavaScript 키**를 `VITE_KAKAO_MAP_KEY`에 넣습니다.
-
-## 배포 (GitHub Pages)
-
-1. 저장소 Pages의 Source는 **GitHub Actions**로 설정되어 있습니다.
-2. **Settings > Secrets and variables > Actions**에 위 환경 변수 3개를 넣습니다. 3개가 모두 없으면 `deploy.yml`이 웹 데모(`build:demo`)를 배포하고, 일부만 있으면 실패합니다.
-3. `main`에 올리거나 **Actions > Deploy**를 다시 실행하면 배포됩니다. 주소는 `https://ngmg.kr`입니다.
-
-사용자 도메인은 저장소 **Settings > Pages > Custom domain**에 `ngmg.kr`로 걸려 있고, DNS는 hosting.kr에서 A 레코드 4개(`185.199.108~111.153`)와 `www` CNAME(`deokbae-cinephile.github.io`)으로 연결합니다. 도메인을 바꾸면 `supabase/config.toml`의 `site_url`과 Kakao 플랫폼 도메인도 함께 바꿉니다. 새로고침을 지원하려고 빌드할 때 `scripts/spa-pages.mjs`가 `index.html`을 `404.html`과 화면 주소별 파일(`schedule.html`, `stats.html` 등)로 복사합니다. GitHub Pages는 `/schedule` 요청에 `schedule.html`을 200으로 돌려주므로 브라우저 콘솔에 404가 남지 않습니다. 장소 상세는 `/place?id=<id>`라 `place.html`이 200으로 받습니다. 예전 주소(`/places/<id>`)처럼 정해지지 않은 주소만 `404.html`이 맡고, 앱이 뜬 뒤 새 주소로 넘깁니다. 화면 주소를 새로 만들면 이 스크립트의 목록에도 넣습니다.
-
-## PR 리뷰
-
-`main`에는 브랜치와 PR로 올리고, 검사(CI `check`, CodeRabbit)가 통과하면 squash로 merge합니다. CodeRabbit이 `main` 대상 PR을 자동으로 리뷰하며, 기준은 `.coderabbit.yaml`에 있습니다. 초안(Draft) PR은 자동 리뷰에서 제외됩니다. Ready로 바꾼 뒤에도 리뷰가 시작되지 않으면 PR에 `@coderabbitai review` 댓글을 남겨 요청합니다.
-
-## 버전과 릴리스
-
-1.1.0부터 [시맨틱 버저닝](https://semver.org/lang/ko/)을 따릅니다. 버그 수정은 PATCH, 기능 추가는 MINOR, 호환이 깨지는 변경은 MAJOR를 올립니다.
-
-1. PR 안에서 `package.json`의 `version`과 `CHANGELOG.md`의 새 절(`## x.y.z - 날짜`)을 함께 고칩니다. README는 두지 않습니다(사용자 요청, 2026-11-14). 외부 자료의 출처는 [출처](credits.md)에 적습니다. 설정의 앱 정보는 `package.json` 버전과 빌드한 날(한국 시간, `vite.config.ts`의 `__BUILD_DATE__`)을 'v1.5.2 (2026.11.12)'처럼 보여 줍니다.
-2. merge 뒤 Deploy가 끝나고 사이트를 확인하면 `vX.Y.Z` 태그를 만들어 올리고, CHANGELOG의 그 절을 GitHub 릴리스 노트로 공개합니다.
-
-   ```bash
-   git tag vX.Y.Z && git push origin vX.Y.Z
-   # CHANGELOG에서 '## X.Y.Z' 절만 잘라 임시 파일로 만든 뒤 릴리스 노트로 씁니다.
-   awk '/^## X\.Y\.Z/{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > /tmp/release-notes.md
-   gh release create vX.Y.Z --title vX.Y.Z --notes-file /tmp/release-notes.md --latest
-   ```
-3. Edge Function(`notify`, `backup`)을 고쳤으면 merge 뒤 `supabase functions deploy <이름> --use-api`로 함께 배포합니다.
-
-## 테스트
-
-| 종류 | 위치 | 비고 |
-| --- | --- | --- |
-| E2E | `e2e/*.spec.ts`(앱·지도·일정·기록·도감통계·물품), 공통 도우미 `e2e/support.ts` | 화면 흐름 94개를 프로덕션 빌드로 360·768·1280px에서 검사합니다(일부는 특정 화면 크기만). 넘침, axe 접근성, 모든 화면의 아이콘 단추 크기(라이트·다크) 검사를 포함합니다. |
-
-프로젝트를 가볍게 두려고 단위 테스트와 DB 권한 테스트는 두지 않습니다. E2E의 Supabase와 Kakao SDK는 `e2e/fake-server.ts`가 흉내 냅니다(`fakeBackend`). 실제 서비스와의 연동은 검증하지 않으므로, 서버를 연결한 뒤에는 직접 확인합니다.
-
-## 화면 설정 저장
-
-지도 위치(`map-view`), 기록 분류 필터(`records-filter`), 화면 테마(`theme`), 지도 단추 펼침(`map-tools-open`) 같은 화면 설정만 기기의 localStorage에 `ngmg:` 접두어로 저장합니다(`src/shared/lib/preferences.ts`). 지도 분류 필터는 저장하지 않고 들어올 때마다 '전체'에서 시작합니다. 로그인 세션은 Supabase 인증 클라이언트가 localStorage에 관리합니다.
-
-## 디자인 토큰
-
-`src/app/styles/base.css`의 `@theme`에 있습니다(스타일은 `src/app/styles/`에 영역별로 나뉘어 있고, `src/app/styles.css`가 순서대로 불러옵니다).
-
-| 토큰 | 값 | 쓰임 |
-| --- | --- | --- |
-| `paper` / `surface` | `#fafafa` / `#f0f0f0` | 바탕 / 입력란·강조 영역 |
-| `ink` / `muted` | `#0a0a0a` / `#595959` | 글자·칸 선 / 보조 글자·라벨 |
-| `soft` / `field` | `#d9d9d9` / `#8c8c8c` | 옅은 구분선 / 입력란 테두리 |
-| `accent` | `#8ed8cb` (브랜드 CI, 아쿠아 민트) | 선택된 메뉴·필터·단추·체크 칸, 달력 표시, 그래프, 삭제 단추 바탕(그 위 글자·아이콘은 검정). CI 색이라 대비 보정 없이 그대로 씀 |
-| `ryu` | `#de8a77` (코랄) | 류 조사 색: 통계의 월별 출조 막대·범례(김 조사는 `accent`). 라이트·다크 같은 값 |
-| `kim-ink` / `ryu-ink` | `#22685d` / `#c26e59` (다크: `#8ed8cb` / `#de8a77`) | 통계의 조사별 큰 숫자(출조·잡은 물고기·손맛 확률). 밝은 화면은 큰 글자 대비 3:1 이상(6.28:1 / 3.55:1)이고 둘의 밝기를 벌려 적록 색약에서도 갈림(ΔE 9.3). 단위·막대 위 숫자 같은 작은 글자에는 쓰지 않음(4.5:1 미만) |
-| `sun` / `sat` | `#d4271b` / `#1f5fb4` | 일요일·공휴일 / 토요일 |
-| `danger` | `#b3221e` | 삭제·오류 |
-
-제목 크기는 칸 제목(h2) 20px, 칸 안 소제목(h3) 18px, 목록 항목 16px입니다. 장소 분류는 낚시·맛집·숙박·기타이고, 핀과 배지의 아이콘과 채움으로 구분합니다(낚시: 검정, 맛집: 흰색, 숙박·기타: 회색 계열).
-
-글꼴은 나눔고딕(Nanum Gothic)을 `@fontsource/nanum-gothic`로 포함합니다. 본문은 400, 큰 숫자·영문은 실제 700(latin-700)이고, 한글 제목은 한글 700 조각까지 받으면 CSS가 크게 늘어 브라우저가 굵게 그립니다(`.title`의 `font-synthesis: weight`). 한글이 여러 조각으로 나뉘어 화면에 쓰인 조각만 받으며, 조각이 CSS에 base64로 박히지 않도록 `vite.config.ts`에서 글꼴 파일은 인라인하지 않습니다.
-
-## 단추 원칙
-
-- 단추는 글자 없는 아이콘 단추로 씁니다(`src/shared/ui/icon-button.tsx`의 `IconButton`, 화면 이동은 `IconLink`). 이름은 `aria-label`로 화면 읽기 프로그램에, `title`로 마우스를 올린 사람에게 알리고, 누르는 면적은 44px입니다.
-- 글자를 그대로 두는 예외: 분류 필터(아이콘이지만 고른 분류 이름을 '분류 · 낚시'처럼 글자로도 보여 줌), 화면 테마('다크 모드')와 알림('이 기기에서 알림 받기')은 스위치(`role="switch"`), 앱 설치는 글자 단추, 이름 자체를 고르는 단추(도감 탭, 조사 탭, 어종 빠른 선택, 달력 연·월 고르기).
-- 주요 단추(`button-primary`)·삭제 단추(`button-accent`)에도 아이콘 크기가 지켜지도록 `.button.icon-only`로 여백을 덮습니다. 이 규칙이 깨지면 아이콘이 0px로 사라지므로, E2E의 '아이콘 단추' 검사가 모든 화면을 라이트·다크로 확인합니다.
-- 지도 위 단추는 왼쪽 위에 여닫기 단추를 두고, 펼치면 그 아래로 위치 지정, 무악재역, 현재 위치가 틈 없이 붙어 내려옵니다(`role="group"` '지도 단추', 겹치는 선은 1px). 처음엔 펼쳐 두고 상태를 기억하며(`map-tools-open`), 지도를 키웠을 때도 접고 펼칩니다. 오른쪽 아래 구석에는 지도 확대·작게 단추(`PlaceMap`의 `corner`)만 둡니다. 지도 위 안내·단추는 지도 가장자리에서 1.25rem(`--map-inset`)이고 높이(단추는 너비도)는 목록 위 단추와 같은 44px입니다. 말풍선은 가로로 겹치는 위쪽 안내·단추 아래로만 올라옵니다. 평점 안내는 1.6.0에서 없앴고, 핀의 색과 점수로 평점을 보여 줍니다.
-- UI를 바꾸면 휴대폰·PC와 라이트·다크로 전체 화면을 찍어 직접 확인한 뒤 올립니다.
-
-## 첫 로딩과 화면 전환
-
-- 첫 화면(`src/app/splash.tsx`): 가운데 로고만 놓인 스플래시가 앱이 준비될 때까지 보였다가 서서히 사라집니다. 탭마다 한 번만 로고를 보여 주고(`sessionStorage`의 `ngmg:intro`), 그 뒤에는 바탕만 덮었다가 바로 엽니다. `index.html`의 `#boot`가 같은 모습이라 자바스크립트를 받는 동안에도 이어집니다.
-- 화면 전환: 로그인 뒤 다른 메뉴의 코드를 미리 받고, 데이터가 오는 동안에는 스켈레톤(`src/shared/ui/skeleton.tsx`)으로 자리를 잡아 화면이 밀리지 않게 합니다.
-- 지도는 마지막으로 보던 곳에서 시작합니다(`map-view`). 저장된 위치가 없으면 무악재역에서 시작합니다.
-- 카카오 지도는 지우는 API가 없어 화면을 열 때마다 새로 만들면 떠난 지도가 메모리에 남습니다. 지도는 한 번만 만들어 다시 쓰고(`src/pages/map/model/use-kakao-map.ts`), 화면을 떠날 때 지도 칸을 떼고 그 화면이 단 이벤트·핀 묶음·오버레이(무악재역 핀, 말풍선, 내 위치 점)를 모두 뗍니다. 핀 묶음은 지도와 테마마다 한 번만 만들고 장소가 바뀌면 핀만 바꿔 넣습니다.
-
-## 경량화 원칙
-
-- 구조는 FSD(Feature-Sliced Design)를 따르고 Steiger(`steiger.config.ts`)로 검사합니다. 한 화면에서만 쓰는 코드는 그 화면 슬라이스에 두고, 두 곳 이상에서 쓰게 되면 features·widgets로 올립니다. 폼 슬라이스 이름이 모두 `-form`이라 `fsd/repetitive-naming`만 끕니다.
-- 여러 기록을 모아 세는 값(장소 평점, 어종 목록, 연도별 통계, 어종·음식 도감, 평점 대기)은 DB 함수(`20261128000000_aggregates.sql`, `20261129000000_pending_ratings.sql`, 혼자 다녀온 기록을 반영한 `20261201000000_solo_rating.sql`·`20261202000000_angler_stats.sql`·`20261203000000_stats_by_angler.sql`, `security invoker`라 RLS 그대로)가 셉니다. 앱이 부르는 함수는 로그인한 계정(authenticated)만 실행할 수 있게 하므로(`20261130000000_rpc_execute_authenticated.sql`), 새 함수를 만들면 같은 식으로 anon·PUBLIC 실행 권한을 거둡니다. 읽기 함수는 `supabase.read`(GET)로 불러 서비스 워커가 오프라인용으로 저장합니다. E2E 가짜 서버는 `e2e/fake-aggregates.ts`가 같은 규칙으로 흉내 내므로, 함수를 바꾸면 둘을 함께 고칩니다.
-
-- 라우터는 `src/shared/lib/router.tsx`(History API), 달력은 `src/pages/schedule/month-calendar.tsx`(WAI-ARIA 날짜 표 패턴), 날짜 계산은 `src/shared/lib/date.ts`(Date·Intl)로 직접 만들어 라이브러리를 쓰지 않습니다.
-- Supabase는 `supabase-js` 대신 DB 클라이언트(`postgrest-js`)만 씁니다(`src/shared/api/supabase.ts`). 로그인은 비밀번호 로그인과 토큰 갱신만 하는 작은 클라이언트(`src/shared/api/auth.ts`)로, 사진 저장소는 서명 주소·올리기·지우기 요청을 직접 보냅니다. 저장 키와 세션 모양이 supabase-js와 같아 로그인이 유지됩니다.
-- 사진은 올릴 때(가로 3200px이 넘는 큰 사진은 먼저 줄여 읽어 휴대폰 메모리를 아낌) 긴 변 1600px 원본과 480px 썸네일(`*.thumb.jpg`)을 함께 저장합니다(`src/shared/api/photos.ts`). 잡은 물고기·음식은 칸마다 5장까지이며, 대표(첫) 사진은 `photo_path`, 나머지 4장은 `extra_photo_paths`에 둡니다(`20261125000000_item_photos.sql`). 도감·사진 모아 보기의 대표 사진은 `photo_path`를 그대로 씁니다. 64px 칸과 도감 카드는 썸네일을 쓰고, 썸네일이 없는 예전 사진은 원본을 씁니다. 사진은 한 번만 읽어 둘을 만들고, 여러 장은 3장씩 함께 올리되 풀기·줄이기는 한 장씩 차례로 해 메모리 최고점을 낮춥니다(`forEachLimit`, `compressImageWithThumb`). 올리기 전 미리보기는 Object URL로 보여 주고 사라지면 풉니다. 받아 둔 서명 주소는 1시간 넘게 남았으면 다시 쓰고, 글꼴 CSS의 woff 대체 경로는 빌드에서 뺍니다(`vite.config.ts`). 도감은 화면에 보이는 대표 사진만 서명 주소를 받습니다.
-- 첫 화면인 로그인 폼은 기본 HTML 폼으로 만들고, `react-hook-form`은 장소·기록·일정 폼을 열 때만 받습니다.
-- 사진 여러 장은 브라우저 기본 가로 스크롤(scroll-snap)로 넘깁니다. 슬라이드 라이브러리(Embla)는 일부 휴대폰에서 밀어도 넘어가지 않아 걷어 냈습니다. 슬라이드 코드는 사진이 두 장 이상인 기록을 처음 그릴 때 받습니다.
-- 오프라인 캐시(`public/sw.js`): 앱 화면과 DB 조회는 네트워크를 먼저 쓰고 3.5초가 넘거나 끊기면 마지막 응답(DB는 요청 토큰의 사용자별로 따로 저장)을, 해시가 붙은 JS·CSS·글꼴과 사진은 저장해 둔 것을 먼저 씁니다. 조회는 `networkMode: 'offlineFirst'`라 오프라인에서도 서비스 워커의 응답을 받고, 저장은 `always`라 오프라인이면 바로 실패를 알립니다. 캐시 구조를 바꾸면 `VERSION`을 올려 예전 캐시를 지웁니다. 같은 주소의 DB 응답에 값이 더해지면(예: 통계 함수) `DATA_VERSION`만 올려 예전 DB 응답만 버립니다. 그러지 않으면 느린 연결·오프라인에서 새 값이 없는 예전 응답이 쓰여 0으로 보입니다(2.3.0에서 v3). E2E는 가짜 서버(`page.route`)를 거치도록 서비스 워커를 막습니다.
-- 글꼴은 글자 조각(unicode-range)을 그대로 씁니다. 화면마다 10~13조각(약 27~52KB)만 받습니다.
+환경 변수, 서버 준비, 배포 등 자세한 내용은 [개발 가이드](documents/development.md), 작업 규칙은 [AGENTS.md](AGENTS.md), 외부 자료의 출처는 [CREDITS.md](CREDITS.md)에 있습니다.
