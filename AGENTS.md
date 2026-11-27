@@ -26,37 +26,27 @@ PR 전에 `typecheck`, `lint`, `test:e2e`, `build`를 로컬에서 돌립니다.
 
 ```
 src/
-├─ app/               주소별 화면(기본 HTML 구조는 layout.tsx, globals.css)
-│  ├─ splash.tsx      첫 화면 로고
-│  ├─ login/          로그인 폼(POST /api/session)
-│  ├─ map/            지도·장소 목록
-│  ├─ schedule/       일정 관리
-│  ├─ records/        기록 목록·추가
-│  ├─ guide-stats/    도감·통계
-│  └─ settings/       설정(테마, 알림, 장치 정보)
-├─ shared/            두 화면 이상에서 쓰는 코드
-│  ├─ lib/             공통 라이브러리(로그인, 날짜, 설정 저장)
-│  └─ ui/             공통 UI(단추, 입력칸, 스피너)
-├─ features/          FSD 특성 레이어(한 기능의 폼·리스트 등)
-│  ├─ place-form/
-│  ├─ record-form/
-│  └─ ...
-├- widgets/           FSD 위젯 레이어(화면 단위로 다시 조합)
-│  ├─ map-layout.tsx
-│  └─ ...
-└- pages/             FSD 페이지 레이어(화면별 진입점, react-router 대신 History API)
-   ├─ splash.tsx
-   ├─ login/
-   ├─ map/
-   ├─ schedule/
-   ├─ records/
-   ├─ guide-stats/
-   └─ settings/
+├─ app/        앱 진입(app.tsx), 첫 화면 로고(splash.tsx), 전역 스타일(styles/, 디자인 토큰은 base.css)
+├─ pages/      FSD 페이지: login, map, place, schedule, stats, dex, gear, settings (react-router 대신 History API)
+├─ widgets/    화면 단위로 조합하는 코드(app-shell 등)
+├─ features/   한 기능의 폼: place-form, record-form, event-form, gear-form
+├─ entities/   도메인 모델
+└─ shared/     두 곳 이상에서 쓰는 코드: api(Supabase·인증·사진), lib(날짜·라우터·저장 대기열), ui(공통 UI), config
 
-e2e/                  Playwright 시험, 가짜 서버
-public/               정적 파일(아이콘, 아이콘 폰트)
-scripts/              빌드 보조(spa-pages.mjs 등)
+e2e/           Playwright 시험, 가짜 서버(fake-server.ts), 데모(demo.ts)
+public/        정적 파일(아이콘, 서비스 워커 sw.js, manifest)
+scripts/       빌드 보조(spa-pages.mjs)
+supabase/      DB 마이그레이션, Edge Function(notify, backup)
+documents/     문서(development.md 개발 가이드, onboarding.md 코드 둘러보기, images/ README 화면)
 ```
+
+## 문서
+
+- [README.md](README.md): 프로젝트 소개(주요 화면·기능·기술 스택·실행 방법). 템플릿 양식을 유지합니다.
+- [documents/development.md](documents/development.md): 환경 변수, 서버 준비, 알림, 백업, 배포, 테스트, 디자인 토큰 등 개발 가이드.
+- [documents/onboarding.md](documents/onboarding.md): 코드를 처음 보는 개발자를 위한 둘러보기.
+- [CHANGELOG.md](CHANGELOG.md): 변경 기록. [CREDITS.md](CREDITS.md): 외부 자료의 출처.
+- 문서를 옮기거나 이름을 바꾸면 위 링크와 앱 설정의 출처 링크(`src/pages/settings/ui/settings-page.tsx`)도 맞춥니다.
 
 ## 코드 규칙
 

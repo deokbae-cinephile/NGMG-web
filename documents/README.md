@@ -9,8 +9,8 @@
 - 설정: 테마(라이트/다크), 알림 설정
 
 - 주소: https://ngmg.kr/
-- 개발 안내: [docs/development.md](docs/development.md)
-- 작업 규칙: [AGENTS.md](AGENTS.md)
+- 개발 안내: [개발 가이드](development.md)
+- 작업 규칙: [AGENTS.md](../AGENTS.md)
 
 ## 시작하기
 
