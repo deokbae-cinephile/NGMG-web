@@ -15,6 +15,8 @@
     "preview": "vite preview",
     "lint": "eslint . && steiger ./src",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test",
     "shots": "SHOTS=1 playwright test install-shots --workers=1",
     "demo": "node e2e/demo.ts"
@@ -33,18 +35,24 @@
     "@feature-sliced/steiger-plugin": "^0.8.2",
     "@playwright/test": "^1.65.0",
     "@tailwindcss/vite": "^4.3.5",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/ui": "^5.1.2",
     "eslint": "^10.14.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "jsdom": "^31.0.1",
     "steiger": "^0.10.0",
     "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",
-    "vite": "^8.3.7"
+    "vite": "^8.3.7",
+    "vitest": "^5.1.2"
   }
 }

@@ -16,11 +16,12 @@ pnpm install          # 설치(pnpm 12, Node 24 이상)
 pnpm dev              # 개발 서버
 pnpm typecheck        # 타입 검사
 pnpm lint             # 린트(eslint + steiger)
+pnpm test             # 단위 테스트(Vitest)
 pnpm test:e2e         # E2E(Playwright, axe 접근성 검사 포함)
 pnpm build            # 운영 빌드(tsc + vite + spa-pages)
 ```
 
-PR 전에 `typecheck`, `lint`, `test:e2e`, `build`를 로컬에서 돌립니다.
+PR 전에 `typecheck`, `lint`, `test`, `test:e2e`, `build`를 로컬에서 돌립니다.
 
 ## 구조
 
